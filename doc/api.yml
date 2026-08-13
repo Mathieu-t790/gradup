@@ -995,12 +995,6 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
 
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
   parameters:
     StudentId:
       name: studentId
