@@ -1,0 +1,50 @@
+openapi: 3.0.3
+info:
+  title: HEI Graduate Management API
+  description: >
+    API for managing students, teachers, courses, grades, transcripts and
+    graduate lists across the 3-year EL/TN tracks at HEI.
+  version: "latest"
+
+servers:
+  - url: /api/v1
+
+tags:
+  - name: health
+  - name: cohorts
+  - name: tracks
+  - name: groups
+  - name: academic-structure
+  - name: students
+  - name: teachers
+  - name: courses
+  - name: course-offerings
+  - name: exams
+  - name: grades
+  - name: transcripts
+  - name: diplomas
+
+security:
+  - bearerAuth: []
+
+paths:
+  /ping:
+    get:
+      tags:
+        - health
+      operationId: ping
+      summary: Liveness check
+      responses:
+        '200':
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: OK, return pong
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

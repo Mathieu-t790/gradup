@@ -1,6 +1,5 @@
 package app.mata.gradup.handler;
 
-import app.mata.gradup.PojaApplication;
 import app.mata.gradup.PojaGenerated;
 import com.amazonaws.serverless.exceptions.ContainerInitializationException;
 import com.amazonaws.serverless.proxy.model.AwsProxyResponse;
@@ -19,7 +18,9 @@ public class LambdaHandler implements RequestStreamHandler {
 
   static {
     try {
-      handler = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(PojaApplication.class);
+      handler =
+          SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(
+              app.mata.gradup.GradUpApplication.class);
     } catch (ContainerInitializationException e) {
       throw new RuntimeException("Initialization of Spring Boot Application failed", e);
     }
