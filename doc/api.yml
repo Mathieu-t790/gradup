@@ -7,7 +7,7 @@ info:
   version: "latest"
 
 servers:
-  - url: /api/v1
+  - url: /
 
 tags:
   - name: health
@@ -24,9 +24,6 @@ tags:
   - name: grade-disputes
   - name: transcripts
   - name: diplomas
-
-security:
-  - bearerAuth: []
 
 paths:
   /ping:
