@@ -21,6 +21,7 @@ tags:
   - name: course-offerings
   - name: exams
   - name: grades
+  - name: grade-disputes
   - name: transcripts
   - name: diplomas
 
@@ -42,9 +43,1672 @@ paths:
                 type: string
           description: OK, return pong
 
+  # ---------- Cohorts ----------
+  /cohorts:
+    get:
+      tags: [cohorts]
+      operationId: listCohorts
+      description: Reference data - any authenticated user can list cohorts.
+      responses:
+        '200':
+          description: List of cohorts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CohortResponse' }
+    post:
+      tags: [cohorts]
+      operationId: createCohort
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CohortCreateRequest' }
+      responses:
+        '201':
+          description: Cohort created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CohortResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /cohorts/{cohortId}:
+    parameters:
+      - $ref: '#/components/parameters/CohortId'
+    get:
+      tags: [cohorts]
+      operationId: getCohort
+      description: Reference data - any authenticated user can view a cohort.
+      responses:
+        '200':
+          description: Cohort details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CohortResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /cohorts/{cohortId}/diplomas:
+    parameters:
+      - $ref: '#/components/parameters/CohortId'
+    get:
+      tags: [diplomas]
+      operationId: listCohortDiplomas
+      x-required-roles: [ADMIN]
+      parameters:
+        - name: track
+          in: query
+          schema: { $ref: '#/components/schemas/TrackCode' }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Frozen diploma list for the cohort, ranked by average
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiplomaPageResponse' }
+
+  /cohorts/{cohortId}/diplomas/generate:
+    parameters:
+      - $ref: '#/components/parameters/CohortId'
+    post:
+      tags: [diplomas]
+      operationId: generateCohortDiplomas
+      description: >
+        Computes graduation eligibility (average >= 10 in every assigned
+        course) for the whole cohort and freezes rank + average into the
+        diploma table. Idempotent per student: re-running updates the
+        existing snapshot rather than duplicating it.
+      x-required-roles: [ADMIN]
+      parameters:
+        - name: track
+          in: query
+          required: true
+          schema: { $ref: '#/components/schemas/TrackCode' }
+      responses:
+        '200':
+          description: Generated diploma list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DiplomaResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /cohorts/{cohortId}/diplomas/export:
+    parameters:
+      - $ref: '#/components/parameters/CohortId'
+    get:
+      tags: [diplomas]
+      operationId: exportCohortDiplomas
+      description: >
+        Downloads the graduate list (rank, last/first name, average) as
+        XLSX, one file per track. Direct download - no email involved
+        (see /students/{studentId}/transcripts for the emailed PDF flow).
+      x-required-roles: [ADMIN]
+      parameters:
+        - name: track
+          in: query
+          required: true
+          schema: { $ref: '#/components/schemas/TrackCode' }
+      responses:
+        '200':
+          description: XLSX file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------- Tracks ----------
+  /tracks:
+    get:
+      tags: [tracks]
+      operationId: listTracks
+      description: >
+        Reference data (EL, TN) - any authenticated user can list tracks.
+        Small, bounded list - not paginated.
+      responses:
+        '200':
+          description: List of tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TrackResponse' }
+    post:
+      tags: [tracks]
+      operationId: createTrack
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrackCreateRequest' }
+      responses:
+        '201':
+          description: Track created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrackResponse' }
+
+  # ---------- Groups ----------
+  /groups:
+    get:
+      tags: [groups]
+      operationId: listGroups
+      description: >
+        Any authenticated user can list groups. Bounded per cohort - not
+        paginated.
+      parameters:
+        - name: cohortId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: trackId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GroupResponse' }
+    post:
+      tags: [groups]
+      operationId: createGroup
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GroupCreateRequest' }
+      responses:
+        '201':
+          description: Group created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GroupResponse' }
+
+  # ---------- Academic structure ----------
+  /academic-years:
+    get:
+      tags: [academic-structure]
+      operationId: listAcademicYears
+      description: Reference data - any authenticated user can list academic years.
+      responses:
+        '200':
+          description: List of academic years
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AcademicYearResponse' }
+    post:
+      tags: [academic-structure]
+      operationId: createAcademicYear
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AcademicYearCreateRequest' }
+      responses:
+        '201':
+          description: Academic year created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AcademicYearResponse' }
+
+  /semesters:
+    get:
+      tags: [academic-structure]
+      operationId: listSemesters
+      description: Reference data - any authenticated user can list semesters.
+      parameters:
+        - name: academicYearId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of semesters
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SemesterResponse' }
+    post:
+      tags: [academic-structure]
+      operationId: createSemester
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SemesterCreateRequest' }
+      responses:
+        '201':
+          description: Semester created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SemesterResponse' }
+
+  /semesters/{semesterId}/finalize:
+    parameters:
+      - $ref: '#/components/parameters/SemesterId'
+    post:
+      tags: [academic-structure]
+      operationId: finalizeSemesterCredits
+      description: >
+        Recomputes SUM(course.credits) across all course_offerings for this
+        semester and the given track, then locks it into
+        semester_credit_validation. This is a one-shot admin action, not a
+        synchronous constraint on course_offering (which would block
+        building the offering list incrementally, one course at a time).
+        Returns 422 - with the actual computed total in the error message -
+        if it isn't exactly 30. Returns 409 if this (semester, track) pair
+        was already finalized (matches the UNIQUE(semester_id, track_id)
+        constraint).
+      x-required-roles: [ADMIN]
+      parameters:
+        - name: trackId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Semester finalized for this track
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SemesterCreditValidationResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  # ---------- Students ----------
+  /students:
+    get:
+      tags: [students]
+      operationId: listStudents
+      description: Returns flattened summaries suitable for a table view - not the full detail shape.
+      x-required-roles: [ADMIN, TEACHER]
+      parameters:
+        - name: cohortId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: groupId
+          in: query
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Paginated list of students
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentPageResponse' }
+    post:
+      tags: [students]
+      operationId: createStudent
+      description: >
+        Creates a student profile (admin only). The `reference` (e.g.
+        STD24192) is generated server-side by the database and returned
+        in the response - it is never supplied by the client.
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentCreateRequest' }
+      responses:
+        '201':
+          description: Student created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /students/{studentId}:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [students]
+      operationId: getStudent
+      description: Full detail shape, with nested cohort/group/track summaries. A STUDENT caller may only fetch their own profile; enforced in application logic.
+      x-required-roles: [ADMIN, TEACHER, STUDENT]
+      responses:
+        '200':
+          description: Student details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [students]
+      operationId: updateStudent
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentUpdateRequest' }
+      responses:
+        '200':
+          description: Student updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /students/{studentId}/group-history:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [students]
+      operationId: listStudentGroupHistory
+      x-required-roles: [ADMIN, TEACHER, STUDENT]
+      responses:
+        '200':
+          description: Chronological list of group assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/StudentGroupHistoryResponse' }
+    post:
+      tags: [students]
+      operationId: changeStudentGroup
+      description: Closes the current open assignment (sets end_date) and opens a new one.
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentGroupHistoryCreateRequest' }
+      responses:
+        '201':
+          description: New group assignment recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentGroupHistoryResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /students/{studentId}/track-history:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [students]
+      operationId: listStudentTrackHistory
+      x-required-roles: [ADMIN, TEACHER, STUDENT]
+      responses:
+        '200':
+          description: Chronological list of track (EL/TN) assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/StudentTrackHistoryResponse' }
+    post:
+      tags: [students]
+      operationId: changeStudentTrack
+      description: Closes the current open track assignment and opens a new one (e.g. specialization after common core).
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentTrackHistoryCreateRequest' }
+      responses:
+        '201':
+          description: New track assignment recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentTrackHistoryResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /students/{studentId}/grades:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [students, grades]
+      operationId: listStudentGrades
+      description: Full grade history across all groups/tracks the student has been through, filtered by their final track for course display.
+      x-required-roles: [ADMIN, TEACHER, STUDENT]
+      parameters:
+        - name: semesterId
+          in: query
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Paginated list of grades
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GradePageResponse' }
+
+  /students/{studentId}/graduation-eligibility:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [students, diplomas]
+      operationId: getGraduationEligibility
+      description: Live computation - true only if the average is >= 10 in every single course assigned across the 3 years.
+      x-required-roles: [ADMIN, STUDENT]
+      responses:
+        '200':
+          description: Eligibility result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GraduationEligibilityResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /students/{studentId}/transcripts:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [transcripts]
+      operationId: listStudentTranscripts
+      x-required-roles: [ADMIN, STUDENT]
+      responses:
+        '200':
+          description: List of previously generated transcripts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TranscriptResponse' }
+    post:
+      tags: [transcripts]
+      operationId: generateStudentTranscript
+      description: >
+        Generates the PDF (respecting the student's track as of the issue
+        date), uploads it to S3, and emails it via the Pole mailer.
+        FULL transcripts include overallAverage and creditsEarned;
+        PROVISIONAL transcripts never do.
+
+        A transcript can be generated even when some course offerings do
+        not yet have a computed average (e.g. an exam not yet graded) -
+        those courses simply appear without a score on the document. There
+        is no minimum-grades precondition to generate PROVISIONAL or FULL.
+
+        type = DIPLOMA generates the final certificate for a student who
+        already has a diploma record (see diplomaId) - it does not
+        recompute eligibility, it only turns the frozen diploma snapshot
+        into a PDF and emails it.
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TranscriptGenerateRequest' }
+      responses:
+        '201':
+          description: Transcript generated and sent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TranscriptResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------- Teachers ----------
+  /teachers:
+    get:
+      tags: [teachers]
+      operationId: listTeachers
+      x-required-roles: [ADMIN]
+      responses:
+        '200':
+          description: List of teachers
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TeacherResponse' }
+    post:
+      tags: [teachers]
+      operationId: createTeacher
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TeacherCreateRequest' }
+      responses:
+        '201':
+          description: Teacher created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeacherResponse' }
+
+  /teachers/{teacherId}/course-offerings:
+    parameters:
+      - name: teacherId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [teachers, course-offerings]
+      operationId: listTeacherCourseOfferings
+      description: The offerings this teacher is currently assigned to teach.
+      x-required-roles: [ADMIN, TEACHER]
+      responses:
+        '200':
+          description: List of course offerings
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CourseOfferingResponse' }
+
+  # ---------- Courses ----------
+  /courses:
+    get:
+      tags: [courses]
+      operationId: listCourses
+      description: >
+        Reference data - any authenticated user can list courses. Bounded
+        catalog (a few dozen per curriculum) - not paginated.
+      parameters:
+        - name: trackId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: semesterNumber
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 6 }
+      responses:
+        '200':
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CourseResponse' }
+    post:
+      tags: [courses]
+      operationId: createCourse
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CourseCreateRequest' }
+      responses:
+        '201':
+          description: Course created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourseResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /courses/{courseId}:
+    parameters:
+      - name: courseId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [courses]
+      operationId: getCourse
+      description: Reference data - any authenticated user can view a course.
+      responses:
+        '200':
+          description: Course details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourseResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [courses]
+      operationId: updateCourse
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CourseUpdateRequest' }
+      responses:
+        '200':
+          description: Course updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourseResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------- Course offerings ----------
+  /course-offerings:
+    get:
+      tags: [course-offerings]
+      operationId: listCourseOfferings
+      description: Returns each offering with its course/group/semester/teachers already resolved to summaries, to spare the client extra lookups.
+      x-required-roles: [ADMIN, TEACHER]
+      parameters:
+        - name: semesterId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: groupId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: courseId
+          in: query
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Paginated list of course offerings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourseOfferingPageResponse' }
+    post:
+      tags: [course-offerings]
+      operationId: createCourseOffering
+      description: >
+        Assigns a course to a group for a given semester. A course belongs
+        to exactly one semester number (course.semesterNumber) and cannot
+        be offered under any other semester: the server rejects the
+        request (422) if the target semester's `number` does not match
+        the course's `semesterNumber`. The 30/60-credit consistency per
+        semester/track is also validated server-side.
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CourseOfferingCreateRequest' }
+      responses:
+        '201':
+          description: Course offering created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourseOfferingResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /course-offerings/{offeringId}:
+    parameters:
+      - $ref: '#/components/parameters/OfferingId'
+    get:
+      tags: [course-offerings]
+      operationId: getCourseOffering
+      x-required-roles: [ADMIN, TEACHER]
+      responses:
+        '200':
+          description: Course offering details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourseOfferingResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /course-offerings/{offeringId}/teachers/{teacherId}:
+    parameters:
+      - $ref: '#/components/parameters/OfferingId'
+      - name: teacherId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [course-offerings]
+      operationId: assignTeacherToOffering
+      description: A course can have several teachers assigned; each assignment is independent.
+      x-required-roles: [ADMIN]
+      responses:
+        '204':
+          description: Teacher assigned
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [course-offerings]
+      operationId: unassignTeacherFromOffering
+      x-required-roles: [ADMIN]
+      responses:
+        '204':
+          description: Teacher unassigned
+
+  /course-offerings/{offeringId}/exams:
+    parameters:
+      - $ref: '#/components/parameters/OfferingId'
+    get:
+      tags: [exams]
+      operationId: listOfferingExams
+      x-required-roles: [ADMIN, TEACHER, STUDENT]
+      responses:
+        '200':
+          description: List of exams for this offering
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ExamResponse' }
+    post:
+      tags: [exams]
+      operationId: createExam
+      description: The sum of weight_numerator/weight_denominator across an offering's exams must equal 1 before grades can be published on a transcript.
+      x-required-roles: [ADMIN, TEACHER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExamCreateRequest' }
+      responses:
+        '201':
+          description: Exam created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExamResponse' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /exams/{examId}:
+    parameters:
+      - $ref: '#/components/parameters/ExamId'
+    get:
+      tags: [exams]
+      operationId: getExam
+      description: Fetch a single exam directly (e.g. deep link from a grading sheet).
+      x-required-roles: [ADMIN, TEACHER, STUDENT]
+      responses:
+        '200':
+          description: Exam details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExamResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [exams]
+      operationId: updateExam
+      x-required-roles: [ADMIN, TEACHER]
+      description: TEACHER allowed only if assigned to the parent offering.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExamUpdateRequest' }
+      responses:
+        '200':
+          description: Exam updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExamResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /exams/{examId}/grades:
+    parameters:
+      - $ref: '#/components/parameters/ExamId'
+    get:
+      tags: [grades]
+      operationId: listExamGrades
+      description: Used by teachers grading a class - includes each student's name directly so the UI can render a grading sheet with no extra lookups.
+      x-required-roles: [ADMIN, TEACHER]
+      responses:
+        '200':
+          description: List of grades for this exam
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GradeResponse' }
+    post:
+      tags: [grades]
+      operationId: recordGrade
+      description: TEACHER allowed only if assigned to the parent offering.
+      x-required-roles: [ADMIN, TEACHER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GradeCreateRequest' }
+      responses:
+        '201':
+          description: Grade recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GradeResponse' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /grades/{gradeId}:
+    parameters:
+      - $ref: '#/components/parameters/GradeId'
+    put:
+      tags: [grades]
+      operationId: updateGrade
+      description: >
+        Overwrites the current score. The previous value is automatically
+        archived to grade history (DB trigger) before the update is applied.
+        TEACHER allowed only for offerings they are assigned to; ADMIN unrestricted.
+      x-required-roles: [ADMIN, TEACHER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GradeUpdateRequest' }
+      responses:
+        '200':
+          description: Grade updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GradeResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /grades/{gradeId}/history:
+    parameters:
+      - $ref: '#/components/parameters/GradeId'
+    get:
+      tags: [grades]
+      operationId: listGradeHistory
+      x-required-roles: [ADMIN, TEACHER]
+      responses:
+        '200':
+          description: Chronological list of modifications for this grade
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GradeHistoryEntryResponse' }
+
+  # ---------- Grade disputes ----------
+  /grades/{gradeId}/disputes:
+    parameters:
+      - $ref: '#/components/parameters/GradeId'
+    post:
+      tags: [grade-disputes]
+      operationId: createGradeDispute
+      description: >
+        A STUDENT may only dispute their own grade (enforced in application
+        logic). Creates the dispute with status PENDING. Does not itself
+        change the grade - resolution is a separate step, done by the
+        assigned TEACHER (or ADMIN).
+      x-required-roles: [STUDENT]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GradeDisputeCreateRequest' }
+      responses:
+        '201':
+          description: Dispute created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GradeDisputeResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: A PENDING dispute already exists for this grade
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /disputes:
+    get:
+      tags: [grade-disputes]
+      operationId: listDisputes
+      description: >
+        Resolution queue for the teacher assigned to the underlying
+        offering (or any admin). Defaults to PENDING disputes if `status`
+        is omitted.
+      x-required-roles: [ADMIN, TEACHER]
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/DisputeStatus' }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Paginated list of disputes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GradeDisputePageResponse' }
+
+  /disputes/{disputeId}:
+    parameters:
+      - $ref: '#/components/parameters/DisputeId'
+    patch:
+      tags: [grade-disputes]
+      operationId: resolveDispute
+      description: >
+        Resolves or rejects a PENDING dispute in a single call. TEACHER
+        allowed only if assigned to the offering behind the disputed grade;
+        ADMIN unrestricted. When `status = RESOLVED` and the score was
+        actually wrong, include `newScore`: the server updates the grade
+        (archiving the old value via the existing grade_history trigger)
+        and links the resulting history entry automatically - the caller
+        never supplies a history id directly. Omit `newScore` when the
+        original score is confirmed correct.
+      x-required-roles: [ADMIN, TEACHER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GradeDisputeResolveRequest' }
+      responses:
+        '200':
+          description: Dispute resolved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GradeDisputeResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Dispute is not in PENDING status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  parameters:
+    StudentId:
+      name: studentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CohortId:
+      name: cohortId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OfferingId:
+      name: offeringId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ExamId:
+      name: examId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    GradeId:
+      name: gradeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    SemesterId:
+      name: semesterId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DisputeId:
+      name: disputeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicting or duplicate resource
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Caller not allowed to perform this action on this resource
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UnprocessableEntity:
+      description: >
+        Business rule violation (e.g. exam weights would exceed 1, or the
+        target semester's number does not match the course's semesterNumber).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+      required: [code, message]
+
+    Role:
+      type: string
+      enum: [STUDENT, TEACHER, ADMIN]
+
+    TrackCode:
+      type: string
+      enum: [EL, TN]
+
+    TranscriptType:
+      type: string
+      enum: [PROVISIONAL, FULL, DIPLOMA]
+      description: >
+        DIPLOMA is the final certificate PDF, linked to an already-generated
+        diploma record (see diplomaId on TranscriptResponse). It mirrors the
+        transcript.type CHECK constraint in the database (PROVISIONAL, FULL,
+        DIPLOMA).
+
+    # ---- shared pagination wrapper: compose with `allOf` per resource,
+    # since OpenAPI 3.0 + the "native" Java generator have no true generics ----
+    PageMetadata:
+      type: object
+      properties:
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        first: { type: boolean }
+        last: { type: boolean }
+      required: [page, size, totalElements, totalPages, first, last]
+
+    # ---- lightweight refs embedded in other responses ----
+    CohortSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string }
+      required: [id, label]
+
+    GroupSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        reference: { type: string, example: K1 }
+      required: [id, reference]
+
+    TrackSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { $ref: '#/components/schemas/TrackCode' }
+      required: [id, code]
+
+    CourseSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        reference: { type: string, example: Pro1 }
+        title: { type: string }
+        credits: { type: integer }
+      required: [id, reference, title, credits]
+
+    SemesterSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        number: { type: integer }
+        academicYearLabel: { type: string, example: "2024-2025" }
+      required: [id, number, academicYearLabel]
+
+    TeacherSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        lastName: { type: string }
+        firstName: { type: string }
+      required: [id, lastName, firstName]
+
+    # ---- reference data ----
+    CohortResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string }
+        entryYear: { type: integer }
+        expectedGraduationYear: { type: integer }
+      required: [id, label, entryYear, expectedGraduationYear]
+
+    CohortCreateRequest:
+      type: object
+      properties:
+        label: { type: string }
+        entryYear: { type: integer }
+        expectedGraduationYear: { type: integer }
+      required: [label, entryYear, expectedGraduationYear]
+
+    TrackResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { $ref: '#/components/schemas/TrackCode' }
+        label: { type: string }
+      required: [id, code, label]
+
+    TrackCreateRequest:
+      type: object
+      properties:
+        code: { $ref: '#/components/schemas/TrackCode' }
+        label: { type: string }
+      required: [code, label]
+
+    GroupResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        reference: { type: string, example: K1 }
+        cohort: { $ref: '#/components/schemas/CohortSummary' }
+        track:
+          allOf: [{ $ref: '#/components/schemas/TrackSummary' }]
+          nullable: true
+          description: null = common-core group
+      required: [id, reference, cohort]
+
+    GroupCreateRequest:
+      type: object
+      properties:
+        reference: { type: string }
+        cohortId: { type: string, format: uuid }
+        trackId: { type: string, format: uuid, nullable: true }
+      required: [reference, cohortId]
+
+    AcademicYearResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string, example: "2024-2025" }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+      required: [id, label, startDate, endDate]
+
+    AcademicYearCreateRequest:
+      type: object
+      properties:
+        label: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+      required: [label, startDate, endDate]
+
+    SemesterResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        number: { type: integer, minimum: 1, maximum: 6 }
+        academicYear: { $ref: '#/components/schemas/AcademicYearResponse' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+      required: [id, number, academicYear, startDate, endDate]
+
+    SemesterCreateRequest:
+      type: object
+      properties:
+        number: { type: integer, minimum: 1, maximum: 6 }
+        academicYearId: { type: string, format: uuid }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+      required: [number, academicYearId, startDate, endDate]
+
+    SemesterCreditValidationResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        semester: { $ref: '#/components/schemas/SemesterSummary' }
+        track: { $ref: '#/components/schemas/TrackSummary' }
+        totalCredits: { type: integer, description: "Always 30 on success - finalize fails with 422 otherwise." }
+        validatedAt: { type: string, format: date-time }
+        validatedByName: { type: string }
+      required: [id, semester, track, totalCredits, validatedAt, validatedByName]
+
+    # ---- students ----
+    # Flattened, list-friendly shape - what a table row needs, nothing more.
+    StudentSummaryResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        lastName: { type: string }
+        firstName: { type: string }
+        reference:
+          type: string
+          example: STD24192
+          description: Server-generated identifier (users.reference), not a client-supplied "student number".
+        cohortLabel: { type: string }
+        currentGroupReference: { type: string, nullable: true }
+        currentTrackCode: { $ref: '#/components/schemas/TrackCode' }
+      required: [id, lastName, firstName, reference, cohortLabel]
+
+    # Full detail shape - what a profile page needs.
+    StudentResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        lastName: { type: string }
+        firstName: { type: string }
+        email: { type: string, format: email }
+        reference:
+          type: string
+          example: STD24192
+          description: Server-generated identifier (users.reference), not a client-supplied "student number".
+        dateOfBirth: { type: string, format: date, nullable: true }
+        cohort: { $ref: '#/components/schemas/CohortSummary' }
+        currentGroup:
+          allOf: [{ $ref: '#/components/schemas/GroupSummary' }]
+          nullable: true
+        currentTrack:
+          allOf: [{ $ref: '#/components/schemas/TrackSummary' }]
+          nullable: true
+        enrollmentDate: { type: string, format: date }
+        isActive: { type: boolean }
+      required: [id, lastName, firstName, email, reference, cohort, enrollmentDate, isActive]
+
+    StudentCreateRequest:
+      type: object
+      description: >
+        `reference` is intentionally absent: it is generated server-side
+        by the database trigger on insert (e.g. STD24192) and returned in
+        the response, never supplied by the client.
+      properties:
+        lastName: { type: string }
+        firstName: { type: string }
+        email: { type: string, format: email }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        cohortId: { type: string, format: uuid }
+        initialGroupId: { type: string, format: uuid, description: "Creates the first group-history entry." }
+      required: [lastName, firstName, email, cohortId, initialGroupId]
+
+    StudentUpdateRequest:
+      type: object
+      properties:
+        lastName: { type: string }
+        firstName: { type: string }
+        email: { type: string, format: email }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        isActive: { type: boolean }
+
+    StudentPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: { $ref: '#/components/schemas/StudentSummaryResponse' }
+          required: [content]
+
+    StudentGroupHistoryResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        group: { $ref: '#/components/schemas/GroupSummary' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, nullable: true }
+        changeReason: { type: string, nullable: true }
+      required: [id, group, startDate]
+
+    StudentGroupHistoryCreateRequest:
+      type: object
+      properties:
+        groupId: { type: string, format: uuid }
+        startDate: { type: string, format: date }
+        changeReason: { type: string, nullable: true }
+      required: [groupId, startDate]
+
+    StudentTrackHistoryResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        track: { $ref: '#/components/schemas/TrackSummary' }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, nullable: true }
+        changeReason: { type: string, nullable: true }
+      required: [id, track, startDate]
+
+    StudentTrackHistoryCreateRequest:
+      type: object
+      properties:
+        trackId: { type: string, format: uuid }
+        startDate: { type: string, format: date }
+        changeReason: { type: string, nullable: true }
+      required: [trackId, startDate]
+
+    GraduationEligibilityResponse:
+      type: object
+      properties:
+        studentId: { type: string, format: uuid }
+        track: { $ref: '#/components/schemas/TrackSummary' }
+        isEligible: { type: boolean }
+        overallAverage: { type: number, format: double }
+        failingCourses:
+          type: array
+          description: Courses currently below 10/20, empty when eligible.
+          items:
+            type: object
+            properties:
+              course: { $ref: '#/components/schemas/CourseSummary' }
+              average: { type: number, format: double }
+            required: [course, average]
+      required: [studentId, track, isEligible, overallAverage, failingCourses]
+
+    # ---- teachers ----
+    TeacherResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        lastName: { type: string }
+        firstName: { type: string }
+        email: { type: string, format: email }
+        reference:
+          type: string
+          example: TCH24005
+          description: Server-generated identifier (users.reference), same trigger as students, never client-supplied.
+        specialty: { type: string, nullable: true }
+      required: [id, lastName, firstName, email, reference]
+
+    TeacherCreateRequest:
+      type: object
+      properties:
+        lastName: { type: string }
+        firstName: { type: string }
+        email: { type: string, format: email }
+        specialty: { type: string, nullable: true }
+      required: [lastName, firstName, email]
+
+    # ---- courses ----
+    CourseResponse:
+      type: object
+      description: >
+        A course belongs to exactly one semester number - semesterNumber
+        is authoritative and every course_offering created for this course
+        must target a semester whose `number` matches it (enforced server-side
+        on POST /course-offerings).
+      properties:
+        id: { type: string, format: uuid }
+        reference: { type: string, example: Pro1 }
+        title: { type: string }
+        credits: { type: integer, minimum: 1 }
+        semesterNumber: { type: integer, minimum: 1, maximum: 6 }
+        track:
+          allOf: [{ $ref: '#/components/schemas/TrackSummary' }]
+          nullable: true
+          description: null = common to EL and TN
+      required: [id, reference, title, credits, semesterNumber]
+
+    CourseCreateRequest:
+      type: object
+      properties:
+        reference: { type: string }
+        title: { type: string }
+        credits: { type: integer, minimum: 1 }
+        semesterNumber: { type: integer, minimum: 1, maximum: 6 }
+        trackId: { type: string, format: uuid, nullable: true }
+      required: [reference, title, credits, semesterNumber]
+
+    CourseUpdateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        credits: { type: integer, minimum: 1 }
+        trackId: { type: string, format: uuid, nullable: true }
+
+    # ---- course offerings ----
+    CourseOfferingResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        course: { $ref: '#/components/schemas/CourseSummary' }
+        group: { $ref: '#/components/schemas/GroupSummary' }
+        semester: { $ref: '#/components/schemas/SemesterSummary' }
+        teachers:
+          type: array
+          items: { $ref: '#/components/schemas/TeacherSummary' }
+        gradingFinalized:
+          type: boolean
+          description: >
+            Set server-side once this offering's exam weights sum to
+            exactly 1 (course_offering.grading_finalized). Grades cannot
+            be published on a FULL transcript for this offering until true.
+      required: [id, course, group, semester, teachers, gradingFinalized]
+
+    CourseOfferingCreateRequest:
+      type: object
+      description: >
+        `semesterId` must reference a semester whose `number` equals the
+        target course's `semesterNumber` - a course can only ever be
+        offered in the one semester it belongs to. Violating this returns
+        422.
+      properties:
+        courseId: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
+        semesterId: { type: string, format: uuid }
+      required: [courseId, groupId, semesterId]
+
+    CourseOfferingPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: { $ref: '#/components/schemas/CourseOfferingResponse' }
+          required: [content]
+
+    # ---- exams ----
+    ExamResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        offeringId: { type: string, format: uuid }
+        label: { type: string, example: "Final exam" }
+        examDate: { type: string, format: date, nullable: true }
+        examTime: { type: string, example: "09:00:00", nullable: true }
+        weightNumerator: { type: integer, minimum: 1 }
+        weightDenominator: { type: integer, minimum: 1 }
+      required: [id, offeringId, label, weightNumerator, weightDenominator]
+
+    ExamCreateRequest:
+      type: object
+      properties:
+        label: { type: string }
+        examDate: { type: string, format: date, nullable: true }
+        examTime: { type: string, nullable: true }
+        weightNumerator: { type: integer, minimum: 1 }
+        weightDenominator: { type: integer, minimum: 1 }
+      required: [label, weightNumerator, weightDenominator]
+
+    ExamUpdateRequest:
+      type: object
+      properties:
+        label: { type: string }
+        examDate: { type: string, format: date, nullable: true }
+        examTime: { type: string, nullable: true }
+        weightNumerator: { type: integer, minimum: 1 }
+        weightDenominator: { type: integer, minimum: 1 }
+
+    # ---- grades ----
+    # Denormalized on purpose: a teacher's grading sheet or a student's
+    # transcript view needs studentName/courseReference/examLabel directly -
+    # none of that lives on the `grade` table itself.
+    GradeResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        studentName: { type: string, example: "Rakoto Tafita" }
+        examId: { type: string, format: uuid }
+        examLabel: { type: string }
+        courseReference: { type: string }
+        score: { type: number, format: double, minimum: 0, maximum: 20 }
+        recordedAt: { type: string, format: date-time }
+        recordedByName: { type: string }
+      required: [id, studentId, studentName, examId, examLabel, courseReference, score, recordedAt, recordedByName]
+
+    GradeCreateRequest:
+      type: object
+      properties:
+        studentId: { type: string, format: uuid }
+        score: { type: number, format: double, minimum: 0, maximum: 20 }
+      required: [studentId, score]
+
+    GradeUpdateRequest:
+      type: object
+      properties:
+        score: { type: number, format: double, minimum: 0, maximum: 20 }
+        reason: { type: string, description: "Dispute or transcription-error note, stored in grade history." }
+      required: [score, reason]
+
+    GradePageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: { $ref: '#/components/schemas/GradeResponse' }
+          required: [content]
+
+    GradeHistoryEntryResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        oldScore: { type: number, format: double, nullable: true }
+        newScore: { type: number, format: double }
+        modifiedByName: { type: string }
+        modifiedAt: { type: string, format: date-time }
+        reason: { type: string, nullable: true }
+      required: [id, newScore, modifiedByName, modifiedAt]
+
+    # ---- grade disputes ----
+    DisputeStatus:
+      type: string
+      enum: [PENDING, RESOLVED, REJECTED]
+      description: >
+        A dispute is created as PENDING and moves directly to RESOLVED or
+        REJECTED via a single teacher/admin action. Matches
+        grade_dispute.status CHECK constraint in the database.
+
+    GradeDisputeResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        gradeId: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        studentName: { type: string, example: "Rakoto Tafita" }
+        courseReference: { type: string, description: "Denormalized for triage list display." }
+        examLabel: { type: string, description: "Denormalized for triage list display." }
+        reason: { type: string }
+        status: { $ref: '#/components/schemas/DisputeStatus' }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+        resolvedByName: { type: string, nullable: true }
+        resolutionNote: { type: string, nullable: true }
+        resultingHistoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Set automatically by the server when resolution included a newScore - links to the grade_history entry created by that change. Never set by the client."
+      required: [id, gradeId, studentId, studentName, courseReference, examLabel, reason, status, createdAt]
+
+    GradeDisputeCreateRequest:
+      type: object
+      properties:
+        reason: { type: string, minLength: 1 }
+      required: [reason]
+
+    GradeDisputeResolveRequest:
+      type: object
+      description: >
+        `newScore` is optional and only meaningful when `status = RESOLVED`:
+        including it corrects the underlying grade in the same call. Omit
+        it to resolve without a score change, or when rejecting.
+      properties:
+        status:
+          allOf: [{ $ref: '#/components/schemas/DisputeStatus' }]
+          description: "Must be RESOLVED or REJECTED - PENDING is not a valid target here."
+        resolutionNote: { type: string, minLength: 1 }
+        newScore: { type: number, format: double, minimum: 0, maximum: 20, nullable: true }
+      required: [status, resolutionNote]
+
+    GradeDisputePageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: { $ref: '#/components/schemas/GradeDisputeResponse' }
+          required: [content]
+
+    # ---- transcripts ----
+    TranscriptResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/TranscriptType' }
+        semesterId: { type: string, format: uuid, nullable: true }
+        academicYearId: { type: string, format: uuid, nullable: true }
+        diplomaId: { type: string, format: uuid, nullable: true, description: "Only set when type = DIPLOMA" }
+        overallAverage: { type: number, format: double, nullable: true, description: "Set when type = FULL or DIPLOMA, null when type = PROVISIONAL" }
+        creditsEarned: { type: integer, nullable: true, description: "Set when type = FULL or DIPLOMA, null when type = PROVISIONAL" }
+        generatedAt: { type: string, format: date-time }
+        downloadUrl: { type: string, description: "Pre-signed S3 URL, short-lived. Not the raw storage key - never expose that to clients." }
+        sentAt: { type: string, format: date-time, nullable: true }
+        recipientEmail: { type: string, format: email, nullable: true }
+      required: [id, studentId, type, generatedAt, downloadUrl]
+
+    TranscriptGenerateRequest:
+      type: object
+      description: >
+        Exactly one of `semesterId` / `academicYearId` / `diplomaId` must
+        be set, and which one is required depends on `type`:
+          - type = PROVISIONAL -> `semesterId` is required, `academicYearId`
+            and `diplomaId` must be omitted (a provisional transcript is
+            scoped to a single in-progress semester and never carries an
+            average or credits).
+          - type = FULL -> `academicYearId` is required, `semesterId` and
+            `diplomaId` must be omitted (a full transcript covers one
+            completed academic year and reports overallAverage + creditsEarned).
+          - type = DIPLOMA -> `diplomaId` is required and must reference an
+            existing diploma (created beforehand via
+            POST /cohorts/{cohortId}/diplomas/generate); `semesterId` and
+            `academicYearId` must be omitted. overallAverage/creditsEarned
+            on the resulting transcript are copied from that diploma record.
+        This conditional rule cannot be expressed in OAS 3.0 (no native
+        if/then support) and is validated server-side; violating it
+        returns 400.
+      properties:
+        type: { $ref: '#/components/schemas/TranscriptType' }
+        semesterId: { type: string, format: uuid, nullable: true }
+        academicYearId: { type: string, format: uuid, nullable: true }
+        diplomaId: { type: string, format: uuid, nullable: true }
+        recipientEmail: { type: string, format: email, description: "Defaults to the student's registered email if omitted." }
+      required: [type]
+
+    # ---- diplomas ----
+    DiplomaResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        student: { $ref: '#/components/schemas/StudentSummaryResponse' }
+        cohort: { $ref: '#/components/schemas/CohortSummary' }
+        track: { $ref: '#/components/schemas/TrackSummary' }
+        overallAverage: { type: number, format: double }
+        rank: { type: integer }
+        graduationDate: { type: string, format: date }
+        listGeneratedAt: { type: string, format: date-time }
+      required: [id, student, cohort, track, overallAverage, rank, graduationDate]
+
+    DiplomaPageResponse:
+      allOf:
+        - $ref: '#/components/schemas/PageMetadata'
+        - type: object
+          properties:
+            content:
+              type: array
+              items: { $ref: '#/components/schemas/DiplomaResponse' }
+          required: [content]
+
