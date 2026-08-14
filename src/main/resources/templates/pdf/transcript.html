@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title>Transcript</title>
+  <style>
+    @page { size: 612pt 792pt; margin: 36pt; }
+    body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #000; }
+    .header { text-align: right; }
+    .header img { width: 55pt; height: 55pt; }
+    .school { font-weight: bold; font-size: 12pt; margin: 0; }
+    .contact { font-size: 9pt; margin: 0; }
+    .title { text-align: center; font-weight: bold; font-size: 16pt; margin: 14pt 0 18pt 0; }
+    .student { font-size: 11pt; margin: 0; }
+    .inscription { font-size: 11pt; margin: 10pt 0 2pt 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12pt 0; }
+    th, td { border: 1px solid #000; padding: 4pt 6pt; font-size: 10pt; text-align: left; }
+    th { font-weight: bold; }
+    .num, .note { text-align: center; }
+    .absences { font-size: 10pt; margin: 0; }
+    .nb { font-size: 9pt; font-style: italic; margin: 12pt 0 16pt 0; }
+    .result-title { font-weight: bold; font-size: 13pt; margin: 0 0 6pt 0; }
+    .result { font-size: 11pt; margin: 0; }
+    .footer { text-align: right; font-size: 10pt; margin-top: 24pt; }
+    .footer .place { margin: 0; }
+    .footer img { width: 130pt; height: 32pt; margin-top: 6pt; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img th:src="${logoDataUri}" alt="HEI" />
+    <p class="school">Haute École d'Informatique</p>
+    <p class="contact">Lot 2J 161 R Ivandry, 101 Antananarivo, Madagascar</p>
+    <p class="contact">+261 34 94 041 16</p>
+    <p class="contact">contact@mail.hei.school</p>
+  </div>
+
+  <h1 class="title" th:text="${data.title()}">Transcript</h1>
+
+  <p class="student">Nom : <span th:text="${data.student().lastName()}">—</span></p>
+  <p class="student">Prénom(s) : <span th:text="${data.student().firstName()}">—</span></p>
+  <p class="student">Numéro d'inscription : <span th:text="${data.student().reference()}">—</span></p>
+  <p class="inscription" th:text="${data.student().inscriptionLine()}">—</p>
+  <p class="student">A obtenu les notes suivantes :</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Code UE</th>
+        <th>Intitulé UE</th>
+        <th>Crédits acquérables</th>
+        <th>Note sur 20</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="c : ${data.courses()}">
+        <td th:text="${c.code()}">—</td>
+        <td th:text="${c.title()}">—</td>
+        <td class="num" th:text="${c.credits()}">—</td>
+        <td class="note" th:text="${c.noteText()} ?: 'Non disponible'">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="absences">Nombre d'absences : <span th:text="${data.absences().countText()} ?: 'Non disponible'">—</span></p>
+  <p class="absences">Justification d'absence : <span th:text="${data.absences().justificationText()} ?: 'Non disponible'">—</span></p>
+  <p class="absences">Malus des absences : <span th:text="${data.absences().malusText()} ?: 'Non disponible'">—</span></p>
+
+  <p class="nb">NB: Ce résultat affiché est temporaire et ne reflète pas le résultat final.</p>
+
+  <div th:if="${data.result() != null}">
+    <p class="result-title">Résultat</p>
+    <p class="result">Crédits acquis : <span th:text="${data.result().creditsAcquired()}">—</span> / <span th:text="${data.result().totalCredits()}">—</span></p>
+    <p class="result">Moyenne pondérée par les crédits : <span th:text="${data.result().weightedAverageText()} ?: 'Non disponible'">—</span> / 20</p>
+  </div>
+
+  <div class="footer">
+    <p class="place">Fait à Antananarivo, le <span th:text="${issueDateText}">—</span></p>
+    <p class="place">Le directeur pédagogique</p>
+    <p class="place">Dr Fonenantsoa MAURICA A.</p>
+    <img th:src="${signatureDataUri}" alt="Signature" />
+  </div>
+</body>
+</html>
