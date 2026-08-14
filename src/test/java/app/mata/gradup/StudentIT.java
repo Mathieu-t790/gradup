@@ -304,12 +304,7 @@ public class StudentIT extends FacadeIT {
           return null;
         });
 
-    when(bucketComponent.presign(anyString(), any(Duration.class)))
-        .thenReturn(
-            new URL(
-                "https://dummy-bucket.s3.eu-west-3.amazonaws.com/students/"
-                    + student.getId()
-                    + "/full.pdf"));
+    stubPresignedDownloadUrl(student);
 
     var response =
         restTemplate.getForEntity(
@@ -339,6 +334,15 @@ public class StudentIT extends FacadeIT {
   private JCohort saveCohort() {
     return cohortRepository.save(
         JCohort.builder().label("P14").entryYear(2024).expectedGraduationYear(2027).build());
+  }
+
+  private void stubPresignedDownloadUrl(JStudent student) {
+    when(bucketComponent.presign(anyString(), any(Duration.class)))
+        .thenReturn(
+            new URL(
+                "https://dummy-bucket.s3.eu-west-3.amazonaws.com/students/"
+                    + student.getId()
+                    + "/full.pdf"));
   }
 
   private JTrack saveTrack(String code, String label) {
