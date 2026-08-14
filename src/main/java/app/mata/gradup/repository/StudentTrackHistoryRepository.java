@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface StudentTrackHistoryRepository extends JpaRepository<JStudentTrackHistory, UUID> {
 
   List<JStudentTrackHistory> findByStudentIdOrderByStartDateDesc(UUID studentId);
+
+  List<JStudentTrackHistory> findByStudentIdOrderByStartDateAsc(UUID studentId);
 }
