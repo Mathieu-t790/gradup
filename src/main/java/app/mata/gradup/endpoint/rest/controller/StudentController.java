@@ -43,14 +43,12 @@ public class StudentController {
   }
 
   @GetMapping("/students/{studentId}/group-history")
-  public List<StudentGroupHistoryResponse> listStudentGroupHistory(
-      @PathVariable UUID studentId) {
+  public List<StudentGroupHistoryResponse> listStudentGroupHistory(@PathVariable UUID studentId) {
     return studentHistoryService.listStudentGroupHistory(studentId);
   }
 
   @GetMapping("/students/{studentId}/track-history")
-  public List<StudentTrackHistoryResponse> listStudentTrackHistory(
-      @PathVariable UUID studentId) {
+  public List<StudentTrackHistoryResponse> listStudentTrackHistory(@PathVariable UUID studentId) {
     return studentHistoryService.listStudentTrackHistory(studentId);
   }
 

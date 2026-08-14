@@ -28,9 +28,7 @@ public class StudentHistoryService {
   @Transactional(readOnly = true)
   public List<StudentGroupHistoryResponse> listStudentGroupHistory(UUID studentId) {
     requireStudent(studentId);
-    return studentGroupHistoryRepository
-        .findByStudentIdOrderByStartDateDesc(studentId)
-        .stream()
+    return studentGroupHistoryRepository.findByStudentIdOrderByStartDateDesc(studentId).stream()
         .sorted(Comparator.comparing(JStudentGroupHistory::getStartDate))
         .map(studentMapper::toDomain)
         .map(studentMapper::toRest)
@@ -40,9 +38,7 @@ public class StudentHistoryService {
   @Transactional(readOnly = true)
   public List<StudentTrackHistoryResponse> listStudentTrackHistory(UUID studentId) {
     requireStudent(studentId);
-    return studentTrackHistoryRepository
-        .findByStudentIdOrderByStartDateDesc(studentId)
-        .stream()
+    return studentTrackHistoryRepository.findByStudentIdOrderByStartDateDesc(studentId).stream()
         .sorted(Comparator.comparing(JStudentTrackHistory::getStartDate))
         .map(studentMapper::toDomain)
         .map(studentMapper::toRest)

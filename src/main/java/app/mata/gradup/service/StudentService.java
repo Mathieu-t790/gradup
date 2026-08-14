@@ -16,7 +16,6 @@ import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentRepository;
 import app.mata.gradup.repository.StudentTrackHistoryRepository;
 import app.mata.gradup.repository.UserRepository;
-import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JStudentGroupHistory;
 import app.mata.gradup.repository.model.JUser;
