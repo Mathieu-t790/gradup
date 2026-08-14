@@ -9,5 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TranscriptRepository extends JpaRepository<JTranscript, UUID> {
 
-  List<JTranscript> findByStudentId(UUID studentId);
+  List<JTranscript> findByStudentIdOrderByGeneratedAtDesc(UUID studentId);
 }
