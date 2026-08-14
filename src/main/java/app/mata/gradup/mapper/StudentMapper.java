@@ -23,6 +23,7 @@ import app.mata.gradup.repository.model.JTrack;
 import app.mata.gradup.repository.model.JUser;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 @Mapper(componentModel = "spring")
 public interface StudentMapper {
@@ -65,5 +66,9 @@ public interface StudentMapper {
 
   default app.mata.gradup.endpoint.rest.model.TrackCode toRestTrackCode(TrackCode code) {
     return code == null ? null : app.mata.gradup.endpoint.rest.model.TrackCode.valueOf(code.name());
+  }
+
+  default <T> T nullableOrNull(JsonNullable<T> value) {
+    return value == null ? null : value.orElse(null);
   }
 }

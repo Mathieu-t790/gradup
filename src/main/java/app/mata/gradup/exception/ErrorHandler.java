@@ -30,6 +30,12 @@ public class ErrorHandler {
     return new Error().code("UNPROCESSABLE_ENTITY").message(e.getMessage());
   }
 
+  @ExceptionHandler(BadRequestException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Error handleBadRequest(BadRequestException e) {
+    return new Error().code("BAD_REQUEST").message(e.getMessage());
+  }
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public Error handleValidation(MethodArgumentNotValidException e) {

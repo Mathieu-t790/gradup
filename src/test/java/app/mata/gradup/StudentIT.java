@@ -58,6 +58,11 @@ public class StudentIT extends FacadeIT {
   @Autowired private PlatformTransactionManager transactionManager;
 
   @BeforeEach
+  void configureRestTemplate() {
+    restTemplate.getRestTemplate().setRequestFactory(new JdkClientHttpRequestFactory());
+  }
+
+  @BeforeEach
   void cleanDatabase() {
     groupHistoryRepository.deleteAll();
     trackHistoryRepository.deleteAll();
@@ -187,6 +192,21 @@ public class StudentIT extends FacadeIT {
     assertEquals("rina.updated@hei.school", student.getEmail());
     assertFalse(student.getIsActive());
     assertEquals(group.getId(), student.getCurrentGroup().getId());
+  }
+
+  @Test
+  void updateStudent_updatesDateOfBirth() {
+    var cohort = saveCohort();
+    var student = saveStudent("birthdate@hei.school", cohort);
+
+    var response =
+        patch(
+            "/students/" + student.getId(),
+            new StudentUpdateRequest().dateOfBirth(LocalDate.of(2002, 5, 20)),
+            StudentResponse.class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertEquals(LocalDate.of(2002, 5, 20), response.getBody().getDateOfBirth());
   }
 
   @Test
@@ -343,7 +363,6 @@ public class StudentIT extends FacadeIT {
   }
 
   private <T> ResponseEntity<T> patch(String url, Object body, Class<T> responseType) {
-    restTemplate.getRestTemplate().setRequestFactory(new JdkClientHttpRequestFactory());
     return restTemplate.exchange(url, HttpMethod.PATCH, new HttpEntity<>(body), responseType);
   }
 }

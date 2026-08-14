@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface StudentGroupHistoryRepository extends JpaRepository<JStudentGroupHistory, UUID> {
 
   List<JStudentGroupHistory> findByStudentIdOrderByStartDateDesc(UUID studentId);
+
+  List<JStudentGroupHistory> findByStudentIdOrderByStartDateAsc(UUID studentId);
 }

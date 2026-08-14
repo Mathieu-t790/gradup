@@ -20,8 +20,11 @@ import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JStudentGroupHistory;
 import app.mata.gradup.repository.model.JUser;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +40,7 @@ public class StudentService {
   private final GroupRepository groupRepository;
   private final StudentGroupHistoryRepository studentGroupHistoryRepository;
   private final StudentTrackHistoryRepository studentTrackHistoryRepository;
+  private final PasswordEncoder passwordEncoder;
   private final StudentMapper studentMapper;
 
   @Transactional
@@ -61,11 +65,16 @@ public class StudentService {
             .lastName(request.getLastName())
             .firstName(request.getFirstName())
             .email(request.getEmail())
-            .passwordHash(DEFAULT_STUDENT_PASSWORD)
+            .passwordHash(passwordEncoder.encode(DEFAULT_STUDENT_PASSWORD))
             .role(Role.STUDENT)
             .isActive(true)
             .build();
-    var savedUser = userRepository.save(user);
+    JUser savedUser;
+    try {
+      savedUser = userRepository.save(user);
+    } catch (DataIntegrityViolationException e) {
+      throw new ConflictException("A user with email " + request.getEmail() + " already exists");
+    }
 
     var student =
         JStudent.builder()
@@ -101,7 +110,7 @@ public class StudentService {
       updateEmail(user, request.getEmail());
     }
     if (request.getDateOfBirth_JsonNullable().isPresent()) {
-      student.setDateOfBirth(request.getDateOfBirth());
+      student.setDateOfBirth(studentMapper.nullableOrNull(request.getDateOfBirth_JsonNullable()));
     }
     if (request.getIsActive() != null) {
       user.setIsActive(request.getIsActive());
@@ -145,7 +154,7 @@ public class StudentService {
         .orElse(null);
   }
 
-  private java.util.Optional<JStudentGroupHistory> openGroupHistory(JStudent student) {
+  private Optional<JStudentGroupHistory> openGroupHistory(JStudent student) {
     return studentGroupHistoryRepository
         .findByStudentIdOrderByStartDateDesc(student.getId())
         .stream()

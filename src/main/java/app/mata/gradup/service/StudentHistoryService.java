@@ -7,9 +7,6 @@ import app.mata.gradup.mapper.StudentMapper;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentRepository;
 import app.mata.gradup.repository.StudentTrackHistoryRepository;
-import app.mata.gradup.repository.model.JStudentGroupHistory;
-import app.mata.gradup.repository.model.JStudentTrackHistory;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -28,8 +25,7 @@ public class StudentHistoryService {
   @Transactional(readOnly = true)
   public List<StudentGroupHistoryResponse> listStudentGroupHistory(UUID studentId) {
     requireStudent(studentId);
-    return studentGroupHistoryRepository.findByStudentIdOrderByStartDateDesc(studentId).stream()
-        .sorted(Comparator.comparing(JStudentGroupHistory::getStartDate))
+    return studentGroupHistoryRepository.findByStudentIdOrderByStartDateAsc(studentId).stream()
         .map(studentMapper::toDomain)
         .map(studentMapper::toRest)
         .toList();
@@ -38,8 +34,7 @@ public class StudentHistoryService {
   @Transactional(readOnly = true)
   public List<StudentTrackHistoryResponse> listStudentTrackHistory(UUID studentId) {
     requireStudent(studentId);
-    return studentTrackHistoryRepository.findByStudentIdOrderByStartDateDesc(studentId).stream()
-        .sorted(Comparator.comparing(JStudentTrackHistory::getStartDate))
+    return studentTrackHistoryRepository.findByStudentIdOrderByStartDateAsc(studentId).stream()
         .map(studentMapper::toDomain)
         .map(studentMapper::toRest)
         .toList();
