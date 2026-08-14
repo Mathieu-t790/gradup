@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 import app.mata.gradup.conf.FacadeIT;
 import app.mata.gradup.conf.TestSecurityConf;
@@ -15,6 +18,7 @@ import app.mata.gradup.endpoint.rest.model.StudentResponse;
 import app.mata.gradup.endpoint.rest.model.StudentTrackHistoryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentUpdateRequest;
 import app.mata.gradup.endpoint.rest.model.TranscriptResponse;
+import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.model.Role;
 import app.mata.gradup.model.TranscriptType;
 import app.mata.gradup.repository.CohortRepository;
@@ -34,6 +38,8 @@ import app.mata.gradup.repository.model.JTrack;
 import app.mata.gradup.repository.model.JTranscript;
 import app.mata.gradup.repository.model.JUser;
 import java.math.BigDecimal;
+import java.net.URL;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -41,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
@@ -65,6 +72,7 @@ public class StudentIT extends FacadeIT {
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
   @Autowired private TranscriptRepository transcriptRepository;
   @Autowired private PlatformTransactionManager transactionManager;
+  @MockBean private BucketComponent bucketComponent;
 
   @BeforeEach
   void cleanDatabase() {
@@ -295,6 +303,13 @@ public class StudentIT extends FacadeIT {
                   .build());
           return null;
         });
+
+    when(bucketComponent.presign(anyString(), any(Duration.class)))
+        .thenReturn(
+            new URL(
+                "https://dummy-bucket.s3.eu-west-3.amazonaws.com/students/"
+                    + student.getId()
+                    + "/full.pdf"));
 
     var response =
         restTemplate.getForEntity(
