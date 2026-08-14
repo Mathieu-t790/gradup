@@ -2,6 +2,7 @@ package app.mata.gradup.service;
 
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
+import app.mata.gradup.exception.BadRequestException;
 import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.mapper.CohortMapper;
 import app.mata.gradup.repository.CohortRepository;
@@ -28,6 +29,9 @@ public class CohortService {
   }
 
   public CohortResponse createCohort(CohortCreateRequest request) {
+    if (request.getLabel() == null || request.getLabel().isBlank()) {
+      throw new BadRequestException("Cohort label must not be blank");
+    }
     var cohort = cohortMapper.toDomain(request);
     var jCohort = cohortMapper.toEntity(cohort);
     var saved = cohortRepository.save(jCohort);
