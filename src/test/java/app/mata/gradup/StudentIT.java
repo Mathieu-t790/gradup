@@ -317,9 +317,7 @@ public class StudentIT extends FacadeIT {
     var transcript = transcripts.get(0);
     assertEquals("FULL", transcript.getType().toString());
     assertEquals(
-        "https://dummy-bucket.s3.eu-west-3.amazonaws.com/students/"
-            + student.getId()
-            + "/full.pdf",
+        "https://dummy-bucket.s3.eu-west-3.amazonaws.com/students/" + student.getId() + "/full.pdf",
         transcript.getDownloadUrl());
     assertEquals(120, transcript.getCreditsEarned());
   }
