@@ -5,10 +5,8 @@ import app.mata.gradup.endpoint.rest.model.StudentGroupHistoryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
 import app.mata.gradup.endpoint.rest.model.StudentTrackHistoryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentUpdateRequest;
-import app.mata.gradup.endpoint.rest.model.TranscriptResponse;
 import app.mata.gradup.service.StudentHistoryService;
 import app.mata.gradup.service.StudentService;
-import app.mata.gradup.service.StudentTranscriptService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +26,6 @@ public class StudentController {
 
   private final StudentService studentService;
   private final StudentHistoryService studentHistoryService;
-  private final StudentTranscriptService studentTranscriptService;
 
   @PostMapping("/students")
   @ResponseStatus(HttpStatus.CREATED)
@@ -50,10 +47,5 @@ public class StudentController {
   @GetMapping("/students/{studentId}/track-history")
   public List<StudentTrackHistoryResponse> listStudentTrackHistory(@PathVariable UUID studentId) {
     return studentHistoryService.listStudentTrackHistory(studentId);
-  }
-
-  @GetMapping("/students/{studentId}/transcripts")
-  public List<TranscriptResponse> listStudentTranscripts(@PathVariable UUID studentId) {
-    return studentTranscriptService.listStudentTranscripts(studentId);
   }
 }

@@ -5,9 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 
 import app.mata.gradup.conf.FacadeIT;
 import app.mata.gradup.endpoint.rest.model.Error;
@@ -16,17 +13,13 @@ import app.mata.gradup.endpoint.rest.model.StudentGroupHistoryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
 import app.mata.gradup.endpoint.rest.model.StudentTrackHistoryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentUpdateRequest;
-import app.mata.gradup.endpoint.rest.model.TranscriptResponse;
-import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.model.Role;
-import app.mata.gradup.model.TranscriptType;
 import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.GroupRepository;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentRepository;
 import app.mata.gradup.repository.StudentTrackHistoryRepository;
 import app.mata.gradup.repository.TrackRepository;
-import app.mata.gradup.repository.TranscriptRepository;
 import app.mata.gradup.repository.UserRepository;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JGroup;
@@ -34,20 +27,14 @@ import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JStudentGroupHistory;
 import app.mata.gradup.repository.model.JStudentTrackHistory;
 import app.mata.gradup.repository.model.JTrack;
-import app.mata.gradup.repository.model.JTranscript;
 import app.mata.gradup.repository.model.JUser;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -68,13 +55,10 @@ public class StudentIT extends FacadeIT {
   @Autowired private StudentRepository studentRepository;
   @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
-  @Autowired private TranscriptRepository transcriptRepository;
   @Autowired private PlatformTransactionManager transactionManager;
-  @MockBean private BucketComponent bucketComponent;
 
   @BeforeEach
   void cleanDatabase() {
-    transcriptRepository.deleteAll();
     groupHistoryRepository.deleteAll();
     trackHistoryRepository.deleteAll();
     studentRepository.deleteAll();
@@ -283,63 +267,9 @@ public class StudentIT extends FacadeIT {
     assertTrue(history.get(0).getStartDate().isBefore(history.get(1).getStartDate()));
   }
 
-  @Test
-  void listStudentTranscripts_returnsPreviouslyGeneratedTranscripts() {
-    var cohort = saveCohort();
-    var student = saveStudent("transcripts@hei.school", cohort);
-    inTransaction(
-        () -> {
-          var managedStudent = studentRepository.findById(student.getId()).orElseThrow();
-          transcriptRepository.save(
-              JTranscript.builder()
-                  .student(managedStudent)
-                  .type(TranscriptType.FULL)
-                  .overallAverage(new BigDecimal("13.50"))
-                  .creditsEarned(120)
-                  .storageKey("students/" + student.getId() + "/full.pdf")
-                  .recipientEmail("transcripts@hei.school")
-                  .build());
-          return null;
-        });
-
-    stubPresignedDownloadUrl(student);
-
-    var response =
-        restTemplate.getForEntity(
-            "/students/" + student.getId() + "/transcripts", TranscriptResponse[].class);
-
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    var transcripts = List.of(response.getBody());
-    assertEquals(1, transcripts.size());
-    var transcript = transcripts.get(0);
-    assertEquals("FULL", transcript.getType().toString());
-    assertEquals(
-        "https://dummy-bucket.s3.eu-west-3.amazonaws.com/students/" + student.getId() + "/full.pdf",
-        transcript.getDownloadUrl());
-    assertEquals(120, transcript.getCreditsEarned());
-  }
-
-  @Test
-  void listStudentTranscripts_unknownStudent_returnsNotFound() {
-    var response =
-        restTemplate.getForEntity("/students/" + UUID.randomUUID() + "/transcripts", Error.class);
-
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-  }
-
   private JCohort saveCohort() {
     return cohortRepository.save(
         JCohort.builder().label("P14").entryYear(2024).expectedGraduationYear(2027).build());
-  }
-
-  @SneakyThrows
-  private void stubPresignedDownloadUrl(JStudent student) {
-    when(bucketComponent.presign(anyString(), any(Duration.class)))
-        .thenReturn(
-            new URL(
-                "https://dummy-bucket.s3.eu-west-3.amazonaws.com/students/"
-                    + student.getId()
-                    + "/full.pdf"));
   }
 
   private JTrack saveTrack(String code, String label) {
