@@ -22,7 +22,6 @@ import app.mata.gradup.repository.model.JUser;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +37,6 @@ public class StudentService {
   private final GroupRepository groupRepository;
   private final StudentGroupHistoryRepository studentGroupHistoryRepository;
   private final StudentTrackHistoryRepository studentTrackHistoryRepository;
-  private final PasswordEncoder passwordEncoder;
   private final StudentMapper studentMapper;
 
   @Transactional
@@ -63,7 +61,7 @@ public class StudentService {
             .lastName(request.getLastName())
             .firstName(request.getFirstName())
             .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(DEFAULT_STUDENT_PASSWORD))
+            .passwordHash(DEFAULT_STUDENT_PASSWORD)
             .role(Role.STUDENT)
             .isActive(true)
             .build();
