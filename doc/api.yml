@@ -552,6 +552,26 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /students/{studentId}/disputes:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+    get:
+      tags: [grade-disputes]
+      operationId: listStudentDisputes
+      description: >
+        Disputes filed by this student. A STUDENT may only list their own
+        disputes (enforced in application logic); ADMIN is unrestricted.
+      x-required-roles: [ADMIN, STUDENT]
+      responses:
+        '200':
+          description: List of disputes filed by the student
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GradeDisputeResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   # ---------- Teachers ----------
   /teachers:
     get:
@@ -897,7 +917,11 @@ paths:
     get:
       tags: [grades]
       operationId: listGradeHistory
-      x-required-roles: [ADMIN, TEACHER]
+      description: >
+        Chronological list of modifications for this grade. A STUDENT may
+        only view the history of their own grade (enforced in application
+        logic); TEACHER and ADMIN are unrestricted.
+      x-required-roles: [ADMIN, TEACHER, STUDENT]
       responses:
         '200':
           description: Chronological list of modifications for this grade
