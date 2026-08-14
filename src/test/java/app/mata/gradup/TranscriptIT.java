@@ -56,18 +56,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.transaction.support.TransactionTemplate;
 
 class TranscriptIT extends FacadeIT {
@@ -350,16 +344,4 @@ class TranscriptIT extends FacadeIT {
   }
 
   private record Fixture(UUID studentId, UUID semesterId, UUID academicYearId) {}
-
-  @TestConfiguration
-  @EnableWebSecurity
-  static class TestSecurityConfig {
-
-    @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-      return http.csrf(AbstractHttpConfigurer::disable)
-          .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-          .build();
-    }
-  }
 }
