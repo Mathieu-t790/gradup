@@ -211,6 +211,7 @@ implementation 'org.springframework.session:spring-session-jdbc'
 implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
 implementation 'org.xhtmlrenderer:flying-saucer-pdf:9.1.22'
+implementation 'ognl:ognl:3.2.21'
 implementation 'app.mata:gradup-9f9793e5-gen:latest'
 
 implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
