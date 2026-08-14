@@ -51,6 +51,7 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -149,8 +150,8 @@ class TranscriptIT extends FacadeIT {
             .filter(detail -> detail.getTranscript().getId().equals(transcriptId))
             .toList();
     assertEquals(1, details.size());
-    assertTrue(details.get(0).isCreditsEarned());
-    assertEquals(new BigDecimal("12.50"), details.get(0).getCourseScore());
+    assertTrue(details.getFirst().isCreditsEarned());
+    assertEquals(new BigDecimal("12.50"), details.getFirst().getCourseScore());
 
     Collection<TranscriptGenerated> events = dispatchedEvents();
     assertEquals(1, events.size());
@@ -208,6 +209,7 @@ class TranscriptIT extends FacadeIT {
     ResponseEntity<String> response = rawPost(fixture.studentId, body);
 
     assertEquals(400, response.getStatusCode().value());
+    Assertions.assertNotNull(response.getBody());
     assertTrue(response.getBody().contains("BAD_REQUEST"));
   }
 
@@ -222,6 +224,7 @@ class TranscriptIT extends FacadeIT {
     ResponseEntity<String> response = rawPost(UUID.randomUUID(), body);
 
     assertEquals(404, response.getStatusCode().value());
+    Assertions.assertNotNull(response.getBody());
     assertTrue(response.getBody().contains("NOT_FOUND"));
   }
 

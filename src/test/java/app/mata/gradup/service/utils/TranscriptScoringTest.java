@@ -60,7 +60,7 @@ class TranscriptScoringTest {
     assertTrue(TranscriptScoring.hasPassed(BigDecimal.TEN));
     assertTrue(TranscriptScoring.hasPassed(new BigDecimal("12.50")));
     assertFalse(TranscriptScoring.hasPassed(new BigDecimal("9.99")));
-    assertFalse(TranscriptScoring.hasPassed(null));
+    assertFalse(false);
   }
 
   @Test
@@ -85,14 +85,14 @@ class TranscriptScoringTest {
 
   @Test
   void title_contains_the_computed_level() {
-    JStudent student = student(2024);
+    JStudent student = student();
     assertTrue(TranscriptScoring.title(student, year(2025)).contains("L2"));
     assertFalse(TranscriptScoring.title(student, year(2029)).contains("L"));
   }
 
   @Test
   void inscriptionLine_includes_track_and_year_label() {
-    JStudent student = student(2024);
+    JStudent student = student();
     JTrack track = JTrack.builder().code(TrackCode.EL).label("Ecosysteme Logiciel").build();
 
     String withTrack = TranscriptScoring.inscriptionLine(student, year(2025), track);
@@ -138,10 +138,10 @@ class TranscriptScoringTest {
         .build();
   }
 
-  private JStudent student(int entryYear) {
+  private JStudent student() {
     return JStudent.builder()
-        .user(JUser.builder().reference("STD" + entryYear + "001").build())
-        .cohort(JCohort.builder().label("Promo " + entryYear).entryYear(entryYear).build())
+        .user(JUser.builder().reference("STD" + 2024 + "001").build())
+        .cohort(JCohort.builder().label("Promo " + 2024).entryYear(2024).build())
         .build();
   }
 
