@@ -320,8 +320,11 @@ public class StudentIT extends FacadeIT {
     assertEquals(1, transcripts.size());
     var transcript = transcripts.get(0);
     assertEquals("FULL", transcript.getType().toString());
-    assertNotNull(transcript.getDownloadUrl());
-    assertTrue(transcript.getDownloadUrl().startsWith("http"));
+    assertEquals(
+        "https://dummy-bucket.s3.eu-west-3.amazonaws.com/students/"
+            + student.getId()
+            + "/full.pdf",
+        transcript.getDownloadUrl());
     assertEquals(120, transcript.getCreditsEarned());
   }
 
