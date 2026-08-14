@@ -39,6 +39,11 @@ public class StudentController {
     return studentService.updateStudent(studentId, request);
   }
 
+  @GetMapping("/students/{studentId}")
+  public StudentResponse getStudent(@PathVariable UUID studentId) {
+    return studentService.getStudent(studentId);
+  }
+
   @GetMapping("/students/{studentId}/group-history")
   public List<StudentGroupHistoryResponse> listStudentGroupHistory(@PathVariable UUID studentId) {
     return studentHistoryService.listStudentGroupHistory(studentId);
