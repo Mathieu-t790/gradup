@@ -8,6 +8,7 @@ import app.mata.gradup.exception.BadRequestException;
 import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mapper.TranscriptMapper;
+import app.mata.gradup.model.TranscriptType;
 import app.mata.gradup.repository.AcademicYearRepository;
 import app.mata.gradup.repository.DiplomaRepository;
 import app.mata.gradup.repository.SemesterRepository;
@@ -31,7 +32,7 @@ import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.ResultInfo;
 import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.StudentInfo;
 import app.mata.gradup.service.utils.TranscriptScope;
 import app.mata.gradup.service.utils.TranscriptScoring;
-import jakarta.transaction.Transactional;
+import app.mata.gradup.service.utils.Wording;
 import java.io.File;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -44,6 +45,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -73,104 +75,140 @@ public class TranscriptService {
     String storageKey = "transcripts/" + studentId + "/" + transcriptId + ".pdf";
     Map<UUID, BigDecimal> averageByOffering = averagesByOffering(studentId);
 
-    JTranscript transcript;
-    List<JCourseOffering> offerings;
-    TranscriptPdfData pdfData;
+    PreparedTranscript prepared =
+        prepare(request, student, transcriptId, storageKey, recipientEmail, averageByOffering);
 
-    switch (request.getType()) {
-      case PROVISIONAL -> {
-        JSemester semester = semester(request.getSemesterId_JsonNullable());
-        JAcademicYear year = semester.getAcademicYear();
-        offerings = scope.forSemester(student, semester);
-        pdfData =
-            pdfData(
-                student,
-                TranscriptScoring.title(student, year),
-                TranscriptScoring.inscriptionLine(
-                    student, year, scope.trackAt(student, LocalDate.now())),
-                offerings,
-                averageByOffering,
-                null);
-        transcript =
-            baseTranscript(
-                transcriptId,
-                storageKey,
-                student,
-                transcriptType(request),
-                semester,
-                null,
-                null,
-                null,
-                null,
-                recipientEmail);
-      }
-      case FULL -> {
-        JAcademicYear year = academicYear(request.getAcademicYearId_JsonNullable());
-        offerings = scope.forYear(student, year);
-        ResultInfo result = TranscriptScoring.score(offerings, averageByOffering);
-        pdfData =
-            pdfData(
-                student,
-                TranscriptScoring.title(student, year),
-                TranscriptScoring.inscriptionLine(
-                    student, year, scope.trackAt(student, LocalDate.now())),
-                offerings,
-                averageByOffering,
-                result);
-        transcript =
-            baseTranscript(
-                transcriptId,
-                storageKey,
-                student,
-                transcriptType(request),
-                null,
-                year,
-                null,
-                result.creditsAcquired(),
-                result.weightedAverage(),
-                recipientEmail);
-      }
-      case DIPLOMA -> {
-        JDiploma diploma = diploma(studentId, request.getDiplomaId_JsonNullable());
-        offerings = scope.byIds(averageByOffering.keySet());
-        ResultInfo scored = TranscriptScoring.score(offerings, averageByOffering);
-        ResultInfo result =
-            new ResultInfo(
-                scored.creditsAcquired(), scored.totalCredits(), diploma.getOverallAverage());
-        pdfData =
-            pdfData(
-                student,
-                "Relevé de notes",
-                TranscriptScoring.diplomaInscriptionLine(diploma),
-                offerings,
-                averageByOffering,
-                result);
-        transcript =
-            baseTranscript(
-                transcriptId,
-                storageKey,
-                student,
-                transcriptType(request),
-                null,
-                null,
-                diploma,
-                result.creditsAcquired(),
-                diploma.getOverallAverage(),
-                recipientEmail);
-      }
-      default -> throw new BadRequestException("Unsupported transcript type: " + request.getType());
-    }
-
-    File pdf = pdfRenderer.render(pdfData);
+    File pdf = pdfRenderer.render(prepared.pdfData());
     bucketComponent.upload(pdf, storageKey);
 
-    transcript = transcriptRepository.save(transcript);
-    transcriptDetailRepository.saveAll(details(offerings, transcript, averageByOffering));
+    JTranscript transcript = transcriptRepository.save(prepared.transcript());
+    transcriptDetailRepository.saveAll(
+        details(prepared.offerings(), transcript, averageByOffering));
 
     dispatchEmailEvent(transcriptId);
 
     String downloadUrl = bucketComponent.presign(storageKey, Duration.ofHours(1)).toString();
     return transcriptMapper.toRest(transcript, downloadUrl);
+  }
+
+  private PreparedTranscript prepare(
+      TranscriptGenerateRequest request,
+      JStudent student,
+      UUID transcriptId,
+      String storageKey,
+      String recipientEmail,
+      Map<UUID, BigDecimal> averageByOffering) {
+    return switch (request.getType()) {
+      case PROVISIONAL ->
+          prepareProvisional(
+              request, student, transcriptId, storageKey, recipientEmail, averageByOffering);
+      case FULL ->
+          prepareFull(
+              request, student, transcriptId, storageKey, recipientEmail, averageByOffering);
+      case DIPLOMA ->
+          prepareDiploma(
+              request, student, transcriptId, storageKey, recipientEmail, averageByOffering);
+      default -> throw new BadRequestException("Unsupported transcript type: " + request.getType());
+    };
+  }
+
+  private PreparedTranscript prepareProvisional(
+      TranscriptGenerateRequest request,
+      JStudent student,
+      UUID transcriptId,
+      String storageKey,
+      String recipientEmail,
+      Map<UUID, BigDecimal> averageByOffering) {
+    JSemester semester = semester(request.getSemesterId_JsonNullable());
+    JAcademicYear year = semester.getAcademicYear();
+    List<JCourseOffering> offerings = scope.forSemester(student, semester);
+    TranscriptPdfData pdfData =
+        pdfData(
+            student,
+            TranscriptScoring.title(student, year),
+            TranscriptScoring.inscriptionLine(
+                student, year, scope.trackAt(student, LocalDate.now())),
+            offerings,
+            averageByOffering,
+            null);
+    JTranscript transcript =
+        JTranscript.builder()
+            .id(transcriptId)
+            .storageKey(storageKey)
+            .student(student)
+            .type(transcriptType(request))
+            .semester(semester)
+            .recipientEmail(recipientEmail)
+            .build();
+    return new PreparedTranscript(transcript, pdfData, offerings);
+  }
+
+  private PreparedTranscript prepareFull(
+      TranscriptGenerateRequest request,
+      JStudent student,
+      UUID transcriptId,
+      String storageKey,
+      String recipientEmail,
+      Map<UUID, BigDecimal> averageByOffering) {
+    JAcademicYear year = academicYear(request.getAcademicYearId_JsonNullable());
+    List<JCourseOffering> offerings = scope.forYear(student, year);
+    ResultInfo result = TranscriptScoring.score(offerings, averageByOffering);
+    TranscriptPdfData pdfData =
+        pdfData(
+            student,
+            TranscriptScoring.title(student, year),
+            TranscriptScoring.inscriptionLine(
+                student, year, scope.trackAt(student, LocalDate.now())),
+            offerings,
+            averageByOffering,
+            result);
+    JTranscript transcript =
+        JTranscript.builder()
+            .id(transcriptId)
+            .storageKey(storageKey)
+            .student(student)
+            .type(transcriptType(request))
+            .academicYear(year)
+            .creditsEarned(result.creditsAcquired())
+            .overallAverage(result.weightedAverage())
+            .recipientEmail(recipientEmail)
+            .build();
+    return new PreparedTranscript(transcript, pdfData, offerings);
+  }
+
+  private PreparedTranscript prepareDiploma(
+      TranscriptGenerateRequest request,
+      JStudent student,
+      UUID transcriptId,
+      String storageKey,
+      String recipientEmail,
+      Map<UUID, BigDecimal> averageByOffering) {
+    JDiploma diploma = diploma(student.getId(), request.getDiplomaId_JsonNullable());
+    List<JCourseOffering> offerings = scope.byIds(averageByOffering.keySet());
+    ResultInfo scored = TranscriptScoring.score(offerings, averageByOffering);
+    ResultInfo result =
+        new ResultInfo(
+            scored.creditsAcquired(), scored.totalCredits(), diploma.getOverallAverage());
+    TranscriptPdfData pdfData =
+        pdfData(
+            student,
+            Wording.get("transcript.title"),
+            TranscriptScoring.diplomaInscriptionLine(diploma),
+            offerings,
+            averageByOffering,
+            result);
+    JTranscript transcript =
+        JTranscript.builder()
+            .id(transcriptId)
+            .storageKey(storageKey)
+            .student(student)
+            .type(transcriptType(request))
+            .diploma(diploma)
+            .creditsEarned(result.creditsAcquired())
+            .overallAverage(diploma.getOverallAverage())
+            .recipientEmail(recipientEmail)
+            .build();
+    return new PreparedTranscript(transcript, pdfData, offerings);
   }
 
   @Transactional
@@ -271,7 +309,8 @@ public class TranscriptService {
 
   private Map<UUID, BigDecimal> averagesByOffering(UUID studentId) {
     return Pages.allPages(
-            pageable -> vCourseAverageRepository.findByStudentId(studentId, pageable), 200)
+            pageable -> vCourseAverageRepository.findByStudentId(studentId, pageable),
+            Pages.DEFAULT_PAGE_SIZE)
         .stream()
         .collect(
             Collectors.toMap(
@@ -299,30 +338,8 @@ public class TranscriptService {
         result);
   }
 
-  private JTranscript baseTranscript(
-      UUID id,
-      String storageKey,
-      JStudent student,
-      app.mata.gradup.model.TranscriptType type,
-      JSemester semester,
-      JAcademicYear academicYear,
-      JDiploma diploma,
-      Integer creditsEarned,
-      BigDecimal overallAverage,
-      String recipientEmail) {
-    return JTranscript.builder()
-        .id(id)
-        .storageKey(storageKey)
-        .student(student)
-        .type(type)
-        .semester(semester)
-        .academicYear(academicYear)
-        .diploma(diploma)
-        .creditsEarned(creditsEarned)
-        .overallAverage(overallAverage)
-        .recipientEmail(recipientEmail)
-        .build();
-  }
+  private record PreparedTranscript(
+      JTranscript transcript, TranscriptPdfData pdfData, List<JCourseOffering> offerings) {}
 
   private List<JTranscriptDetail> details(
       List<JCourseOffering> offerings,
@@ -341,8 +358,8 @@ public class TranscriptService {
         .toList();
   }
 
-  private app.mata.gradup.model.TranscriptType transcriptType(TranscriptGenerateRequest request) {
-    return app.mata.gradup.model.TranscriptType.valueOf(request.getType().name());
+  private TranscriptType transcriptType(TranscriptGenerateRequest request) {
+    return TranscriptType.valueOf(request.getType().name());
   }
 
   private static <T> T nullableOrNull(JsonNullable<T> value) {
