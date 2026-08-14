@@ -86,7 +86,7 @@ class TranscriptScoringTest {
   @Test
   void title_contains_the_computed_level() {
     JStudent student = student();
-    assertTrue(TranscriptScoring.title(student, year(2025)).contains("L2"));
+    assertTrue(TranscriptScoring.title(student, year(2022)).contains("L2"));
     assertFalse(TranscriptScoring.title(student, year(2029)).contains("L"));
   }
 
@@ -108,14 +108,14 @@ class TranscriptScoringTest {
   void diplomaInscriptionLine_includes_promotion_rank_and_track() {
     JDiploma diploma =
         JDiploma.builder()
-            .cohort(JCohort.builder().label("Promo 2024").build())
+            .cohort(JCohort.builder().label("Mpamakilay").build())
             .track(JTrack.builder().label("Transformation Numerique").build())
             .rank(3)
             .build();
 
     String line = TranscriptScoring.diplomaInscriptionLine(diploma);
 
-    assertTrue(line.contains("Promo 2024"));
+    assertTrue(line.contains("Mpamakilay"));
     assertTrue(line.contains("3e"));
     assertTrue(line.contains("Transformation Numerique"));
   }
@@ -140,8 +140,8 @@ class TranscriptScoringTest {
 
   private JStudent student() {
     return JStudent.builder()
-        .user(JUser.builder().reference("STD" + 2024 + "001").build())
-        .cohort(JCohort.builder().label("Promo " + 2024).entryYear(2024).build())
+        .user(JUser.builder().reference("STD" + 2021 + "001").build())
+        .cohort(JCohort.builder().label("Mpamakilay").entryYear(2021).build())
         .build();
   }
 

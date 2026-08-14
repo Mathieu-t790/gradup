@@ -5,14 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 
-import app.mata.gradup.conf.FacadeIT;
+import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.StudentCreateRequest;
 import app.mata.gradup.endpoint.rest.model.StudentGroupHistoryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
 import app.mata.gradup.endpoint.rest.model.StudentTrackHistoryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentUpdateRequest;
+import app.mata.gradup.mail.Email;
+import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
 import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.GroupRepository;
@@ -30,22 +33,27 @@ import app.mata.gradup.repository.model.JTrack;
 import app.mata.gradup.repository.model.JUser;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class StudentIT extends FacadeIT {
+public class StudentIT extends SecuredFacadeIT {
+
+  private static final Pattern RANDOM_PASSWORD = Pattern.compile("\\b[0-9a-f]{32}\\b");
+
+  @MockBean private Mailer mailer;
 
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private CohortRepository cohortRepository;
@@ -58,12 +66,13 @@ public class StudentIT extends FacadeIT {
   @Autowired private PlatformTransactionManager transactionManager;
 
   @BeforeEach
-  void configureRestTemplate() {
-    restTemplate.getRestTemplate().setRequestFactory(new JdkClientHttpRequestFactory());
+  void setUp() {
+    useCookieAwareClient(restTemplate);
+    cleanDatabase();
+    loginAsAdmin(restTemplate);
   }
 
-  @BeforeEach
-  void cleanDatabase() {
+  private void cleanDatabase() {
     groupHistoryRepository.deleteAll();
     trackHistoryRepository.deleteAll();
     studentRepository.deleteAll();
@@ -82,9 +91,9 @@ public class StudentIT extends FacadeIT {
         restTemplate.postForEntity(
             "/students",
             new StudentCreateRequest()
-                .lastName("Rakoto")
-                .firstName("Jean")
-                .email("jean.rakoto@hei.school")
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email("tafita@cu.te")
                 .cohortId(cohort.getId())
                 .initialGroupId(group.getId()),
             StudentResponse.class);
@@ -93,13 +102,13 @@ public class StudentIT extends FacadeIT {
     var student = response.getBody();
     assertNotNull(student);
     assertNotNull(student.getId());
-    assertEquals("Rakoto", student.getLastName());
-    assertEquals("Jean", student.getFirstName());
-    assertEquals("jean.rakoto@hei.school", student.getEmail());
+    assertEquals("Mathieu", student.getLastName());
+    assertEquals("Tafita", student.getFirstName());
+    assertEquals("tafita@cu.te", student.getEmail());
     assertNotNull(student.getReference());
     assertTrue(student.getReference().startsWith("STD"));
     assertEquals(cohort.getId(), student.getCohort().getId());
-    assertEquals(group.getId(), student.getCurrentGroup().getId());
+    assertEquals(group.getId(), Objects.requireNonNull(student.getCurrentGroup()).getId());
     assertNull(student.getCurrentTrack());
     assertNotNull(student.getEnrollmentDate());
     assertTrue(student.getIsActive());
@@ -109,23 +118,59 @@ public class StudentIT extends FacadeIT {
   }
 
   @Test
-  void createStudent_duplicateEmail_returnsConflict() {
+  void createStudent_sendsCredentialsEmailWithBcryptHash() {
     var cohort = saveCohort();
     var group = saveGroup(cohort, "K1");
-    saveStudent("dup@hei.school", cohort);
 
     var response =
         restTemplate.postForEntity(
             "/students",
             new StudentCreateRequest()
-                .lastName("Other")
-                .firstName("Name")
-                .email("dup@hei.school")
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email("tafita@cu.te")
+                .cohortId(cohort.getId())
+                .initialGroupId(group.getId()),
+            StudentResponse.class);
+
+    var emailCaptor = ArgumentCaptor.forClass(Email.class);
+    verify(mailer).accept(emailCaptor.capture());
+    var email = emailCaptor.getValue();
+    var student = response.getBody();
+
+    assertEquals("tafita@cu.te", email.to().getAddress());
+    assertTrue(email.subject().contains("Vos identifiants"));
+    assertNotNull(student);
+    assertTrue(email.subject().contains(student.getReference()));
+    assertTrue(email.htmlBody().contains("Tafita"));
+    assertTrue(email.htmlBody().contains("tafita@cu.te"));
+    assertTrue(email.htmlBody().contains("data:image/png"));
+
+    var rawPassword =
+        RANDOM_PASSWORD.matcher(email.htmlBody()).results().findFirst().orElseThrow().group();
+    var savedUser = userRepository.findByEmail("tafita@cu.te").orElseThrow();
+    assertTrue(passwordEncoder.matches(rawPassword, savedUser.getPasswordHash()));
+  }
+
+  @Test
+  void createStudent_duplicateEmail_returnsConflict() {
+    var cohort = saveCohort();
+    var group = saveGroup(cohort, "K1");
+    saveStudent("tafita@cu.te", cohort);
+
+    var response =
+        restTemplate.postForEntity(
+            "/students",
+            new StudentCreateRequest()
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email("tafita@cu.te")
                 .cohortId(cohort.getId())
                 .initialGroupId(group.getId()),
             Error.class);
 
     assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("CONFLICT", response.getBody().getCode());
   }
 
@@ -137,9 +182,9 @@ public class StudentIT extends FacadeIT {
         restTemplate.postForEntity(
             "/students",
             new StudentCreateRequest()
-                .lastName("Rakoto")
-                .firstName("Jean")
-                .email("jean.rakoto@hei.school")
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email("tafita@cu.te")
                 .cohortId(UUID.randomUUID())
                 .initialGroupId(group.getId()),
             Error.class);
@@ -149,21 +194,22 @@ public class StudentIT extends FacadeIT {
 
   @Test
   void createStudent_groupOutsideCohort_returnsUnprocessable() {
-    var otherCohort = saveCohort();
+    var otherCohort = saveCohort("Tohindia", 2022, 2025);
     var groupInOtherCohort = saveGroup(otherCohort, "K1");
 
     var response =
         restTemplate.postForEntity(
             "/students",
             new StudentCreateRequest()
-                .lastName("Rakoto")
-                .firstName("Jean")
-                .email("jean.rakoto@hei.school")
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email("tafita@cu.te")
                 .cohortId(saveCohort().getId())
                 .initialGroupId(groupInOtherCohort.getId()),
             Error.class);
 
     assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("UNPROCESSABLE_ENTITY", response.getBody().getCode());
   }
 
@@ -171,33 +217,33 @@ public class StudentIT extends FacadeIT {
   void updateStudent_updatesProvidedFields() {
     var cohort = saveCohort();
     var group = saveGroup(cohort, "K1");
-    var existing = saveStudent("update.me@hei.school", cohort);
+    var existing = saveStudent("tafita@cu.te", cohort);
     saveOpenGroupHistory(existing, group);
 
     var response =
         patch(
             "/students/" + existing.getId(),
             new StudentUpdateRequest()
-                .lastName("Updated")
-                .firstName("Rina")
-                .email("rina.updated@hei.school")
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email("tafita.mathieu@cu.te")
                 .isActive(false),
             StudentResponse.class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
     var student = response.getBody();
     assertNotNull(student);
-    assertEquals("Updated", student.getLastName());
-    assertEquals("Rina", student.getFirstName());
-    assertEquals("rina.updated@hei.school", student.getEmail());
+    assertEquals("Mathieu", student.getLastName());
+    assertEquals("Tafita", student.getFirstName());
+    assertEquals("tafita.mathieu@cu.te", student.getEmail());
     assertFalse(student.getIsActive());
-    assertEquals(group.getId(), student.getCurrentGroup().getId());
+    assertEquals(group.getId(), Objects.requireNonNull(student.getCurrentGroup()).getId());
   }
 
   @Test
   void updateStudent_updatesDateOfBirth() {
     var cohort = saveCohort();
-    var student = saveStudent("birthdate@hei.school", cohort);
+    var student = saveStudent("tafita@cu.te", cohort);
 
     var response =
         patch(
@@ -206,6 +252,7 @@ public class StudentIT extends FacadeIT {
             StudentResponse.class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals(LocalDate.of(2002, 5, 20), response.getBody().getDateOfBirth());
   }
 
@@ -223,16 +270,17 @@ public class StudentIT extends FacadeIT {
   @Test
   void updateStudent_duplicateEmail_returnsConflict() {
     var cohort = saveCohort();
-    saveStudent("taken@hei.school", cohort);
-    var other = saveStudent("free@hei.school", cohort);
+    saveStudent("taken@cu.te", cohort);
+    var other = saveStudent("free@cu.te", cohort);
 
     var response =
         patch(
             "/students/" + other.getId(),
-            new StudentUpdateRequest().email("taken@hei.school"),
+            new StudentUpdateRequest().email("taken@cu.te"),
             Error.class);
 
     assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("CONFLICT", response.getBody().getCode());
   }
 
@@ -241,7 +289,7 @@ public class StudentIT extends FacadeIT {
     var cohort = saveCohort();
     var group1 = saveGroup(cohort, "K1");
     var group2 = saveGroup(cohort, "K2");
-    var student = saveStudent("history@hei.school", cohort);
+    var student = saveStudent("tafita@cu.te", cohort);
     saveGroupHistory(student, group1, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 1));
     saveGroupHistory(student, group2, LocalDate.of(2025, 6, 2), null);
 
@@ -250,6 +298,7 @@ public class StudentIT extends FacadeIT {
             "/students/" + student.getId() + "/group-history", StudentGroupHistoryResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var history = List.of(response.getBody());
     assertEquals(2, history.size());
     assertEquals("K1", history.get(0).getGroup().getReference());
@@ -271,7 +320,7 @@ public class StudentIT extends FacadeIT {
     var cohort = saveCohort();
     var trackEl = saveTrack("EL", "Electronique");
     var trackTn = saveTrack("TN", "Telecom");
-    var student = saveStudent("track.history@hei.school", cohort);
+    var student = saveStudent("tafita@cu.te", cohort);
     saveTrackHistory(student, trackEl, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 1));
     saveTrackHistory(student, trackTn, LocalDate.of(2025, 6, 2), null);
 
@@ -280,6 +329,7 @@ public class StudentIT extends FacadeIT {
             "/students/" + student.getId() + "/track-history", StudentTrackHistoryResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var history = List.of(response.getBody());
     assertEquals(2, history.size());
     assertEquals("EL", history.get(0).getTrack().getCode().toString());
@@ -288,8 +338,16 @@ public class StudentIT extends FacadeIT {
   }
 
   private JCohort saveCohort() {
+    return saveCohort("Mpamakilay", 2021, 2024);
+  }
+
+  private JCohort saveCohort(String label, int entryYear, int expectedGraduationYear) {
     return cohortRepository.save(
-        JCohort.builder().label("P14").entryYear(2024).expectedGraduationYear(2027).build());
+        JCohort.builder()
+            .label(label)
+            .entryYear(entryYear)
+            .expectedGraduationYear(expectedGraduationYear)
+            .build());
   }
 
   private JTrack saveTrack(String code, String label) {
@@ -308,8 +366,8 @@ public class StudentIT extends FacadeIT {
           var user =
               userRepository.save(
                   JUser.builder()
-                      .lastName("Rakoto")
-                      .firstName("Jean")
+                      .lastName("Mathieu")
+                      .firstName("Tafita")
                       .email(email)
                       .passwordHash("hashed")
                       .role(Role.STUDENT)
