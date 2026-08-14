@@ -8,7 +8,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import app.mata.gradup.conf.FacadeIT;
+import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.endpoint.event.EventProducer;
 import app.mata.gradup.endpoint.event.model.TranscriptGenerated;
 import app.mata.gradup.file.bucket.BucketComponent;
@@ -64,7 +64,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.support.TransactionTemplate;
 
-class TranscriptIT extends FacadeIT {
+class TranscriptIT extends SecuredFacadeIT {
 
   private static final String BASE_URL = "/students/%s/transcripts";
 
@@ -94,7 +94,9 @@ class TranscriptIT extends FacadeIT {
   @BeforeEach
   void setUp() throws Exception {
     reset(bucketComponent, eventProducer, mailer);
+    useCookieAwareClient(restTemplate);
     cleanDatabase();
+    loginAsAdmin(restTemplate);
     when(bucketComponent.presign(any(), any()))
         .thenReturn(URI.create("http://localhost/download.pdf").toURL());
   }
@@ -256,18 +258,18 @@ class TranscriptIT extends FacadeIT {
           JUser user =
               userRepository.save(
                   JUser.builder()
-                      .lastName("Rakoto")
+                      .lastName("Mathieu")
                       .firstName("Tafita")
-                      .email("tafita@mail.hei.school")
+                      .email("tafita@cu.te")
                       .passwordHash("hashed")
                       .role(Role.STUDENT)
                       .build());
           JCohort cohort =
               cohortRepository.save(
                   JCohort.builder()
-                      .label("Promotion 2024")
-                      .entryYear(2024)
-                      .expectedGraduationYear(2027)
+                      .label("Mpamakilay")
+                      .entryYear(2021)
+                      .expectedGraduationYear(2024)
                       .build());
           JStudent student =
               studentRepository.save(JStudent.builder().user(user).cohort(cohort).build());

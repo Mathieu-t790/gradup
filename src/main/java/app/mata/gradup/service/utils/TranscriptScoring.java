@@ -69,26 +69,26 @@ public final class TranscriptScoring {
 
   public static String title(JStudent student, JAcademicYear year) {
     int level = level(student, year);
-    return level >= 1 && level <= 3 ? "Relevé de notes L" + level : "Relevé de notes";
+    return level >= 1 && level <= 3
+        ? Wording.get("transcript.title.level", level)
+        : Wording.get("transcript.title");
   }
 
   public static String inscriptionLine(JStudent student, JAcademicYear year, JTrack track) {
     String trackLabel = track == null ? "" : track.getLabel();
-    return "Inscrit(e) en "
-        + levelName(student, year)
-        + (trackLabel.isEmpty() ? "" : " - " + trackLabel)
-        + ", pour l'année scolaire "
-        + year.getLabel()
-        + ",";
+    return Wording.get(
+        "transcript.inscription",
+        levelName(student, year),
+        trackLabel.isEmpty() ? "" : " - " + trackLabel,
+        year.getLabel());
   }
 
   public static String diplomaInscriptionLine(JDiploma diploma) {
-    return "Diplômé(e) de la promotion "
-        + diploma.getCohort().getLabel()
-        + ", classé(e) "
-        + diploma.getRank()
-        + "e - "
-        + diploma.getTrack().getLabel();
+    return Wording.get(
+        "transcript.diploma.inscription",
+        diploma.getCohort().getLabel(),
+        diploma.getRank(),
+        diploma.getTrack().getLabel());
   }
 
   private static int level(JStudent student, JAcademicYear year) {
@@ -96,11 +96,9 @@ public final class TranscriptScoring {
   }
 
   private static String levelName(JStudent student, JAcademicYear year) {
-    return switch (level(student, year)) {
-      case 1 -> "Première année de Licence";
-      case 2 -> "Deuxième année de Licence";
-      case 3 -> "Troisième année de Licence";
-      default -> "Licence " + level(student, year);
-    };
+    int level = level(student, year);
+    return level >= 1 && level <= 3
+        ? Wording.get("transcript.level." + level)
+        : Wording.get("transcript.level.n", level);
   }
 }

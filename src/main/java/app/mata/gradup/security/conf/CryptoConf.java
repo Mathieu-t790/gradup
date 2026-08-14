@@ -1,4 +1,4 @@
-package app.mata.gradup.security;
+package app.mata.gradup.security.conf;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

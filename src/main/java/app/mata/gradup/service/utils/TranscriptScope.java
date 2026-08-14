@@ -24,8 +24,6 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class TranscriptScope {
 
-  private static final int PAGE_SIZE = 200;
-
   private final CourseOfferingRepository courseOfferingRepository;
   private final SemesterRepository semesterRepository;
   private final StudentGroupHistoryRepository studentGroupHistoryRepository;
@@ -77,7 +75,7 @@ public class TranscriptScope {
     return Pages.allPages(
         pageable ->
             courseOfferingRepository.findByGroupIdAndSemesterIdIn(groupId, semesterIds, pageable),
-        PAGE_SIZE);
+        Pages.DEFAULT_PAGE_SIZE);
   }
 
   private static boolean activeAt(JStudentGroupHistory history, LocalDate date) {

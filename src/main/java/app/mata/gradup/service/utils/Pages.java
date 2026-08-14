@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 
 public final class Pages {
 
+  public static final int DEFAULT_PAGE_SIZE = 200;
+
   private Pages() {}
 
   public static <T> List<T> allPages(Function<Pageable, Page<T>> fetcher, int pageSize) {

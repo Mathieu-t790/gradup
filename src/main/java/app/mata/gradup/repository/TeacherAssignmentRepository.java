@@ -12,6 +12,8 @@ public interface TeacherAssignmentRepository extends JpaRepository<JTeacherAssig
 
   List<JTeacherAssignment> findByTeacherId(UUID teacherId);
 
+  boolean existsByTeacherIdAndOfferingId(UUID teacherId, UUID offeringId);
+
   @Transactional
   void deleteByOfferingIdAndTeacherId(UUID offeringId, UUID teacherId);
 }

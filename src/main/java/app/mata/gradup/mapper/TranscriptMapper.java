@@ -1,11 +1,13 @@
 package app.mata.gradup.mapper;
 
 import app.mata.gradup.endpoint.rest.model.TranscriptResponse;
+import app.mata.gradup.model.TranscriptType;
 import app.mata.gradup.repository.model.JTranscript;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TranscriptMapper {
 
   @Mapping(target = "id", source = "entity.id")
@@ -21,8 +23,7 @@ public interface TranscriptMapper {
   @Mapping(target = "recipientEmail", source = "entity.recipientEmail")
   TranscriptResponse toRest(JTranscript entity, String downloadUrl);
 
-  default app.mata.gradup.endpoint.rest.model.TranscriptType toRestType(
-      app.mata.gradup.model.TranscriptType type) {
+  default app.mata.gradup.endpoint.rest.model.TranscriptType toRestType(TranscriptType type) {
     return app.mata.gradup.endpoint.rest.model.TranscriptType.valueOf(type.name());
   }
 }

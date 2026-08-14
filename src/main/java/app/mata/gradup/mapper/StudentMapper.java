@@ -23,9 +23,10 @@ import app.mata.gradup.repository.model.JTrack;
 import app.mata.gradup.repository.model.JUser;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 import org.openapitools.jackson.nullable.JsonNullable;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface StudentMapper {
 
   @Mapping(source = "entity.user", target = "user")

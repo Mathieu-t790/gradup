@@ -21,7 +21,7 @@ public class PdfRenderer {
   private static final String NOTE_FORMAT_PATTERN = "0.0#";
   private static final DateTimeFormatter FRENCH_DATE =
       DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRENCH);
-  private static final String LOGO_DATA_URI = ClasspathImages.dataUri("static/images/HEI_logo.png");
+  private static final String LOGO_DATA_URI = EmailAssets.LOGO_DATA_URI;
   private static final String SIGNATURE_DATA_URI =
       ClasspathImages.dataUri("static/images/signature.png");
 
@@ -37,7 +37,7 @@ public class PdfRenderer {
 
       String html = htmlTemplater.render("pdf/transcript", context);
 
-      File pdf = File.createTempFile("releve-" + data.student().reference() + "-", ".pdf");
+      File pdf = File.createTempFile("relevé-" + data.student().reference() + "-", ".pdf");
       try (OutputStream os = new FileOutputStream(pdf)) {
         ITextRenderer renderer = new ITextRenderer();
         renderer.setDocumentFromString(html);
@@ -61,7 +61,6 @@ public class PdfRenderer {
         String lastName, String firstName, String reference, String inscriptionLine) {}
 
     public record CourseLine(String code, String title, int credits, BigDecimal note) {
-
       public String noteText() {
         return note == null ? null : formatNote(note);
       }
@@ -70,7 +69,6 @@ public class PdfRenderer {
     public record AbsencesInfo(String countText, String justificationText, String malusText) {}
 
     public record ResultInfo(int creditsAcquired, int totalCredits, BigDecimal weightedAverage) {
-
       public String weightedAverageText() {
         return weightedAverage == null ? null : formatNote(weightedAverage);
       }
