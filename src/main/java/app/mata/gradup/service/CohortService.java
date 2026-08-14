@@ -2,9 +2,9 @@ package app.mata.gradup.service;
 
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
+import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.mapper.CohortMapper;
 import app.mata.gradup.repository.CohortRepository;
-import app.mata.gradup.service.exception.NotFoundException;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
