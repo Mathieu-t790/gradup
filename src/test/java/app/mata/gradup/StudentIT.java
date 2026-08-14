@@ -43,6 +43,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -336,6 +337,7 @@ public class StudentIT extends FacadeIT {
         JCohort.builder().label("P14").entryYear(2024).expectedGraduationYear(2027).build());
   }
 
+  @SneakyThrows
   private void stubPresignedDownloadUrl(JStudent student) {
     when(bucketComponent.presign(anyString(), any(Duration.class)))
         .thenReturn(
