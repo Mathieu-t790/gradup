@@ -18,7 +18,9 @@ public interface CourseMapper {
 
   CourseResponse toRest(Course course);
 
-  Course toDomain(CourseCreateRequest request, Track track);
+  @Mapping(source = "track", target = "track")
+  @Mapping(target = "id", ignore = true)
+  Course toDomain(CourseCreateRequest request, JTrack track);
 
   @Mapping(target = "id", ignore = true)
   JCourse toEntity(Course course);
