@@ -1,6 +1,7 @@
 package app.mata.gradup.conf;
 
 import app.mata.gradup.model.Role;
+import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.AcademicYearRepository;
 import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.CourseOfferingRepository;
@@ -81,6 +82,40 @@ public class TestDataSeeder {
     trackRepository.deleteAll();
     cohortRepository.deleteAll();
     userRepository.deleteAll();
+  }
+
+  public JCohort cohort(String label, int entryYear, int expectedGraduationYear) {
+    return cohortRepository.save(
+        JCohort.builder()
+            .label(label)
+            .entryYear(entryYear)
+            .expectedGraduationYear(expectedGraduationYear)
+            .build());
+  }
+
+  public JTrack track(TrackCode code, String label) {
+    return trackRepository.save(JTrack.builder().code(code).label(label).build());
+  }
+
+  public JGroup group(String reference, JCohort cohort, JTrack track) {
+    return groupRepository.save(
+        JGroup.builder().reference(reference).cohort(cohort).track(track).build());
+  }
+
+  public JAcademicYear academicYear(String label, LocalDate startDate, LocalDate endDate) {
+    return academicYearRepository.save(
+        JAcademicYear.builder().label(label).startDate(startDate).endDate(endDate).build());
+  }
+
+  public JSemester semester(
+      int number, JAcademicYear year, LocalDate startDate, LocalDate endDate) {
+    return semesterRepository.save(
+        JSemester.builder()
+            .number(number)
+            .academicYear(year)
+            .startDate(startDate)
+            .endDate(endDate)
+            .build());
   }
 
   public JStudent student(
