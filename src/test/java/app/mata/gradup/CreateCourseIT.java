@@ -5,40 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import app.mata.gradup.conf.SecuredFacadeIT;
+import app.mata.gradup.conf.CourseFacadeIT;
 import app.mata.gradup.endpoint.rest.model.CourseCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CourseResponse;
 import app.mata.gradup.endpoint.rest.model.Error;
-import app.mata.gradup.repository.CourseRepository;
-import app.mata.gradup.repository.TrackRepository;
-import app.mata.gradup.repository.UserRepository;
-import app.mata.gradup.repository.model.JTrack;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 
-public class CreateCourseIT extends SecuredFacadeIT {
-
-  @Autowired private TestRestTemplate restTemplate;
-  @Autowired private CourseRepository courseRepository;
-  @Autowired private TrackRepository trackRepository;
-  @Autowired private UserRepository userRepository;
-
-  @BeforeEach
-  void setUp() {
-    useCookieAwareClient(restTemplate);
-    cleanDatabase();
-    loginAsAdmin(restTemplate);
-  }
-
-  private void cleanDatabase() {
-    courseRepository.deleteAll();
-    trackRepository.deleteAll();
-    userRepository.deleteAll();
-  }
+public class CreateCourseIT extends CourseFacadeIT {
 
   @Test
   void createCourse_returnsCreatedCourse() {
@@ -172,22 +147,5 @@ public class CreateCourseIT extends SecuredFacadeIT {
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     assertEquals("BAD_REQUEST", response.getBody().getCode());
-  }
-
-  private JTrack saveTrack(String code, String label) {
-    return trackRepository.save(
-        JTrack.builder().code(app.mata.gradup.model.TrackCode.valueOf(code)).label(label).build());
-  }
-
-  private void saveCourse(
-      String reference, String title, int credits, int semesterNumber, JTrack track) {
-    courseRepository.save(
-        app.mata.gradup.repository.model.JCourse.builder()
-            .reference(reference)
-            .title(title)
-            .credits(credits)
-            .semesterNumber(semesterNumber)
-            .track(track)
-            .build());
   }
 }
