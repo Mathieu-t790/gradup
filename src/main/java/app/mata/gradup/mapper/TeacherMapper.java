@@ -41,8 +41,7 @@ public interface TeacherMapper {
         .course(toCourseSummary(offering.getCourse()))
         .group(toGroupSummary(offering.getGroup()))
         .semester(toSemesterSummary(offering.getSemester()))
-        .teachers(
-            assignments.stream().map(a -> toTeacherSummary(a.getTeacher())).toList())
+        .teachers(assignments.stream().map(a -> toTeacherSummary(a.getTeacher())).toList())
         .gradingFinalized(offering.getGradingFinalized());
   }
 
