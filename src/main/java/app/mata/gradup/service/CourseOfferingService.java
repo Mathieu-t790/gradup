@@ -48,4 +48,15 @@ public class CourseOfferingService {
     teacherAssignmentRepository.save(
         JTeacherAssignment.builder().offering(offering).teacher(teacher).build());
   }
+
+  @Transactional
+  public void unassignTeacher(UUID offeringId, UUID teacherId) {
+    courseOfferingRepository
+        .findById(offeringId)
+        .orElseThrow(() -> new NotFoundException("Course offering not found"));
+    teacherRepository
+        .findById(teacherId)
+        .orElseThrow(() -> new NotFoundException("Teacher not found"));
+    teacherAssignmentRepository.deleteByOfferingIdAndTeacherId(offeringId, teacherId);
+  }
 }
