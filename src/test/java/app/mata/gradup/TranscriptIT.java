@@ -16,17 +16,12 @@ import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
 import app.mata.gradup.model.TrackCode;
-import app.mata.gradup.repository.AcademicYearRepository;
-import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.CourseOfferingRepository;
 import app.mata.gradup.repository.CourseRepository;
 import app.mata.gradup.repository.ExamRepository;
 import app.mata.gradup.repository.GradeRepository;
-import app.mata.gradup.repository.GroupRepository;
-import app.mata.gradup.repository.SemesterRepository;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentRepository;
-import app.mata.gradup.repository.TrackRepository;
 import app.mata.gradup.repository.TranscriptDetailRepository;
 import app.mata.gradup.repository.TranscriptRepository;
 import app.mata.gradup.repository.UserRepository;
@@ -76,12 +71,7 @@ class TranscriptIT extends SecuredFacadeIT {
   @Autowired private TestDataSeeder seeder;
 
   @Autowired private UserRepository userRepository;
-  @Autowired private CohortRepository cohortRepository;
   @Autowired private StudentRepository studentRepository;
-  @Autowired private TrackRepository trackRepository;
-  @Autowired private GroupRepository groupRepository;
-  @Autowired private AcademicYearRepository academicYearRepository;
-  @Autowired private SemesterRepository semesterRepository;
   @Autowired private StudentGroupHistoryRepository studentGroupHistoryRepository;
   @Autowired private CourseRepository courseRepository;
   @Autowired private CourseOfferingRepository courseOfferingRepository;
@@ -256,37 +246,16 @@ class TranscriptIT extends SecuredFacadeIT {
                       .passwordHash("hashed")
                       .role(Role.STUDENT)
                       .build());
-          JCohort cohort =
-              cohortRepository.save(
-                  JCohort.builder()
-                      .label("Mpamakilay")
-                      .entryYear(2021)
-                      .expectedGraduationYear(2024)
-                      .build());
+          JCohort cohort = seeder.cohort("Mpamakilay", 2021, 2024);
           JStudent student =
               studentRepository.save(JStudent.builder().user(user).cohort(cohort).build());
 
-          JTrack track =
-              trackRepository.save(
-                  JTrack.builder().code(TrackCode.EL).label("Ecosysteme Logiciel").build());
-          JGroup group =
-              groupRepository.save(
-                  JGroup.builder().reference("k1").cohort(cohort).track(track).build());
+          JTrack track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+          JGroup group = seeder.group("k1", cohort, null);
           JAcademicYear year =
-              academicYearRepository.save(
-                  JAcademicYear.builder()
-                      .label("2025-2026")
-                      .startDate(LocalDate.of(2025, 9, 1))
-                      .endDate(LocalDate.of(2026, 7, 31))
-                      .build());
+              seeder.academicYear("2025-2026", LocalDate.of(2025, 9, 1), LocalDate.of(2026, 7, 31));
           JSemester semester =
-              semesterRepository.save(
-                  JSemester.builder()
-                      .number(1)
-                      .academicYear(year)
-                      .startDate(LocalDate.of(2025, 9, 1))
-                      .endDate(LocalDate.of(2026, 1, 31))
-                      .build());
+              seeder.semester(1, year, LocalDate.of(2025, 9, 1), LocalDate.of(2026, 1, 31));
           studentGroupHistoryRepository.save(
               JStudentGroupHistory.builder()
                   .student(student)

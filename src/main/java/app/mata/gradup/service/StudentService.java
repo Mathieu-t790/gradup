@@ -1,7 +1,9 @@
 package app.mata.gradup.service;
 
 import app.mata.gradup.endpoint.rest.model.StudentCreateRequest;
+import app.mata.gradup.endpoint.rest.model.StudentPageResponse;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
+import app.mata.gradup.endpoint.rest.model.StudentSummaryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentUpdateRequest;
 import app.mata.gradup.exception.BusinessRuleException;
 import app.mata.gradup.exception.ConflictException;
@@ -23,14 +25,19 @@ import app.mata.gradup.repository.model.JStudentGroupHistory;
 import app.mata.gradup.repository.model.JUser;
 import app.mata.gradup.service.utils.EmailAssets;
 import app.mata.gradup.service.utils.HtmlTemplater;
+import app.mata.gradup.service.utils.Students;
 import app.mata.gradup.service.utils.Wording;
 import jakarta.mail.internet.InternetAddress;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -111,6 +118,72 @@ public class StudentService {
     return toResponse(findStudent(studentId));
   }
 
+  @Transactional(readOnly = true)
+  public StudentPageResponse listStudents(UUID cohortId, UUID groupId, Pageable pageable) {
+    var page = findStudents(cohortId, groupId, pageable);
+    var students = page.getContent();
+    var currentGroups = currentGroupsByStudent(students);
+    var currentTracks = currentTracksByStudent(students);
+    var summaryPage =
+        page.map(
+            student ->
+                studentMapper.toRestSummary(
+                    student,
+                    currentGroups.get(student.getId()),
+                    currentTracks.get(student.getId())));
+    return toStudentPageResponse(summaryPage);
+  }
+
+  private Page<JStudent> findStudents(UUID cohortId, UUID groupId, Pageable pageable) {
+    if (cohortId != null && groupId != null) {
+      return studentRepository.findByCohortIdAndCurrentGroupId(cohortId, groupId, pageable);
+    }
+    if (groupId != null) {
+      return studentRepository.findByCurrentGroupId(groupId, pageable);
+    }
+    if (cohortId != null) {
+      return studentRepository.findByCohortId(cohortId, pageable);
+    }
+    return studentRepository.findAll(pageable);
+  }
+
+  private Map<UUID, Group> currentGroupsByStudent(List<JStudent> students) {
+    var studentIds = students.stream().map(JStudent::getId).toList();
+    if (studentIds.isEmpty()) {
+      return Map.of();
+    }
+    return studentGroupHistoryRepository.findByStudentIdInAndEndDateIsNull(studentIds).stream()
+        .collect(
+            Collectors.toMap(
+                history -> history.getStudent().getId(),
+                history -> studentMapper.toGroup(history.getGroup()),
+                (first, second) -> first));
+  }
+
+  private Map<UUID, Track> currentTracksByStudent(List<JStudent> students) {
+    var studentIds = students.stream().map(JStudent::getId).toList();
+    if (studentIds.isEmpty()) {
+      return Map.of();
+    }
+    return studentTrackHistoryRepository.findByStudentIdInAndEndDateIsNull(studentIds).stream()
+        .collect(
+            Collectors.toMap(
+                history -> history.getStudent().getId(),
+                history -> studentMapper.toTrack(history.getTrack()),
+                (first, second) -> first));
+  }
+
+  private static StudentPageResponse toStudentPageResponse(Page<StudentSummaryResponse> page) {
+    return new StudentPageResponse()
+        .page(page.getNumber())
+        .size(page.getSize())
+        .totalElements(page.getTotalElements())
+        .totalPages(page.getTotalPages())
+        .first(page.isFirst())
+        .last(page.isLast())
+        .content(page.getContent());
+  }
+
   @Transactional
   public StudentResponse updateStudent(UUID studentId, StudentUpdateRequest request) {
     var student = findStudent(studentId);
@@ -170,9 +243,7 @@ public class StudentService {
   }
 
   private JStudent findStudent(UUID studentId) {
-    return studentRepository
-        .findById(studentId)
-        .orElseThrow(() -> new NotFoundException("Student not found"));
+    return Students.requireStudent(studentRepository, studentId);
   }
 
   private StudentResponse toResponse(JStudent student) {
@@ -189,19 +260,12 @@ public class StudentService {
 
   private Track currentTrack(JStudent student) {
     return studentTrackHistoryRepository
-        .findByStudentIdOrderByStartDateDesc(student.getId())
-        .stream()
-        .filter(history -> history.getEndDate() == null)
-        .findFirst()
+        .findFirstByStudentIdAndEndDateIsNull(student.getId())
         .map(history -> studentMapper.toTrack(history.getTrack()))
         .orElse(null);
   }
 
   private Optional<JStudentGroupHistory> openGroupHistory(JStudent student) {
-    return studentGroupHistoryRepository
-        .findByStudentIdOrderByStartDateDesc(student.getId())
-        .stream()
-        .filter(history -> history.getEndDate() == null)
-        .findFirst();
+    return studentGroupHistoryRepository.findFirstByStudentIdAndEndDateIsNull(student.getId());
   }
 }

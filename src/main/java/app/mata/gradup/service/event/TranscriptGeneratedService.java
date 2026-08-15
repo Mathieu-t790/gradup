@@ -9,6 +9,7 @@ import app.mata.gradup.repository.TranscriptRepository;
 import app.mata.gradup.repository.model.JTranscript;
 import app.mata.gradup.service.utils.EmailAssets;
 import app.mata.gradup.service.utils.HtmlTemplater;
+import app.mata.gradup.service.utils.Users;
 import app.mata.gradup.service.utils.Wording;
 import jakarta.mail.internet.InternetAddress;
 import java.io.File;
@@ -48,10 +49,7 @@ public class TranscriptGeneratedService implements Consumer<TranscriptGenerated>
   private Email emailOf(JTranscript transcript, File pdf) {
     try {
       String reference = transcript.getStudent().getUser().getReference();
-      String studentName =
-          transcript.getStudent().getUser().getFirstName()
-              + " "
-              + transcript.getStudent().getUser().getLastName();
+      String studentName = Users.fullName(transcript.getStudent().getUser());
       Context context = new Context();
       context.setVariable("studentName", studentName);
       context.setVariable("signatureDataUri", EmailAssets.SIGNATURE_DATA_URI);

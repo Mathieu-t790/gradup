@@ -19,12 +19,7 @@ import app.mata.gradup.endpoint.rest.model.StudentSummaryResponse;
 import app.mata.gradup.endpoint.rest.model.TrackSummary;
 import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.model.TrackCode;
-import app.mata.gradup.repository.AcademicYearRepository;
-import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.DiplomaRepository;
-import app.mata.gradup.repository.GroupRepository;
-import app.mata.gradup.repository.SemesterRepository;
-import app.mata.gradup.repository.TrackRepository;
 import app.mata.gradup.repository.model.JAcademicYear;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JCourse;
@@ -60,11 +55,6 @@ class DiplomaIT extends SecuredFacadeIT {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
 
-  @Autowired private CohortRepository cohortRepository;
-  @Autowired private TrackRepository trackRepository;
-  @Autowired private GroupRepository groupRepository;
-  @Autowired private AcademicYearRepository academicYearRepository;
-  @Autowired private SemesterRepository semesterRepository;
   @Autowired private DiplomaRepository diplomaRepository;
 
   @BeforeEach
@@ -343,35 +333,19 @@ class DiplomaIT extends SecuredFacadeIT {
   private Fixture seed() {
     return seeder.inTransaction(
         () -> {
-          JCohort cohort =
-              cohortRepository.save(
-                  JCohort.builder()
-                      .label("Mpamakilay")
-                      .entryYear(2021)
-                      .expectedGraduationYear(2024)
-                      .build());
-          JTrack el =
-              trackRepository.save(
-                  JTrack.builder().code(TrackCode.EL).label("Ecosysteme Logiciel").build());
-          JTrack tn =
-              trackRepository.save(
-                  JTrack.builder().code(TrackCode.TN).label("Transformation Numerique").build());
-          JGroup groupEl =
-              groupRepository.save(
-                  JGroup.builder().reference("G1").cohort(cohort).track(el).build());
-          JGroup groupTn =
-              groupRepository.save(
-                  JGroup.builder().reference("G2").cohort(cohort).track(tn).build());
+          JCohort cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+          JTrack el = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+          JTrack tn = seeder.track(TrackCode.TN, "Transformation Numerique");
+          JGroup groupEl = seeder.group("G1", cohort, el);
+          JGroup groupTn = seeder.group("G2", cohort, tn);
           JAcademicYear year =
-              academicYearRepository.save(
-                  JAcademicYear.builder()
-                      .label("2021-2024")
-                      .startDate(LocalDate.of(2021, 9, 1))
-                      .endDate(LocalDate.of(2024, 7, 31))
-                      .build());
-          JSemester s1 = semester(year, 1, 2021, 9, 1, 2022, 1, 31);
-          JSemester s3 = semester(year, 3, 2022, 9, 1, 2023, 1, 31);
-          JSemester s5 = semester(year, 5, 2023, 9, 1, 2024, 1, 31);
+              seeder.academicYear("2021-2024", LocalDate.of(2021, 9, 1), LocalDate.of(2024, 7, 31));
+          JSemester s1 =
+              seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+          JSemester s3 =
+              seeder.semester(3, year, LocalDate.of(2022, 9, 1), LocalDate.of(2023, 1, 31));
+          JSemester s5 =
+              seeder.semester(5, year, LocalDate.of(2023, 9, 1), LocalDate.of(2024, 1, 31));
 
           JCourse prog1 = seeder.course("PROG1", 60, 1, null);
           JCourse prog3 = seeder.course("PROG3", 60, 3, null);
@@ -421,17 +395,6 @@ class DiplomaIT extends SecuredFacadeIT {
 
           return new Fixture(cohort.getId());
         });
-  }
-
-  private JSemester semester(
-      JAcademicYear year, int number, int ys, int ms, int ds, int ye, int me, int de) {
-    return semesterRepository.save(
-        JSemester.builder()
-            .number(number)
-            .academicYear(year)
-            .startDate(LocalDate.of(ys, ms, ds))
-            .endDate(LocalDate.of(ye, me, de))
-            .build());
   }
 
   private record Fixture(UUID cohortId) {}
