@@ -90,8 +90,7 @@ class CourseOfferingIT extends SecuredFacadeIT {
   @Test
   void getCourseOffering_unknownOffering_returnsNotFound() {
     ResponseEntity<Error> response =
-        restTemplate.getForEntity(
-            "/course-offerings/" + UUID.randomUUID(), Error.class);
+        restTemplate.getForEntity("/course-offerings/" + UUID.randomUUID(), Error.class);
 
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     assertNotNull(response.getBody());
@@ -267,8 +266,7 @@ class CourseOfferingIT extends SecuredFacadeIT {
   @Test
   void listOfferingExams_unknownOffering_returnsNotFound() {
     ResponseEntity<Error> response =
-        restTemplate.getForEntity(
-            "/course-offerings/" + UUID.randomUUID() + "/exams", Error.class);
+        restTemplate.getForEntity("/course-offerings/" + UUID.randomUUID() + "/exams", Error.class);
 
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
   }

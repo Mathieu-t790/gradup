@@ -40,7 +40,8 @@ public interface CourseOfferingMapper {
         .offeringId(exam.getOffering().getId())
         .label(exam.getLabel())
         .examDate(exam.getExamDate())
-        .examTime(exam.getExamTime() == null ? null : exam.getExamTime().format(EXAM_TIME_FORMATTER))
+        .examTime(
+            exam.getExamTime() == null ? null : exam.getExamTime().format(EXAM_TIME_FORMATTER))
         .weightNumerator(exam.getWeightNumerator())
         .weightDenominator(exam.getWeightDenominator());
   }

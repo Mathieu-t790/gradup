@@ -27,15 +27,13 @@ public class CourseOfferingController {
 
   @PostMapping("/course-offerings/{offeringId}/teachers/{teacherId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void assignTeacher(
-      @PathVariable UUID offeringId, @PathVariable UUID teacherId) {
+  public void assignTeacher(@PathVariable UUID offeringId, @PathVariable UUID teacherId) {
     courseOfferingService.assignTeacher(offeringId, teacherId);
   }
 
   @DeleteMapping("/course-offerings/{offeringId}/teachers/{teacherId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void unassignTeacher(
-      @PathVariable UUID offeringId, @PathVariable UUID teacherId) {
+  public void unassignTeacher(@PathVariable UUID offeringId, @PathVariable UUID teacherId) {
     courseOfferingService.unassignTeacher(offeringId, teacherId);
   }
 
