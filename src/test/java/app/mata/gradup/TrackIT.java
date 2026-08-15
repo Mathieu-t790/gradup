@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import app.mata.gradup.conf.FacadeIT;
+import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.TrackCode;
 import app.mata.gradup.endpoint.rest.model.TrackCreateRequest;
@@ -18,17 +18,16 @@ import app.mata.gradup.repository.TrackRepository;
 import app.mata.gradup.repository.UserRepository;
 import app.mata.gradup.repository.model.JTrack;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class TrackIT extends FacadeIT {
+public class TrackIT extends SecuredFacadeIT {
 
-  @Autowired private TestRestTemplate restTemplate;
+  @Autowired protected TestRestTemplate restTemplate;
   @Autowired private TrackRepository trackRepository;
   @Autowired private CohortRepository cohortRepository;
   @Autowired private GroupRepository groupRepository;
@@ -38,7 +37,18 @@ public class TrackIT extends FacadeIT {
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
 
   @BeforeEach
-  void cleanDatabase() {
+  void setUp() {
+    useCookieAwareClient(restTemplate);
+    cleanDatabase();
+    loginAsAdmin(restTemplate);
+  }
+
+  @AfterEach
+  void tearDown() {
+    cleanDatabase();
+  }
+
+  private void cleanDatabase() {
     groupHistoryRepository.deleteAll();
     trackHistoryRepository.deleteAll();
     studentRepository.deleteAll();
@@ -50,8 +60,8 @@ public class TrackIT extends FacadeIT {
 
   @Test
   void listTracks_shouldReturnAllTracks() {
-    saveTrack("EL", "Electronique");
-    saveTrack("TN", "Telecom");
+    saveTrack("EL", "Ecosysteme Logiciel");
+    saveTrack("TN", "Transformation Numerique");
 
     var response = restTemplate.getForEntity("/tracks", TrackResponse[].class);
 
@@ -62,7 +72,7 @@ public class TrackIT extends FacadeIT {
         List.of(TrackCode.EL, TrackCode.TN),
         tracks.stream().map(TrackResponse::getCode).sorted().toList());
     assertEquals(
-        List.of("Electronique", "Telecom"),
+        List.of("Ecosysteme Logiciel", "Transformation Numerique"),
         tracks.stream().map(TrackResponse::getLabel).sorted().toList());
   }
 
@@ -71,7 +81,7 @@ public class TrackIT extends FacadeIT {
     var response =
         restTemplate.postForEntity(
             "/tracks",
-            new TrackCreateRequest().code(TrackCode.EL).label("Electronique"),
+            new TrackCreateRequest().code(TrackCode.EL).label("Ecosysteme Logiciel"),
             TrackResponse.class);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -79,12 +89,12 @@ public class TrackIT extends FacadeIT {
     assertNotNull(track);
     assertNotNull(track.getId());
     assertEquals(TrackCode.EL, track.getCode());
-    assertEquals("Electronique", track.getLabel());
+    assertEquals("Ecosysteme Logiciel", track.getLabel());
 
     var saved = trackRepository.findById(track.getId());
     assertTrue(saved.isPresent());
     assertEquals(app.mata.gradup.model.TrackCode.EL, saved.get().getCode());
-    assertEquals("Electronique", saved.get().getLabel());
+    assertEquals("Ecosysteme Logiciel", saved.get().getLabel());
   }
 
   @Test
@@ -98,7 +108,7 @@ public class TrackIT extends FacadeIT {
 
   @Test
   void createTrack_shouldReturn409_whenDuplicateCode() {
-    saveTrack("EL", "Electronique");
+    saveTrack("EL", "Ecosysteme Logiciel");
 
     var response =
         restTemplate.postForEntity(
