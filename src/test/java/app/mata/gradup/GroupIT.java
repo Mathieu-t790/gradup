@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import app.mata.gradup.conf.FacadeIT;
+import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.GroupCreateRequest;
 import app.mata.gradup.endpoint.rest.model.GroupResponse;
@@ -21,18 +21,16 @@ import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JTrack;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class GroupIT extends FacadeIT {
+public class GroupIT extends SecuredFacadeIT {
 
-  @Autowired private TestRestTemplate restTemplate;
+  @Autowired protected TestRestTemplate restTemplate;
   @Autowired private CohortRepository cohortRepository;
   @Autowired private TrackRepository trackRepository;
   @Autowired private GroupRepository groupRepository;
@@ -42,12 +40,18 @@ public class GroupIT extends FacadeIT {
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
 
   @BeforeEach
-  void configureRestTemplate() {
-    restTemplate.getRestTemplate().setRequestFactory(new JdkClientHttpRequestFactory());
+  void setUp() {
+    useCookieAwareClient(restTemplate);
+    cleanDatabase();
+    loginAsAdmin(restTemplate);
   }
 
-  @BeforeEach
-  void cleanDatabase() {
+  @AfterEach
+  void tearDown() {
+    cleanDatabase();
+  }
+
+  private void cleanDatabase() {
     groupHistoryRepository.deleteAll();
     trackHistoryRepository.deleteAll();
     studentRepository.deleteAll();
