@@ -141,13 +141,14 @@ paths:
       operationId: exportCohortDiplomas
       description: >
         Downloads the graduate list (rank, last/first name, average) as
-        XLSX, one file per track. Direct download - no email involved
-        (see /students/{studentId}/transcripts for the emailed PDF flow).
+        XLSX. Without a track, exports every graduate of the cohort across
+        all tracks; with a track, exports a single file for that track.
+        Direct download - no email involved (see
+        /students/{studentId}/transcripts for the emailed PDF flow).
       x-required-roles: [ADMIN]
       parameters:
         - name: track
           in: query
-          required: true
           schema: { $ref: '#/components/schemas/TrackCode' }
       responses:
         '200':

@@ -1,6 +1,7 @@
 package app.mata.gradup.repository;
 
 import app.mata.gradup.repository.model.JVGraduationEligibility;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +12,7 @@ public interface VGraduationEligibilityRepository
     extends JpaRepository<JVGraduationEligibility, UUID> {
 
   Optional<JVGraduationEligibility> findByStudentId(UUID studentId);
+
+  List<JVGraduationEligibility> findByCohortIdAndTrackIdAndIsEligibleTrue(
+      UUID cohortId, UUID trackId);
 }
