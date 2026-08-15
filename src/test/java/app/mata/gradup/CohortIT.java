@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import app.mata.gradup.conf.FacadeIT;
+import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
 import app.mata.gradup.endpoint.rest.model.Error;
@@ -18,17 +18,16 @@ import app.mata.gradup.repository.UserRepository;
 import app.mata.gradup.repository.model.JCohort;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class CohortIT extends FacadeIT {
+public class CohortIT extends SecuredFacadeIT {
 
-  @Autowired private TestRestTemplate restTemplate;
+  @Autowired protected TestRestTemplate restTemplate;
   @Autowired private CohortRepository cohortRepository;
   @Autowired private GroupRepository groupRepository;
   @Autowired private TrackRepository trackRepository;
@@ -38,7 +37,18 @@ public class CohortIT extends FacadeIT {
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
 
   @BeforeEach
-  void cleanDatabase() {
+  void setUp() {
+    useCookieAwareClient(restTemplate);
+    cleanDatabase();
+    loginAsAdmin(restTemplate);
+  }
+
+  @AfterEach
+  void tearDown() {
+    cleanDatabase();
+  }
+
+  private void cleanDatabase() {
     groupHistoryRepository.deleteAll();
     trackHistoryRepository.deleteAll();
     studentRepository.deleteAll();
