@@ -7,13 +7,6 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-/**
- * Deterministic, dependency-free XLSX writer.
- *
- * <p>The whole point of this class is byte-for-byte reproducible output: every ZIP entry has a
- * fixed timestamp and none of the embedded XML carries a creation date, so the produced bytes can
- * be compared against a committed golden file in integration tests.
- */
 public final class XlsxRenderer {
 
   private static final String CONTENT_TYPE =
@@ -21,13 +14,6 @@ public final class XlsxRenderer {
 
   private XlsxRenderer() {}
 
-  /**
-   * Renders a single-sheet workbook.
-   *
-   * @param sheetName sheet name (kept short: Excel caps it at 31 chars)
-   * @param headers first row
-   * @param rows data rows, one list of cells per row
-   */
   public static byte[] render(String sheetName, List<String> headers, List<List<String>> rows) {
     try (ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         ZipOutputStream zip = new ZipOutputStream(buffer, StandardCharsets.UTF_8)) {
