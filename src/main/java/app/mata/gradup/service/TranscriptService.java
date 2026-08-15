@@ -24,6 +24,7 @@ import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JTranscript;
 import app.mata.gradup.repository.model.JTranscriptDetail;
 import app.mata.gradup.repository.model.JVCourseAverage;
+import app.mata.gradup.service.utils.BucketExporter;
 import app.mata.gradup.service.utils.Pages;
 import app.mata.gradup.service.utils.PdfRenderer;
 import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData;
@@ -87,7 +88,7 @@ public class TranscriptService {
 
     dispatchEmailEvent(transcriptId);
 
-    String downloadUrl = bucketComponent.presign(storageKey, Duration.ofHours(1)).toString();
+    String downloadUrl = BucketExporter.presign(bucketComponent, storageKey);
     return transcriptMapper.toRest(transcript, downloadUrl);
   }
 

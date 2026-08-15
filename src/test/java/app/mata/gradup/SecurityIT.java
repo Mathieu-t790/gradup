@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
+import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.StudentCreateRequest;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
@@ -46,25 +47,12 @@ class SecurityIT extends SecuredFacadeIT {
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
   @Autowired private UserRepository userRepository;
   @Autowired private PlatformTransactionManager transactionManager;
+  @Autowired private TestDataSeeder seeder;
 
   @BeforeEach
   void setUp() {
     useCookieAwareClient(restTemplate);
-    cleanDatabase();
-  }
-
-  @AfterEach
-  void tearDown() {
-    cleanDatabase();
-  }
-
-  private void cleanDatabase() {
-    groupHistoryRepository.deleteAll();
-    trackHistoryRepository.deleteAll();
-    studentRepository.deleteAll();
-    groupRepository.deleteAll();
-    cohortRepository.deleteAll();
-    userRepository.deleteAll();
+    seeder.cleanDatabase();
   }
 
   @Test
