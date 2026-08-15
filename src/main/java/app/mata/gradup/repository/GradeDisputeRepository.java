@@ -2,6 +2,7 @@ package app.mata.gradup.repository;
 
 import app.mata.gradup.model.DisputeStatus;
 import app.mata.gradup.repository.model.JGradeDispute;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,9 @@ import org.springframework.stereotype.Repository;
 public interface GradeDisputeRepository extends JpaRepository<JGradeDispute, UUID> {
 
   Page<JGradeDispute> findByStatus(DisputeStatus status, Pageable pageable);
+
+  Page<JGradeDispute> findByStatusAndGrade_Exam_Offering_IdIn(
+      DisputeStatus status, Collection<UUID> offeringIds, Pageable pageable);
 
   Optional<JGradeDispute> findByGradeIdAndStatus(UUID gradeId, DisputeStatus status);
 

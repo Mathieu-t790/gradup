@@ -1,6 +1,7 @@
 package app.mata.gradup.service;
 
 import app.mata.gradup.endpoint.rest.model.GradeDisputeCreateRequest;
+import app.mata.gradup.endpoint.rest.model.GradeDisputePageResponse;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResolveRequest;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
 import app.mata.gradup.exception.BusinessRuleException;
@@ -8,10 +9,12 @@ import app.mata.gradup.exception.ConflictException;
 import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.mapper.GradeDisputeMapper;
 import app.mata.gradup.model.DisputeStatus;
+import app.mata.gradup.model.Role;
 import app.mata.gradup.repository.GradeDisputeRepository;
 import app.mata.gradup.repository.GradeHistoryRepository;
 import app.mata.gradup.repository.GradeRepository;
 import app.mata.gradup.repository.StudentRepository;
+import app.mata.gradup.repository.TeacherAssignmentRepository;
 import app.mata.gradup.repository.model.JGradeDispute;
 import app.mata.gradup.repository.model.JGradeHistory;
 import app.mata.gradup.service.utils.Students;
@@ -21,6 +24,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +37,7 @@ public class GradeDisputeService {
   private final GradeRepository gradeRepository;
   private final GradeHistoryRepository gradeHistoryRepository;
   private final StudentRepository studentRepository;
+  private final TeacherAssignmentRepository teacherAssignmentRepository;
   private final GradeDisputeMapper gradeDisputeMapper;
 
   @Transactional
@@ -91,6 +97,38 @@ public class GradeDisputeService {
     return gradeDisputeRepository.findByStudentId(studentId).stream()
         .map(gradeDisputeMapper::toRest)
         .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public GradeDisputePageResponse listDisputes(
+      DisputeStatus status, Pageable pageable, UUID currentUserId, Role currentRole) {
+    DisputeStatus effectiveStatus = status == null ? DisputeStatus.PENDING : status;
+    Page<JGradeDispute> page;
+    if (currentRole == Role.ADMIN) {
+      page = gradeDisputeRepository.findByStatus(effectiveStatus, pageable);
+    } else {
+      var offeringIds =
+          teacherAssignmentRepository.findByTeacherId(currentUserId).stream()
+              .map(assignment -> assignment.getOffering().getId())
+              .toList();
+      page =
+          offeringIds.isEmpty()
+              ? Page.empty(pageable)
+              : gradeDisputeRepository.findByStatusAndGrade_Exam_Offering_IdIn(
+                  effectiveStatus, offeringIds, pageable);
+    }
+    return toPageResponse(page);
+  }
+
+  private GradeDisputePageResponse toPageResponse(Page<JGradeDispute> page) {
+    return new GradeDisputePageResponse()
+        .page(page.getNumber())
+        .size(page.getSize())
+        .totalElements(page.getTotalElements())
+        .totalPages(page.getTotalPages())
+        .first(page.isFirst())
+        .last(page.isLast())
+        .content(page.getContent().stream().map(gradeDisputeMapper::toRest).toList());
   }
 
   private UUID latestHistoryId(UUID gradeId) {
