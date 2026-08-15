@@ -4,14 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.CohortSummary;
+import app.mata.gradup.endpoint.rest.model.DiplomaExportResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaPageResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaResponse;
 import app.mata.gradup.endpoint.rest.model.StudentSummaryResponse;
 import app.mata.gradup.endpoint.rest.model.TrackSummary;
+import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.AcademicYearRepository;
 import app.mata.gradup.repository.CohortRepository;
@@ -27,16 +33,19 @@ import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JSemester;
 import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JTrack;
+import java.io.File;
 import java.math.BigDecimal;
+import java.net.URI;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -45,6 +54,8 @@ class DiplomaIT extends SecuredFacadeIT {
   private static final String BASE_URL = "/cohorts/%s/diplomas";
   private static final String GENERATE_URL = BASE_URL + "/generate";
   private static final String EXPORT_URL = BASE_URL + "/export";
+
+  @MockBean private BucketComponent bucketComponent;
 
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
@@ -57,10 +68,13 @@ class DiplomaIT extends SecuredFacadeIT {
   @Autowired private DiplomaRepository diplomaRepository;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
+    reset(bucketComponent);
     useCookieAwareClient(restTemplate);
     seeder.cleanDatabase();
     loginAsAdmin(restTemplate);
+    when(bucketComponent.presign(any(), any()))
+        .thenReturn(URI.create("http://localhost/diplomas.xlsx").toURL());
   }
 
   @Test
@@ -78,6 +92,24 @@ class DiplomaIT extends SecuredFacadeIT {
         Arrays.stream(diplomas).noneMatch(d -> d.getStudent().getReference().equals("STD21005")),
         "student with a course below 10 must be absent");
     assertEquals(4, diplomaRepository.findAll().size());
+  }
+
+  @Test
+  void post_generate_without_track_ranks_graduates_across_tracks_by_promotion() throws Exception {
+    Fixture fixture = seed();
+
+    DiplomaResponse[] diplomas = generate(fixture, null);
+
+    assertEquals(5, diplomas.length);
+    assertDiploma(diplomas[0], 1, "STD21002", "Rabe", "Mialy", "15.00");
+    assertDiploma(diplomas[1], 2, "STD21001", "Rakoto", "Hery", "14.00");
+    assertDiploma(diplomas[2], 2, "STD21003", "Andria", "Tiana", "14.00");
+    assertDiploma(diplomas[3], 4, "STD21006", "Razafy", "Nirina", "13.00");
+    assertDiploma(diplomas[4], 5, "STD21004", "Rasolofoniaina", "Lova", "12.00");
+    assertTrue(
+        Arrays.stream(diplomas).noneMatch(d -> d.getStudent().getReference().equals("STD21005")),
+        "student with a course below 10 must be absent");
+    assertEquals(5, diplomaRepository.findAll().size());
   }
 
   @Test
@@ -148,6 +180,26 @@ class DiplomaIT extends SecuredFacadeIT {
     assertAllGraduates(fixture, "?track=");
   }
 
+  @Test
+  void get_list_without_track_ranks_graduates_by_promotion() throws Exception {
+    Fixture fixture = seed();
+    generate(fixture, TrackCode.EL);
+    generate(fixture, TrackCode.TN);
+
+    String base = BASE_URL.formatted(fixture.cohortId);
+    ResponseEntity<DiplomaPageResponse> all =
+        restTemplate.getForEntity(base + "?page=0&size=50", DiplomaPageResponse.class);
+
+    assertEquals(HttpStatus.OK, all.getStatusCode());
+    DiplomaPageResponse allPage = all.getBody();
+    assertNotNull(allPage);
+    assertDiploma(allPage.getContent().get(0), 1, "STD21002", "Rabe", "Mialy", "15.00");
+    assertDiploma(allPage.getContent().get(1), 2, "STD21001", "Rakoto", "Hery", "14.00");
+    assertDiploma(allPage.getContent().get(2), 2, "STD21003", "Andria", "Tiana", "14.00");
+    assertDiploma(allPage.getContent().get(3), 4, "STD21006", "Razafy", "Nirina", "13.00");
+    assertDiploma(allPage.getContent().get(4), 5, "STD21004", "Rasolofoniaina", "Lova", "12.00");
+  }
+
   private void assertAllGraduates(Fixture fixture, String trackQuery) throws Exception {
     String query = trackQuery == null ? "" : trackQuery;
     String base = BASE_URL.formatted(fixture.cohortId);
@@ -173,38 +225,33 @@ class DiplomaIT extends SecuredFacadeIT {
   }
 
   @Test
-  void get_export_returns_el_xlsx_matching_golden_file() throws Exception {
+  void get_export_returns_el_xlsx_uploaded_to_s3_matching_golden_file() throws Exception {
     Fixture fixture = seed();
     generate(fixture, TrackCode.EL);
     generate(fixture, TrackCode.TN);
 
-    ResponseEntity<byte[]> response =
-        restTemplate.getForEntity(
-            EXPORT_URL.formatted(fixture.cohortId) + "?track=EL", byte[].class);
+    DiplomaExportResponse response = export(fixture, "?track=EL");
 
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    HttpHeaders headers = response.getHeaders();
-    assertEquals(
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        Objects.requireNonNull(headers.getContentType()).toString());
+    assertNotNull(response);
+    assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
+    assertTrue(response.getFileName().startsWith("diplomas/" + fixture.cohortId + "/"));
     assertTrue(
-        Objects.requireNonNull(headers.getFirst(HttpHeaders.CONTENT_DISPOSITION))
-            .contains("dipl%C3%B4m%C3%A9s"));
-    assertArrayEquals(seeder.goldenFile("xlsx/diplomas_el.xlsx"), response.getBody());
+        response.getFileName().endsWith("dipl%C3%B4m%C3%A9s_Mpamakilay_EL.xlsx")
+            || response.getFileName().endsWith("diplômés_Mpamakilay_EL.xlsx"));
+    assertArrayEquals(seeder.goldenFile("xlsx/diplomas_el.xlsx"), uploadedContent());
   }
 
   @Test
-  void get_export_returns_tn_xlsx_matching_golden_file() throws Exception {
+  void get_export_returns_tn_xlsx_uploaded_to_s3_matching_golden_file() throws Exception {
     Fixture fixture = seed();
     generate(fixture, TrackCode.EL);
     generate(fixture, TrackCode.TN);
 
-    ResponseEntity<byte[]> response =
-        restTemplate.getForEntity(
-            EXPORT_URL.formatted(fixture.cohortId) + "?track=TN", byte[].class);
+    DiplomaExportResponse response = export(fixture, "?track=TN");
 
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertArrayEquals(seeder.goldenFile("xlsx/diplomas_tn.xlsx"), response.getBody());
+    assertNotNull(response);
+    assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
+    assertArrayEquals(seeder.goldenFile("xlsx/diplomas_tn.xlsx"), uploadedContent());
   }
 
   @Test
@@ -213,11 +260,12 @@ class DiplomaIT extends SecuredFacadeIT {
     generate(fixture, TrackCode.EL);
     generate(fixture, TrackCode.TN);
 
-    ResponseEntity<byte[]> response =
-        restTemplate.getForEntity(EXPORT_URL.formatted(fixture.cohortId), byte[].class);
+    DiplomaExportResponse response = export(fixture, "");
 
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertArrayEquals(seeder.goldenFile("xlsx/diplomas_all.xlsx"), response.getBody());
+    assertNotNull(response);
+    assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
+    assertTrue(response.getFileName().startsWith("diplomas/" + fixture.cohortId + "/"));
+    assertArrayEquals(seeder.goldenFile("xlsx/diplomas_all.xlsx"), uploadedContent());
   }
 
   @Test
@@ -226,11 +274,11 @@ class DiplomaIT extends SecuredFacadeIT {
     generate(fixture, TrackCode.EL);
     generate(fixture, TrackCode.TN);
 
-    ResponseEntity<byte[]> response =
-        restTemplate.getForEntity(EXPORT_URL.formatted(fixture.cohortId) + "?track=", byte[].class);
+    DiplomaExportResponse response = export(fixture, "?track=");
 
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertArrayEquals(seeder.goldenFile("xlsx/diplomas_all.xlsx"), response.getBody());
+    assertNotNull(response);
+    assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
+    assertArrayEquals(seeder.goldenFile("xlsx/diplomas_all.xlsx"), uploadedContent());
   }
 
   @Test
@@ -240,6 +288,20 @@ class DiplomaIT extends SecuredFacadeIT {
             GENERATE_URL.formatted(UUID.randomUUID()) + "?track=EL", null, String.class);
 
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+  }
+
+  private DiplomaExportResponse export(Fixture fixture, String query) {
+    ResponseEntity<DiplomaExportResponse> response =
+        restTemplate.getForEntity(
+            EXPORT_URL.formatted(fixture.cohortId) + query, DiplomaExportResponse.class);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    return response.getBody();
+  }
+
+  private byte[] uploadedContent() throws Exception {
+    ArgumentCaptor<File> fileCaptor = ArgumentCaptor.forClass(File.class);
+    verify(bucketComponent).upload(fileCaptor.capture(), any());
+    return Files.readAllBytes(fileCaptor.getValue().toPath());
   }
 
   private void assertDiploma(
@@ -270,11 +332,10 @@ class DiplomaIT extends SecuredFacadeIT {
   }
 
   private DiplomaResponse[] generate(Fixture fixture, TrackCode track) {
+    String query = track == null ? "" : "?track=" + track;
     ResponseEntity<DiplomaResponse[]> response =
         restTemplate.postForEntity(
-            GENERATE_URL.formatted(fixture.cohortId) + "?track=" + track,
-            null,
-            DiplomaResponse[].class);
+            GENERATE_URL.formatted(fixture.cohortId) + query, null, DiplomaResponse[].class);
     assertEquals(HttpStatus.OK, response.getStatusCode());
     return response.getBody();
   }

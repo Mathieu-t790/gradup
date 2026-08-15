@@ -32,7 +32,7 @@ public interface DiplomaMapper {
         .firstName(user.getFirstName())
         .reference(user.getReference())
         .cohortLabel(entity.getCohort().getLabel())
-        .currentTrackCode(toRestTrackCode(entity.getTrack().getCode()));
+        .currentTrackCode(toRestTrackCode(trackCode(entity)));
   }
 
   default CohortSummary toCohortSummary(JDiploma entity) {
@@ -40,9 +40,16 @@ public interface DiplomaMapper {
   }
 
   default TrackSummary toTrackSummary(JDiploma entity) {
+    if (entity.getTrack() == null) {
+      return null;
+    }
     return new TrackSummary()
         .id(entity.getTrack().getId())
         .code(toRestTrackCode(entity.getTrack().getCode()));
+  }
+
+  default TrackCode trackCode(JDiploma entity) {
+    return entity.getTrack() == null ? null : entity.getTrack().getCode();
   }
 
   default Double toDouble(BigDecimal value) {

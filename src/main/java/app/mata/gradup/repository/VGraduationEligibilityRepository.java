@@ -15,4 +15,6 @@ public interface VGraduationEligibilityRepository
 
   List<JVGraduationEligibility> findByCohortIdAndTrackIdAndIsEligibleTrue(
       UUID cohortId, UUID trackId);
+
+  List<JVGraduationEligibility> findByCohortIdAndIsEligibleTrue(UUID cohortId);
 }
