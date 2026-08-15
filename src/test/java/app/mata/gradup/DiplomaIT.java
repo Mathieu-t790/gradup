@@ -151,8 +151,7 @@ class DiplomaIT extends SecuredFacadeIT {
   private void assertAllGraduates(Fixture fixture, String trackQuery) throws Exception {
     String query = trackQuery == null ? "" : trackQuery;
     String base = BASE_URL.formatted(fixture.cohortId);
-    String url =
-        query.isEmpty() ? base + "?page=0&size=50" : base + query + "&page=0&size=50";
+    String url = query.isEmpty() ? base + "?page=0&size=50" : base + query + "&page=0&size=50";
     ResponseEntity<DiplomaPageResponse> all =
         restTemplate.getForEntity(url, DiplomaPageResponse.class);
 
@@ -228,8 +227,7 @@ class DiplomaIT extends SecuredFacadeIT {
     generate(fixture, TrackCode.TN);
 
     ResponseEntity<byte[]> response =
-        restTemplate.getForEntity(
-            EXPORT_URL.formatted(fixture.cohortId) + "?track=", byte[].class);
+        restTemplate.getForEntity(EXPORT_URL.formatted(fixture.cohortId) + "?track=", byte[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertArrayEquals(seeder.goldenFile("xlsx/diplomas_all.xlsx"), response.getBody());
