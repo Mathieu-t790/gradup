@@ -1,8 +1,10 @@
 package app.mata.gradup.service;
 
+import app.mata.gradup.endpoint.rest.model.DiplomaExportResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaPageResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaResponse;
 import app.mata.gradup.exception.NotFoundException;
+import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mapper.DiplomaMapper;
 import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.DiplomaRepository;
@@ -14,10 +16,13 @@ import app.mata.gradup.repository.model.JDiploma;
 import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JTrack;
 import app.mata.gradup.repository.model.JVGraduationEligibility;
+import app.mata.gradup.service.utils.BucketExporter;
+import app.mata.gradup.service.utils.Pages;
+import app.mata.gradup.service.utils.Ranking;
+import app.mata.gradup.service.utils.Wording;
 import app.mata.gradup.service.utils.XlsxRenderer;
 import java.math.BigDecimal;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,7 +39,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class DiplomaService {
 
   private static final List<String> EXPORT_HEADERS =
-      List.of("Rang", "Référence", "Nom", "Prénom", "Moyenne");
+      List.of(
+          Wording.get("diploma.export.header.rank"),
+          Wording.get("diploma.export.header.reference"),
+          Wording.get("diploma.export.header.lastName"),
+          Wording.get("diploma.export.header.firstName"),
+          Wording.get("diploma.export.header.average"));
+
+  private static final String EXPORT_BUCKET_PREFIX = "diplomas";
 
   private final DiplomaRepository diplomaRepository;
   private final CohortRepository cohortRepository;
@@ -42,29 +54,99 @@ public class DiplomaService {
   private final StudentRepository studentRepository;
   private final VGraduationEligibilityRepository eligibilityRepository;
   private final DiplomaMapper diplomaMapper;
+  private final BucketComponent bucketComponent;
 
   @Transactional(readOnly = true)
   public DiplomaPageResponse listCohortDiplomas(
       UUID cohortId, app.mata.gradup.endpoint.rest.model.TrackCode trackCode, Pageable pageable) {
     cohort(cohortId);
-    JTrack track = trackCode == null ? null : track(trackCode);
+    if (trackCode == null) {
+      return promotionList(cohortId, pageable);
+    }
+    JTrack track = track(trackCode);
     Page<JDiploma> page =
-        track == null
-            ? diplomaRepository.findByCohortId(cohortId, pageable)
-            : diplomaRepository.findByCohortIdAndTrackId(cohortId, track.getId(), pageable);
-    return toPageResponse(page);
+        diplomaRepository.findByCohortIdAndTrackId(cohortId, track.getId(), pageable);
+    return toPageResponse(page.map(diplomaMapper::toRest));
   }
 
   @Transactional
   public List<DiplomaResponse> generateCohortDiplomas(
       UUID cohortId, app.mata.gradup.endpoint.rest.model.TrackCode trackCode) {
     JCohort cohort = cohort(cohortId);
-    JTrack track = track(trackCode);
+    if (trackCode == null) {
+      return generateForPromotion(cohort);
+    }
+    return generateForTrack(cohort, track(trackCode));
+  }
 
+  private List<DiplomaResponse> generateForTrack(JCohort cohort, JTrack track) {
+    return persistForTrack(
+            cohort,
+            track,
+            eligibilityRepository.findByCohortIdAndTrackIdAndIsEligibleTrue(
+                cohort.getId(), track.getId()))
+        .stream()
+        .sorted(byRankThenReference())
+        .map(diplomaMapper::toRest)
+        .toList();
+  }
+
+  private List<DiplomaResponse> generateForPromotion(JCohort cohort) {
+    UUID cohortId = cohort.getId();
     List<JVGraduationEligibility> eligible =
-        eligibilityRepository.findByCohortIdAndTrackIdAndIsEligibleTrue(cohortId, track.getId());
-    List<JVGraduationEligibility> ranked = rank(eligible);
-    Map<UUID, Integer> rankByStudent = ranksOf(ranked);
+        eligibilityRepository.findByCohortIdAndIsEligibleTrue(cohortId);
+    List<JVGraduationEligibility> promotionRanked =
+        Ranking.sortByAverageDesc(
+            eligible,
+            JVGraduationEligibility::getOverallAverage,
+            JVGraduationEligibility::getStudentId);
+    Map<UUID, Integer> promotionRanks =
+        Ranking.competitionRanks(
+            promotionRanked,
+            JVGraduationEligibility::getOverallAverage,
+            JVGraduationEligibility::getStudentId);
+
+    persistEachTrack(cohort, eligible);
+
+    Map<UUID, JDiploma> diplomasByStudent =
+        diplomaRepository.findByCohortId(cohortId).stream()
+            .collect(Collectors.toMap(d -> d.getStudent().getId(), Function.identity()));
+    return promotionRanked.stream()
+        .map(
+            eligibility ->
+                toPromotionRankedResponse(
+                    diplomasByStudent.get(eligibility.getStudentId()), promotionRanks))
+        .sorted(
+            Comparator.comparingInt(DiplomaResponse::getRank)
+                .thenComparing(diploma -> diploma.getStudent().getReference()))
+        .toList();
+  }
+
+  private void persistEachTrack(JCohort cohort, List<JVGraduationEligibility> eligible) {
+    Map<UUID, List<JVGraduationEligibility>> byTrack =
+        eligible.stream().collect(Collectors.groupingBy(JVGraduationEligibility::getTrackId));
+    for (Map.Entry<UUID, List<JVGraduationEligibility>> entry : byTrack.entrySet()) {
+      JTrack track =
+          trackRepository
+              .findById(entry.getKey())
+              .orElseThrow(() -> new NotFoundException("Track not found: " + entry.getKey()));
+      persistForTrack(cohort, track, entry.getValue());
+    }
+  }
+
+  private List<JDiploma> persistForTrack(
+      JCohort cohort, JTrack track, List<JVGraduationEligibility> eligible) {
+    UUID cohortId = cohort.getId();
+    List<JVGraduationEligibility> ranked =
+        Ranking.sortByAverageDesc(
+            eligible,
+            JVGraduationEligibility::getOverallAverage,
+            JVGraduationEligibility::getStudentId);
+    Map<UUID, Integer> rankByStudent =
+        Ranking.competitionRanks(
+            ranked,
+            JVGraduationEligibility::getOverallAverage,
+            JVGraduationEligibility::getStudentId);
 
     Map<UUID, JDiploma> existingByStudent =
         diplomaRepository.findByCohortIdAndTrackId(cohortId, track.getId()).stream()
@@ -103,39 +185,76 @@ public class DiplomaService {
           }
         });
 
-    return diplomaRepository.findByCohortIdAndTrackId(cohortId, track.getId()).stream()
-        .sorted(byRankThenReference())
-        .map(diplomaMapper::toRest)
-        .toList();
+    return diplomaRepository.findByCohortIdAndTrackId(cohortId, track.getId());
+  }
+
+  private DiplomaPageResponse promotionList(UUID cohortId, Pageable pageable) {
+    List<JDiploma> diplomas = diplomaRepository.findByCohortId(cohortId);
+    Map<UUID, Integer> promotionRanks =
+        Ranking.competitionRanks(
+            Ranking.sortByAverageDesc(
+                diplomas, JDiploma::getOverallAverage, diploma -> diploma.getStudent().getId()),
+            JDiploma::getOverallAverage,
+            diploma -> diploma.getStudent().getId());
+    List<DiplomaResponse> ordered =
+        diplomas.stream()
+            .sorted(byPromotionRankThenReference(promotionRanks))
+            .map(diploma -> toPromotionRankedResponse(diploma, promotionRanks))
+            .toList();
+    return toPageResponse(Pages.subPage(ordered, pageable));
   }
 
   @Transactional(readOnly = true)
-  public ExportResult exportCohortDiplomas(
+  public DiplomaExportResponse exportCohortDiplomas(
       UUID cohortId, app.mata.gradup.endpoint.rest.model.TrackCode trackCode) {
     JCohort cohort = cohort(cohortId);
-    JTrack track = trackCode == null ? null : track(trackCode);
     List<JDiploma> diplomas =
-        track == null
+        trackCode == null
             ? diplomaRepository.findByCohortId(cohortId)
-            : diplomaRepository.findByCohortIdAndTrackId(cohortId, track.getId());
-    List<List<String>> rows =
-        diplomas.stream()
-            .sorted(byRankThenReference())
-            .map(
-                diploma ->
-                    List.of(
-                        String.valueOf(diploma.getRank()),
-                        diploma.getStudent().getUser().getReference(),
-                        diploma.getStudent().getUser().getLastName(),
-                        diploma.getStudent().getUser().getFirstName(),
-                        formattedAverage(diploma.getOverallAverage())))
-            .toList();
-    byte[] content = XlsxRenderer.render("Diplômes", EXPORT_HEADERS, rows);
+            : diplomaRepository.findByCohortIdAndTrackId(cohortId, track(trackCode).getId());
+    List<List<String>> rows = exportRows(trackCode == null, diplomas);
+    byte[] content = XlsxRenderer.render(Wording.get("diploma.export.sheet"), EXPORT_HEADERS, rows);
     String filename =
         trackCode == null
-            ? "diplômés_" + cohort.getLabel() + ".xlsx"
-            : "diplômés_" + cohort.getLabel() + "_" + trackCode + ".xlsx";
-    return new ExportResult(content, filename);
+            ? Wording.get("diploma.export.filename.prefix") + cohort.getLabel() + ".xlsx"
+            : Wording.get("diploma.export.filename.prefix")
+                + cohort.getLabel()
+                + "_"
+                + trackCode
+                + ".xlsx";
+    String bucketKey = EXPORT_BUCKET_PREFIX + "/" + cohortId + "/" + filename;
+    String downloadUrl = BucketExporter.uploadAndPresign(bucketComponent, content, bucketKey);
+    return new DiplomaExportResponse().fileName(bucketKey).downloadUrl(downloadUrl);
+  }
+
+  private List<List<String>> exportRows(boolean promotion, List<JDiploma> diplomas) {
+    if (!promotion) {
+      return diplomas.stream()
+          .sorted(byRankThenReference())
+          .map(diploma -> row(String.valueOf(diploma.getRank()), diploma))
+          .toList();
+    }
+    Map<UUID, Integer> promotionRanks =
+        Ranking.competitionRanks(
+            Ranking.sortByAverageDesc(
+                diplomas, JDiploma::getOverallAverage, diploma -> diploma.getStudent().getId()),
+            JDiploma::getOverallAverage,
+            diploma -> diploma.getStudent().getId());
+    return diplomas.stream()
+        .sorted(byPromotionRankThenReference(promotionRanks))
+        .map(
+            diploma ->
+                row(String.valueOf(promotionRanks.get(diploma.getStudent().getId())), diploma))
+        .toList();
+  }
+
+  private static List<String> row(String rank, JDiploma diploma) {
+    return List.of(
+        rank,
+        diploma.getStudent().getUser().getReference(),
+        diploma.getStudent().getUser().getLastName(),
+        diploma.getStudent().getUser().getFirstName(),
+        formattedAverage(diploma.getOverallAverage()));
   }
 
   private JCohort cohort(UUID cohortId) {
@@ -152,7 +271,7 @@ public class DiplomaService {
         .orElseThrow(() -> new NotFoundException("Track not found: " + trackCode));
   }
 
-  private DiplomaPageResponse toPageResponse(Page<JDiploma> page) {
+  private DiplomaPageResponse toPageResponse(Page<DiplomaResponse> page) {
     return new DiplomaPageResponse()
         .page(page.getNumber())
         .size(page.getSize())
@@ -160,41 +279,7 @@ public class DiplomaService {
         .totalPages(page.getTotalPages())
         .first(page.isFirst())
         .last(page.isLast())
-        .content(page.getContent().stream().map(diplomaMapper::toRest).toList());
-  }
-
-  /** Competition ranking: equal averages share a rank, the next rank skips (1, 2, 2, 4). */
-  private static List<JVGraduationEligibility> rank(List<JVGraduationEligibility> eligible) {
-    return eligible.stream()
-        .sorted(
-            Comparator.comparing(
-                    JVGraduationEligibility::getOverallAverage,
-                    Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(eligibility -> eligibility.getStudentId().toString()))
-        .toList();
-  }
-
-  private static Map<UUID, Integer> ranksOf(List<JVGraduationEligibility> ranked) {
-    Map<UUID, Integer> ranks = new HashMap<>();
-    int rank = 0;
-    BigDecimal previousAverage = null;
-    for (int i = 0; i < ranked.size(); i++) {
-      JVGraduationEligibility eligibility = ranked.get(i);
-      if (previousAverage == null
-          || !equalsAverage(previousAverage, eligibility.getOverallAverage())) {
-        rank = i + 1;
-      }
-      ranks.put(eligibility.getStudentId(), rank);
-      previousAverage = eligibility.getOverallAverage();
-    }
-    return ranks;
-  }
-
-  private static boolean equalsAverage(BigDecimal a, BigDecimal b) {
-    if (a == null && b == null) {
-      return true;
-    }
-    return a != null && b != null && a.compareTo(b) == 0;
+        .content(page.getContent());
   }
 
   private static Comparator<JDiploma> byRankThenReference() {
@@ -202,9 +287,19 @@ public class DiplomaService {
         .thenComparing(diploma -> diploma.getStudent().getUser().getReference());
   }
 
+  private static Comparator<JDiploma> byPromotionRankThenReference(
+      Map<UUID, Integer> promotionRanks) {
+    return Comparator.comparingInt(
+            (JDiploma diploma) -> promotionRanks.get(diploma.getStudent().getId()))
+        .thenComparing(diploma -> diploma.getStudent().getUser().getReference());
+  }
+
+  private DiplomaResponse toPromotionRankedResponse(
+      JDiploma diploma, Map<UUID, Integer> promotionRanks) {
+    return diplomaMapper.toRest(diploma).rank(promotionRanks.get(diploma.getStudent().getId()));
+  }
+
   private static String formattedAverage(BigDecimal average) {
     return average == null ? "" : average.toPlainString();
   }
-
-  public record ExportResult(byte[] content, String filename) {}
 }

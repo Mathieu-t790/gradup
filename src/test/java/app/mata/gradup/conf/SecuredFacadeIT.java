@@ -18,7 +18,6 @@ import org.springframework.util.LinkedMultiValueMap;
 public abstract class SecuredFacadeIT extends FacadeIT {
 
   protected static final String TEST_PASSWORD = "my-cute-password";
-  protected static final String TEST_EMAIL = "tafita@cu.te";
   protected static final String ADMIN_EMAIL = "admin@cu.te";
 
   @Autowired protected UserRepository userRepository;
@@ -60,6 +59,7 @@ public abstract class SecuredFacadeIT extends FacadeIT {
 
   protected static String csrfToken(TestRestTemplate restTemplate) {
     var loginPage = restTemplate.getForEntity("/login", String.class);
+    assert loginPage.getBody() != null;
     var matcher =
         Pattern.compile("name=\"_csrf\"[^>]*value=\"([^\"]+)\"").matcher(loginPage.getBody());
     return matcher.find() ? matcher.group(1) : null;
