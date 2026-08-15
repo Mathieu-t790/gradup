@@ -1,13 +1,16 @@
 package app.mata.gradup.service;
 
 import app.mata.gradup.endpoint.rest.model.CourseOfferingResponse;
+import app.mata.gradup.endpoint.rest.model.ExamResponse;
 import app.mata.gradup.exception.ConflictException;
 import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.mapper.CourseOfferingMapper;
 import app.mata.gradup.repository.CourseOfferingRepository;
+import app.mata.gradup.repository.ExamRepository;
 import app.mata.gradup.repository.TeacherAssignmentRepository;
 import app.mata.gradup.repository.TeacherRepository;
 import app.mata.gradup.repository.model.JTeacherAssignment;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,7 @@ public class CourseOfferingService {
   private final CourseOfferingRepository courseOfferingRepository;
   private final TeacherAssignmentRepository teacherAssignmentRepository;
   private final TeacherRepository teacherRepository;
+  private final ExamRepository examRepository;
   private final CourseOfferingMapper courseOfferingMapper;
 
   @Transactional(readOnly = true)
@@ -58,5 +62,15 @@ public class CourseOfferingService {
         .findById(teacherId)
         .orElseThrow(() -> new NotFoundException("Teacher not found"));
     teacherAssignmentRepository.deleteByOfferingIdAndTeacherId(offeringId, teacherId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<ExamResponse> listOfferingExams(UUID offeringId) {
+    courseOfferingRepository
+        .findById(offeringId)
+        .orElseThrow(() -> new NotFoundException("Course offering not found"));
+    return examRepository.findByOfferingId(offeringId).stream()
+        .map(courseOfferingMapper::toRest)
+        .toList();
   }
 }
