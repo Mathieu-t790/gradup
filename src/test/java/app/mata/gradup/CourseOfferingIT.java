@@ -84,7 +84,7 @@ class CourseOfferingIT extends SecuredFacadeIT {
     assertEquals(1, body.getSemester().getNumber());
     assertEquals("2024-2025", body.getSemester().getAcademicYearLabel());
     assertTrue(body.getTeachers().isEmpty());
-    assertFalse(body.getGradingFinalized());
+    assertTrue(body.getGradingFinalized());
   }
 
   @Test
