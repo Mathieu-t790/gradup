@@ -16,14 +16,26 @@ import app.mata.gradup.mail.Email;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
 import app.mata.gradup.repository.AcademicYearRepository;
+import app.mata.gradup.repository.AdminRepository;
 import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.CourseOfferingRepository;
 import app.mata.gradup.repository.CourseRepository;
+import app.mata.gradup.repository.DiplomaRepository;
+import app.mata.gradup.repository.ExamRepository;
+import app.mata.gradup.repository.GradeDisputeRepository;
+import app.mata.gradup.repository.GradeHistoryRepository;
+import app.mata.gradup.repository.GradeRepository;
 import app.mata.gradup.repository.GroupRepository;
+import app.mata.gradup.repository.SemesterCreditValidationRepository;
 import app.mata.gradup.repository.SemesterRepository;
+import app.mata.gradup.repository.StudentGroupHistoryRepository;
+import app.mata.gradup.repository.StudentRepository;
+import app.mata.gradup.repository.StudentTrackHistoryRepository;
 import app.mata.gradup.repository.TeacherAssignmentRepository;
 import app.mata.gradup.repository.TeacherRepository;
 import app.mata.gradup.repository.TrackRepository;
+import app.mata.gradup.repository.TranscriptDetailRepository;
+import app.mata.gradup.repository.TranscriptRepository;
 import app.mata.gradup.repository.UserRepository;
 import app.mata.gradup.repository.model.JAcademicYear;
 import app.mata.gradup.repository.model.JCohort;
@@ -62,6 +74,18 @@ class TeacherIT extends SecuredFacadeIT {
   @Autowired private SemesterRepository semesterRepository;
   @Autowired private CourseRepository courseRepository;
   @Autowired private CourseOfferingRepository courseOfferingRepository;
+  @Autowired private DiplomaRepository diplomaRepository;
+  @Autowired private ExamRepository examRepository;
+  @Autowired private GradeDisputeRepository gradeDisputeRepository;
+  @Autowired private GradeHistoryRepository gradeHistoryRepository;
+  @Autowired private GradeRepository gradeRepository;
+  @Autowired private SemesterCreditValidationRepository semesterCreditValidationRepository;
+  @Autowired private StudentGroupHistoryRepository studentGroupHistoryRepository;
+  @Autowired private StudentRepository studentRepository;
+  @Autowired private StudentTrackHistoryRepository studentTrackHistoryRepository;
+  @Autowired private TranscriptDetailRepository transcriptDetailRepository;
+  @Autowired private TranscriptRepository transcriptRepository;
+  @Autowired private AdminRepository adminRepository;
   @Autowired private PlatformTransactionManager transactionManager;
 
   @MockBean private Mailer mailer;
@@ -79,15 +103,27 @@ class TeacherIT extends SecuredFacadeIT {
   }
 
   private void cleanDatabase() {
+    gradeDisputeRepository.deleteAll();
+    gradeHistoryRepository.deleteAll();
+    gradeRepository.deleteAll();
+    examRepository.deleteAll();
+    transcriptDetailRepository.deleteAll();
+    transcriptRepository.deleteAll();
+    diplomaRepository.deleteAll();
+    semesterCreditValidationRepository.deleteAll();
+    studentGroupHistoryRepository.deleteAll();
+    studentTrackHistoryRepository.deleteAll();
     teacherAssignmentRepository.deleteAll();
+    studentRepository.deleteAll();
     courseOfferingRepository.deleteAll();
     courseRepository.deleteAll();
+    teacherRepository.deleteAll();
+    adminRepository.deleteAll();
     groupRepository.deleteAll();
     semesterRepository.deleteAll();
     academicYearRepository.deleteAll();
     cohortRepository.deleteAll();
     trackRepository.deleteAll();
-    teacherRepository.deleteAll();
     userRepository.deleteAll();
   }
 
