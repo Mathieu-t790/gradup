@@ -113,10 +113,7 @@ public class UpdateCourseIT extends CourseFacadeIT {
     var saved = saveCourse("Pro1", "Programmation", 4, 1, null);
 
     var response =
-        patch(
-            "/courses/" + saved.getId(),
-            new CourseUpdateRequest().credits(0),
-            Error.class);
+        patch("/courses/" + saved.getId(), new CourseUpdateRequest().credits(0), Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     assertEquals("BAD_REQUEST", response.getBody().getCode());

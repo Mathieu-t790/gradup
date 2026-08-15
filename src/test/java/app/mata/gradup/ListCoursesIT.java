@@ -48,8 +48,7 @@ public class ListCoursesIT extends CourseFacadeIT {
     saveCourse("Math1", "Mathematiques", 5, 2, trackTn);
 
     var response =
-        restTemplate.getForEntity(
-            "/courses?trackId=" + trackEl.getId(), CourseResponse[].class);
+        restTemplate.getForEntity("/courses?trackId=" + trackEl.getId(), CourseResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
@@ -66,9 +65,7 @@ public class ListCoursesIT extends CourseFacadeIT {
     saveCourse("Pro1", "Programmation", 4, 1, trackEl);
     saveCourse("Math1", "Mathematiques", 5, 2, null);
 
-    var response =
-        restTemplate.getForEntity(
-            "/courses?semesterNumber=2", CourseResponse[].class);
+    var response = restTemplate.getForEntity("/courses?semesterNumber=2", CourseResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
@@ -87,8 +84,7 @@ public class ListCoursesIT extends CourseFacadeIT {
 
     var response =
         restTemplate.getForEntity(
-            "/courses?trackId=" + trackTn.getId() + "&semesterNumber=2",
-            CourseResponse[].class);
+            "/courses?trackId=" + trackTn.getId() + "&semesterNumber=2", CourseResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
