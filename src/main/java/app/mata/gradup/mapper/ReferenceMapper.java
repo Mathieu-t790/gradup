@@ -24,4 +24,8 @@ public interface ReferenceMapper {
   default app.mata.gradup.endpoint.rest.model.TrackCode toRestTrackCode(TrackCode code) {
     return code == null ? null : app.mata.gradup.endpoint.rest.model.TrackCode.valueOf(code.name());
   }
+
+  default TrackCode toDomainTrackCode(app.mata.gradup.endpoint.rest.model.TrackCode code) {
+    return code == null ? null : TrackCode.valueOf(code.name());
+  }
 }

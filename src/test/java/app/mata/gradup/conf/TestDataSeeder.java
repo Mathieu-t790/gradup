@@ -97,6 +97,10 @@ public class TestDataSeeder {
     return trackRepository.save(JTrack.builder().code(code).label(label).build());
   }
 
+  public JTrack track(String code, String label) {
+    return track(TrackCode.valueOf(code), label);
+  }
+
   public JGroup group(String reference, JCohort cohort, JTrack track) {
     return groupRepository.save(
         JGroup.builder().reference(reference).cohort(cohort).track(track).build());
