@@ -1,6 +1,7 @@
 package app.mata.gradup.repository;
 
 import app.mata.gradup.repository.model.JTeacherAssignment;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,8 @@ public interface TeacherAssignmentRepository extends JpaRepository<JTeacherAssig
   List<JTeacherAssignment> findByTeacherId(UUID teacherId);
 
   List<JTeacherAssignment> findByOfferingId(UUID offeringId);
+
+  List<JTeacherAssignment> findByOfferingIdIn(Collection<UUID> offeringIds);
 
   boolean existsByTeacherIdAndOfferingId(UUID teacherId, UUID offeringId);
 
