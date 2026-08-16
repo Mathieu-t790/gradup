@@ -46,8 +46,8 @@ public class GroupIT extends SecuredFacadeIT {
   @Test
   void listGroups_returnsAllGroups() {
     var cohort = seeder.cohort("P14", 2024, 2027);
-    seeder.group(cohort, "K1");
-    seeder.group(cohort, "K2");
+    seeder.group("K1", cohort, null);
+    seeder.group("K2", cohort, null);
 
     var response = restTemplate.getForEntity("/groups", GroupResponse[].class);
 
@@ -61,9 +61,9 @@ public class GroupIT extends SecuredFacadeIT {
   void listGroups_filterByCohortId() {
     var firstCohort = seeder.cohort("P14", 2024, 2027);
     var secondCohort = seeder.cohort("P15", 2025, 2028);
-    seeder.group(firstCohort, "K1");
-    seeder.group(firstCohort, "K2");
-    seeder.group(secondCohort, "L1");
+    seeder.group("K1", firstCohort, null);
+    seeder.group("K2", firstCohort, null);
+    seeder.group("L1", secondCohort, null);
 
     var response =
         restTemplate.getForEntity("/groups?cohortId=" + firstCohort.getId(), GroupResponse[].class);
@@ -80,8 +80,8 @@ public class GroupIT extends SecuredFacadeIT {
   void listGroups_filterByTrackId() {
     var cohort = seeder.cohort("P14", 2024, 2027);
     var track = seeder.track(TrackCode.EL, "EL (4 years)");
-    seeder.group(cohort, "K1", track);
-    seeder.group(cohort, "K2");
+    seeder.group("K1", cohort, track);
+    seeder.group("K2", cohort, null);
 
     var response =
         restTemplate.getForEntity("/groups?trackId=" + track.getId(), GroupResponse[].class);
@@ -140,7 +140,7 @@ public class GroupIT extends SecuredFacadeIT {
   void createGroup_sameReferenceInDifferentCohort_returnsCreated() {
     var firstCohort = seeder.cohort("P14", 2024, 2027);
     var secondCohort = seeder.cohort("P15", 2025, 2028);
-    seeder.group(firstCohort, "K1");
+    seeder.group("K1", firstCohort, null);
 
     var response =
         restTemplate.postForEntity(
@@ -213,7 +213,7 @@ public class GroupIT extends SecuredFacadeIT {
   @Test
   void createGroup_duplicateReferenceInSameCohort_returnsConflict() {
     var cohort = seeder.cohort("P14", 2024, 2027);
-    seeder.group(cohort, "K1");
+    seeder.group("K1", cohort, null);
 
     var response =
         restTemplate.postForEntity(

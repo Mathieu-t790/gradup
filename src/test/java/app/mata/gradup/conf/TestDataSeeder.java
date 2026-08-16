@@ -1,6 +1,7 @@
 package app.mata.gradup.conf;
 
 import app.mata.gradup.model.Role;
+import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.AcademicYearRepository;
 import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.CourseOfferingRepository;
@@ -92,15 +93,11 @@ public class TestDataSeeder {
             .build());
   }
 
-  public JTrack track(app.mata.gradup.model.TrackCode code, String label) {
+  public JTrack track(TrackCode code, String label) {
     return trackRepository.save(JTrack.builder().code(code).label(label).build());
   }
 
-  public JGroup group(JCohort cohort, String reference) {
-    return group(cohort, reference, null);
-  }
-
-  public JGroup group(JCohort cohort, String reference, JTrack track) {
+  public JGroup group(String reference, JCohort cohort, JTrack track) {
     return groupRepository.save(
         JGroup.builder().reference(reference).cohort(cohort).track(track).build());
   }
