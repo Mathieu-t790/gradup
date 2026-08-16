@@ -196,6 +196,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/TrackResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   # ---------- Groups ----------
   /groups:
