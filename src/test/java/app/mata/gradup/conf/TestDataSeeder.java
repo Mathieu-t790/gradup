@@ -83,6 +83,28 @@ public class TestDataSeeder {
     userRepository.deleteAll();
   }
 
+  public JCohort cohort(String label, int entryYear, int expectedGraduationYear) {
+    return cohortRepository.save(
+        JCohort.builder()
+            .label(label)
+            .entryYear(entryYear)
+            .expectedGraduationYear(expectedGraduationYear)
+            .build());
+  }
+
+  public JTrack track(app.mata.gradup.model.TrackCode code, String label) {
+    return trackRepository.save(JTrack.builder().code(code).label(label).build());
+  }
+
+  public JGroup group(JCohort cohort, String reference) {
+    return group(cohort, reference, null);
+  }
+
+  public JGroup group(JCohort cohort, String reference, JTrack track) {
+    return groupRepository.save(
+        JGroup.builder().reference(reference).cohort(cohort).track(track).build());
+  }
+
   public JStudent student(
       String reference,
       String lastName,

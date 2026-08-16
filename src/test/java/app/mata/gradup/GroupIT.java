@@ -6,22 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
+import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.GroupCreateRequest;
 import app.mata.gradup.endpoint.rest.model.GroupResponse;
-import app.mata.gradup.repository.CohortRepository;
+import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.GroupRepository;
-import app.mata.gradup.repository.StudentGroupHistoryRepository;
-import app.mata.gradup.repository.StudentRepository;
-import app.mata.gradup.repository.StudentTrackHistoryRepository;
-import app.mata.gradup.repository.TrackRepository;
-import app.mata.gradup.repository.UserRepository;
-import app.mata.gradup.repository.model.JCohort;
-import app.mata.gradup.repository.model.JGroup;
-import app.mata.gradup.repository.model.JTrack;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,34 +24,14 @@ import org.springframework.http.HttpStatus;
 public class GroupIT extends SecuredFacadeIT {
 
   @Autowired protected TestRestTemplate restTemplate;
-  @Autowired private CohortRepository cohortRepository;
-  @Autowired private TrackRepository trackRepository;
+  @Autowired private TestDataSeeder seeder;
   @Autowired private GroupRepository groupRepository;
-  @Autowired private UserRepository userRepository;
-  @Autowired private StudentRepository studentRepository;
-  @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
-  @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
 
   @BeforeEach
   void setUp() {
     useCookieAwareClient(restTemplate);
-    cleanDatabase();
+    seeder.cleanDatabase();
     loginAsAdmin(restTemplate);
-  }
-
-  @AfterEach
-  void tearDown() {
-    cleanDatabase();
-  }
-
-  private void cleanDatabase() {
-    groupHistoryRepository.deleteAll();
-    trackHistoryRepository.deleteAll();
-    studentRepository.deleteAll();
-    groupRepository.deleteAll();
-    cohortRepository.deleteAll();
-    trackRepository.deleteAll();
-    userRepository.deleteAll();
   }
 
   @Test
@@ -66,34 +39,37 @@ public class GroupIT extends SecuredFacadeIT {
     var response = restTemplate.getForEntity("/groups", GroupResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals(0, List.of(response.getBody()).size());
   }
 
   @Test
   void listGroups_returnsAllGroups() {
-    var cohort = saveCohort();
-    saveGroup(cohort, "K1");
-    saveGroup(cohort, "K2");
+    var cohort = seeder.cohort("P14", 2024, 2027);
+    seeder.group(cohort, "K1");
+    seeder.group(cohort, "K2");
 
     var response = restTemplate.getForEntity("/groups", GroupResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var groups = List.of(response.getBody());
     assertEquals(2, groups.size());
   }
 
   @Test
   void listGroups_filterByCohortId() {
-    var firstCohort = saveCohort();
-    var secondCohort = saveCohort();
-    saveGroup(firstCohort, "K1");
-    saveGroup(firstCohort, "K2");
-    saveGroup(secondCohort, "L1");
+    var firstCohort = seeder.cohort("P14", 2024, 2027);
+    var secondCohort = seeder.cohort("P15", 2025, 2028);
+    seeder.group(firstCohort, "K1");
+    seeder.group(firstCohort, "K2");
+    seeder.group(secondCohort, "L1");
 
     var response =
         restTemplate.getForEntity("/groups?cohortId=" + firstCohort.getId(), GroupResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var groups = List.of(response.getBody());
     assertEquals(2, groups.size());
     assertTrue(
@@ -102,24 +78,25 @@ public class GroupIT extends SecuredFacadeIT {
 
   @Test
   void listGroups_filterByTrackId() {
-    var cohort = saveCohort();
-    var track = saveTrack("EL", "EL (4 years)");
-    saveGroup(cohort, "K1", track);
-    saveGroup(cohort, "K2");
+    var cohort = seeder.cohort("P14", 2024, 2027);
+    var track = seeder.track(TrackCode.EL, "EL (4 years)");
+    seeder.group(cohort, "K1", track);
+    seeder.group(cohort, "K2");
 
     var response =
         restTemplate.getForEntity("/groups?trackId=" + track.getId(), GroupResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var groups = List.of(response.getBody());
     assertEquals(1, groups.size());
-    assertEquals("K1", groups.get(0).getReference());
-    assertEquals(track.getId(), groups.get(0).getTrack().getId());
+    assertEquals("K1", groups.getFirst().getReference());
+    assertEquals(track.getId(), Objects.requireNonNull(groups.getFirst().getTrack()).getId());
   }
 
   @Test
   void createGroup_withoutTrack_returnsCreatedGroup() {
-    var cohort = saveCohort();
+    var cohort = seeder.cohort("P14", 2024, 2027);
 
     var response =
         restTemplate.postForEntity(
@@ -140,8 +117,8 @@ public class GroupIT extends SecuredFacadeIT {
 
   @Test
   void createGroup_withTrack_returnsCreatedGroup() {
-    var cohort = saveCohort();
-    var track = saveTrack("EL", "EL (4 years)");
+    var cohort = seeder.cohort("P14", 2024, 2027);
+    var track = seeder.track(TrackCode.EL, "EL (4 years)");
 
     var response =
         restTemplate.postForEntity(
@@ -155,15 +132,15 @@ public class GroupIT extends SecuredFacadeIT {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var group = response.getBody();
     assertNotNull(group);
-    assertEquals(track.getId(), group.getTrack().getId());
+    assertEquals(track.getId(), Objects.requireNonNull(group.getTrack()).getId());
     assertEquals("EL", group.getTrack().getCode().toString());
   }
 
   @Test
   void createGroup_sameReferenceInDifferentCohort_returnsCreated() {
-    var firstCohort = saveCohort();
-    var secondCohort = saveCohort();
-    saveGroup(firstCohort, "K1");
+    var firstCohort = seeder.cohort("P14", 2024, 2027);
+    var secondCohort = seeder.cohort("P15", 2025, 2028);
+    seeder.group(firstCohort, "K1");
 
     var response =
         restTemplate.postForEntity(
@@ -172,12 +149,13 @@ public class GroupIT extends SecuredFacadeIT {
             GroupResponse.class);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals(secondCohort.getId(), response.getBody().getCohort().getId());
   }
 
   @Test
   void createGroup_blankReference_returnsBadRequest() {
-    var cohort = saveCohort();
+    var cohort = seeder.cohort("P14", 2024, 2027);
 
     var response =
         restTemplate.postForEntity(
@@ -186,6 +164,7 @@ public class GroupIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("BAD_REQUEST", response.getBody().getCode());
   }
 
@@ -196,6 +175,7 @@ public class GroupIT extends SecuredFacadeIT {
             "/groups", new GroupCreateRequest().reference("K1"), Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("BAD_REQUEST", response.getBody().getCode());
   }
 
@@ -208,12 +188,13 @@ public class GroupIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("NOT_FOUND", response.getBody().getCode());
   }
 
   @Test
   void createGroup_unknownTrack_returnsNotFound() {
-    var cohort = saveCohort();
+    var cohort = seeder.cohort("P14", 2024, 2027);
 
     var response =
         restTemplate.postForEntity(
@@ -225,13 +206,14 @@ public class GroupIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("NOT_FOUND", response.getBody().getCode());
   }
 
   @Test
   void createGroup_duplicateReferenceInSameCohort_returnsConflict() {
-    var cohort = saveCohort();
-    saveGroup(cohort, "K1");
+    var cohort = seeder.cohort("P14", 2024, 2027);
+    seeder.group(cohort, "K1");
 
     var response =
         restTemplate.postForEntity(
@@ -240,25 +222,7 @@ public class GroupIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("CONFLICT", response.getBody().getCode());
-  }
-
-  private JCohort saveCohort() {
-    return cohortRepository.save(
-        JCohort.builder().label("P14").entryYear(2024).expectedGraduationYear(2027).build());
-  }
-
-  private JTrack saveTrack(String code, String label) {
-    return trackRepository.save(
-        JTrack.builder().code(app.mata.gradup.model.TrackCode.valueOf(code)).label(label).build());
-  }
-
-  private JGroup saveGroup(JCohort cohort, String reference) {
-    return saveGroup(cohort, reference, null);
-  }
-
-  private JGroup saveGroup(JCohort cohort, String reference, JTrack track) {
-    return groupRepository.save(
-        JGroup.builder().reference(reference).cohort(cohort).track(track).build());
   }
 }

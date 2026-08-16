@@ -28,15 +28,17 @@ public class GroupService {
 
   @Transactional(readOnly = true)
   public List<GroupResponse> listGroups(UUID cohortId, UUID trackId) {
-    return groupRepository.findAll().stream()
-        .filter(group -> cohortId == null || group.getCohort().getId().equals(cohortId))
-        .filter(
-            group ->
-                trackId == null
-                    || (group.getTrack() != null && group.getTrack().getId().equals(trackId)))
-        .map(groupMapper::toDomain)
-        .map(groupMapper::toRest)
-        .toList();
+    var groups =
+        cohortId != null
+            ? groupRepository.findByCohortId(cohortId)
+            : trackId != null ? groupRepository.findByTrackId(trackId) : groupRepository.findAll();
+    if (cohortId != null && trackId != null) {
+      groups =
+          groups.stream()
+              .filter(group -> group.getTrack() != null && group.getTrack().getId().equals(trackId))
+              .toList();
+    }
+    return groups.stream().map(groupMapper::toDomain).map(groupMapper::toRest).toList();
   }
 
   @Transactional
@@ -52,19 +54,16 @@ public class GroupService {
     var cohort =
         cohortRepository
             .findById(cohortId)
-            .orElseThrow(() -> new NotFoundException("Cohort not found"));
+            .orElseThrow(() -> new NotFoundException("Cohort not found: " + cohortId));
     var trackId = request.getTrackId();
     JTrack track = null;
     if (trackId != null) {
       track =
           trackRepository
               .findById(trackId)
-              .orElseThrow(() -> new NotFoundException("Track not found"));
+              .orElseThrow(() -> new NotFoundException("Track not found: " + trackId));
     }
-    boolean duplicate =
-        groupRepository.findByCohortId(cohortId).stream()
-            .anyMatch(existing -> existing.getReference().equals(reference));
-    if (duplicate) {
+    if (groupRepository.existsByCohortIdAndReference(cohortId, reference)) {
       throw new ConflictException(
           "A group with reference " + reference + " already exists in this cohort");
     }
