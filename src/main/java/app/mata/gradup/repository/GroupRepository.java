@@ -12,4 +12,6 @@ public interface GroupRepository extends JpaRepository<JGroup, UUID> {
   List<JGroup> findByCohortId(UUID cohortId);
 
   List<JGroup> findByTrackId(UUID trackId);
+
+  boolean existsByCohortIdAndReference(UUID cohortId, String reference);
 }

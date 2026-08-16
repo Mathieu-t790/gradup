@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
+import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.StudentCreateRequest;
 import app.mata.gradup.endpoint.rest.model.StudentGroupHistoryResponse;
@@ -17,6 +18,7 @@ import app.mata.gradup.endpoint.rest.model.StudentUpdateRequest;
 import app.mata.gradup.mail.Email;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
+import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.GroupRepository;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
@@ -56,6 +58,7 @@ public class StudentIT extends SecuredFacadeIT {
   @MockBean private Mailer mailer;
 
   @Autowired private TestRestTemplate restTemplate;
+  @Autowired private TestDataSeeder seeder;
   @Autowired private CohortRepository cohortRepository;
   @Autowired private TrackRepository trackRepository;
   @Autowired private GroupRepository groupRepository;
@@ -68,18 +71,8 @@ public class StudentIT extends SecuredFacadeIT {
   @BeforeEach
   void setUp() {
     useCookieAwareClient(restTemplate);
-    cleanDatabase();
+    seeder.cleanDatabase();
     loginAsAdmin(restTemplate);
-  }
-
-  private void cleanDatabase() {
-    groupHistoryRepository.deleteAll();
-    trackHistoryRepository.deleteAll();
-    studentRepository.deleteAll();
-    groupRepository.deleteAll();
-    cohortRepository.deleteAll();
-    trackRepository.deleteAll();
-    userRepository.deleteAll();
   }
 
   @Test
@@ -194,7 +187,7 @@ public class StudentIT extends SecuredFacadeIT {
 
   @Test
   void createStudent_groupOutsideCohort_returnsUnprocessable() {
-    var otherCohort = saveCohort("Tohindia", 2022, 2025);
+    var otherCohort = seeder.cohort("Tohindia", 2022, 2025);
     var groupInOtherCohort = saveGroup(otherCohort, "K1");
 
     var response =
@@ -318,8 +311,8 @@ public class StudentIT extends SecuredFacadeIT {
   @Test
   void listStudentTrackHistory_returnsChronologicalAssignments() {
     var cohort = saveCohort();
-    var trackEl = saveTrack("EL", "Electronique");
-    var trackTn = saveTrack("TN", "Telecom");
+    var trackEl = seeder.track(TrackCode.EL, "Electronique");
+    var trackTn = seeder.track(TrackCode.TN, "Telecom");
     var student = saveStudent("tafita@cu.te", cohort);
     saveTrackHistory(student, trackEl, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 1));
     saveTrackHistory(student, trackTn, LocalDate.of(2025, 6, 2), null);
@@ -338,25 +331,11 @@ public class StudentIT extends SecuredFacadeIT {
   }
 
   private JCohort saveCohort() {
-    return saveCohort("Mpamakilay", 2021, 2024);
-  }
-
-  private JCohort saveCohort(String label, int entryYear, int expectedGraduationYear) {
-    return cohortRepository.save(
-        JCohort.builder()
-            .label(label)
-            .entryYear(entryYear)
-            .expectedGraduationYear(expectedGraduationYear)
-            .build());
-  }
-
-  private JTrack saveTrack(String code, String label) {
-    return trackRepository.save(
-        JTrack.builder().code(app.mata.gradup.model.TrackCode.valueOf(code)).label(label).build());
+    return seeder.cohort("Mpamakilay", 2021, 2024);
   }
 
   private JGroup saveGroup(JCohort cohort, String reference) {
-    return groupRepository.save(JGroup.builder().reference(reference).cohort(cohort).build());
+    return seeder.group(reference, cohort, null);
   }
 
   private JStudent saveStudent(String email, JCohort cohort) {

@@ -1,31 +1,27 @@
 package app.mata.gradup;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
+import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.event.EventProducer;
 import app.mata.gradup.endpoint.event.model.TranscriptGenerated;
+import app.mata.gradup.endpoint.rest.model.TranscriptResponse;
+import app.mata.gradup.endpoint.rest.model.TranscriptType;
 import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
 import app.mata.gradup.model.TrackCode;
-import app.mata.gradup.repository.AcademicYearRepository;
-import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.CourseOfferingRepository;
 import app.mata.gradup.repository.CourseRepository;
 import app.mata.gradup.repository.ExamRepository;
 import app.mata.gradup.repository.GradeRepository;
-import app.mata.gradup.repository.GroupRepository;
-import app.mata.gradup.repository.SemesterRepository;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentRepository;
-import app.mata.gradup.repository.TrackRepository;
 import app.mata.gradup.repository.TranscriptDetailRepository;
 import app.mata.gradup.repository.TranscriptRepository;
 import app.mata.gradup.repository.UserRepository;
@@ -42,8 +38,6 @@ import app.mata.gradup.repository.model.JStudentGroupHistory;
 import app.mata.gradup.repository.model.JTrack;
 import app.mata.gradup.repository.model.JTranscriptDetail;
 import app.mata.gradup.repository.model.JUser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
@@ -73,15 +67,10 @@ class TranscriptIT extends SecuredFacadeIT {
   @MockBean private Mailer mailer;
 
   @Autowired private TestRestTemplate restTemplate;
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private TestDataSeeder seeder;
 
   @Autowired private UserRepository userRepository;
-  @Autowired private CohortRepository cohortRepository;
   @Autowired private StudentRepository studentRepository;
-  @Autowired private TrackRepository trackRepository;
-  @Autowired private GroupRepository groupRepository;
-  @Autowired private AcademicYearRepository academicYearRepository;
-  @Autowired private SemesterRepository semesterRepository;
   @Autowired private StudentGroupHistoryRepository studentGroupHistoryRepository;
   @Autowired private CourseRepository courseRepository;
   @Autowired private CourseOfferingRepository courseOfferingRepository;
@@ -95,34 +84,17 @@ class TranscriptIT extends SecuredFacadeIT {
   void setUp() throws Exception {
     reset(bucketComponent, eventProducer, mailer);
     useCookieAwareClient(restTemplate);
-    cleanDatabase();
+    seeder.cleanDatabase();
     loginAsAdmin(restTemplate);
     when(bucketComponent.presign(any(), any()))
         .thenReturn(URI.create("http://localhost/download.pdf").toURL());
   }
 
-  private void cleanDatabase() {
-    transcriptDetailRepository.deleteAll();
-    transcriptRepository.deleteAll();
-    gradeRepository.deleteAll();
-    examRepository.deleteAll();
-    courseOfferingRepository.deleteAll();
-    courseRepository.deleteAll();
-    studentGroupHistoryRepository.deleteAll();
-    semesterRepository.deleteAll();
-    groupRepository.deleteAll();
-    academicYearRepository.deleteAll();
-    studentRepository.deleteAll();
-    trackRepository.deleteAll();
-    cohortRepository.deleteAll();
-    userRepository.deleteAll();
-  }
-
   @Test
-  void post_provisional_generates_upload_and_dispatches_event() throws Exception {
+  void post_provisional_generates_upload_and_dispatches_event() {
     Fixture fixture = seed(true);
 
-    JsonNode json =
+    TranscriptResponse json =
         post(
             fixture.studentId,
             """
@@ -130,11 +102,11 @@ class TranscriptIT extends SecuredFacadeIT {
             """
                 .formatted(fixture.semesterId));
 
-    UUID transcriptId = UUID.fromString(json.get("id").asText());
-    assertEquals("PROVISIONAL", json.get("type").asText());
-    assertTrue(json.get("downloadUrl").asText().startsWith("http://localhost"));
-    assertFalse(json.hasNonNull("overallAverage"));
-    assertFalse(json.hasNonNull("creditsEarned"));
+    UUID transcriptId = json.getId();
+    assertEquals(TranscriptType.PROVISIONAL, json.getType());
+    assertTrue(json.getDownloadUrl().startsWith("http://localhost"));
+    assertNull(json.getOverallAverage());
+    assertNull(json.getCreditsEarned());
 
     String storageKey = uploadedKey(fixture.studentId, transcriptId);
     assertEquals("transcripts/" + fixture.studentId + "/" + transcriptId + ".pdf", storageKey);
@@ -155,10 +127,10 @@ class TranscriptIT extends SecuredFacadeIT {
   }
 
   @Test
-  void post_full_computes_overall_average_and_credits() throws Exception {
+  void post_full_computes_overall_average_and_credits() {
     Fixture fixture = seed(true);
 
-    JsonNode json =
+    TranscriptResponse json =
         post(
             fixture.studentId,
             """
@@ -166,16 +138,18 @@ class TranscriptIT extends SecuredFacadeIT {
             """
                 .formatted(fixture.academicYearId));
 
-    assertEquals("FULL", json.get("type").asText());
+    assertEquals(TranscriptType.FULL, json.getType());
     assertEquals(
-        0, new BigDecimal("12.50").compareTo(new BigDecimal(json.get("overallAverage").asText())));
-    assertEquals(6, json.get("creditsEarned").asInt());
+        0,
+        new BigDecimal("12.50")
+            .compareTo(BigDecimal.valueOf(json.getOverallAverage().doubleValue())));
+    assertEquals(6, json.getCreditsEarned());
   }
 
   @Test
-  void get_lists_generated_transcripts() throws Exception {
+  void get_lists_generated_transcripts() {
     Fixture fixture = seed(false);
-    JsonNode created =
+    TranscriptResponse created =
         post(
             fixture.studentId,
             """
@@ -183,14 +157,15 @@ class TranscriptIT extends SecuredFacadeIT {
             """
                 .formatted(fixture.semesterId));
 
-    ResponseEntity<String> response =
-        restTemplate.getForEntity(BASE_URL.formatted(fixture.studentId), String.class);
-    JsonNode list = objectMapper.readTree(response.getBody());
+    ResponseEntity<TranscriptResponse[]> response =
+        restTemplate.getForEntity(
+            BASE_URL.formatted(fixture.studentId), TranscriptResponse[].class);
+    TranscriptResponse[] list = response.getBody();
 
     assertEquals(200, response.getStatusCode().value());
-    assertEquals(1, list.size());
-    assertEquals(created.get("id").asText(), list.get(0).get("id").asText());
-    assertFalse(list.get(0).get("downloadUrl").asText().isBlank());
+    assertTrue(list != null && list.length == 1);
+    assertEquals(created.getId(), list[0].getId());
+    assertFalse(list[0].getDownloadUrl().isBlank());
   }
 
   @Test
@@ -224,10 +199,16 @@ class TranscriptIT extends SecuredFacadeIT {
     assertTrue(response.getBody().contains("NOT_FOUND"));
   }
 
-  private JsonNode post(UUID studentId, String body) throws Exception {
-    ResponseEntity<String> response = rawPost(studentId, body);
+  private TranscriptResponse post(UUID studentId, String body) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    ResponseEntity<TranscriptResponse> response =
+        restTemplate.postForEntity(
+            BASE_URL.formatted(studentId),
+            new HttpEntity<>(body, headers),
+            TranscriptResponse.class);
     assertEquals(200, response.getStatusCode().value());
-    return objectMapper.readTree(response.getBody());
+    return response.getBody();
   }
 
   private ResponseEntity<String> rawPost(UUID studentId, String body) {
@@ -264,37 +245,16 @@ class TranscriptIT extends SecuredFacadeIT {
                       .passwordHash("hashed")
                       .role(Role.STUDENT)
                       .build());
-          JCohort cohort =
-              cohortRepository.save(
-                  JCohort.builder()
-                      .label("Mpamakilay")
-                      .entryYear(2021)
-                      .expectedGraduationYear(2024)
-                      .build());
+          JCohort cohort = seeder.cohort("Mpamakilay", 2021, 2024);
           JStudent student =
               studentRepository.save(JStudent.builder().user(user).cohort(cohort).build());
 
-          JTrack track =
-              trackRepository.save(
-                  JTrack.builder().code(TrackCode.EL).label("Ecosysteme Logiciel").build());
-          JGroup group =
-              groupRepository.save(
-                  JGroup.builder().reference("k1").cohort(cohort).track(track).build());
+          JTrack track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+          JGroup group = seeder.group("k1", cohort, null);
           JAcademicYear year =
-              academicYearRepository.save(
-                  JAcademicYear.builder()
-                      .label("2025-2026")
-                      .startDate(LocalDate.of(2025, 9, 1))
-                      .endDate(LocalDate.of(2026, 7, 31))
-                      .build());
+              seeder.academicYear("2025-2026", LocalDate.of(2025, 9, 1), LocalDate.of(2026, 7, 31));
           JSemester semester =
-              semesterRepository.save(
-                  JSemester.builder()
-                      .number(1)
-                      .academicYear(year)
-                      .startDate(LocalDate.of(2025, 9, 1))
-                      .endDate(LocalDate.of(2026, 1, 31))
-                      .build());
+              seeder.semester(1, year, LocalDate.of(2025, 9, 1), LocalDate.of(2026, 1, 31));
           studentGroupHistoryRepository.save(
               JStudentGroupHistory.builder()
                   .student(student)

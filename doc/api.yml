@@ -114,14 +114,19 @@ paths:
       operationId: generateCohortDiplomas
       description: >
         Computes graduation eligibility (average >= 10 in every assigned
-        course) for the whole cohort and freezes rank + average into the
-        diploma table. Idempotent per student: re-running updates the
-        existing snapshot rather than duplicating it.
+        course) for the cohort and freezes rank + average into the diploma
+        table. Idempotent per student: re-running updates the existing
+        snapshot rather than duplicating it.
+        When `track` is provided, eligibility is restricted to that track and
+        the returned rank is relative to the track. Without a track, the whole
+        cohort is processed (each graduate keeping its own track) and the
+        returned rank is the promotion-wide rank, computed on the fly and not
+        stored.
       x-required-roles: [ADMIN]
       parameters:
         - name: track
           in: query
-          required: true
+          required: false
           schema: { $ref: '#/components/schemas/TrackCode' }
       responses:
         '200':
@@ -140,23 +145,24 @@ paths:
       tags: [diplomas]
       operationId: exportCohortDiplomas
       description: >
-        Downloads the graduate list (rank, last/first name, average) as
-        XLSX, one file per track. Direct download - no email involved
-        (see /students/{studentId}/transcripts for the emailed PDF flow).
+        Exports the graduate list (rank, last/first name, average) as XLSX.
+        The file is uploaded to S3 and a pre-signed download URL is returned.
+        Without a track, a single promotion-wide file is produced, ranked by
+        the promotion rank (recomputed on the fly); with a track, a single
+        file for that track ranked by the stored track rank. No email
+        involved (see /students/{studentId}/transcripts for the emailed PDF
+        flow).
       x-required-roles: [ADMIN]
       parameters:
         - name: track
           in: query
-          required: true
           schema: { $ref: '#/components/schemas/TrackCode' }
       responses:
         '200':
-          description: XLSX file
+          description: Pre-signed URL to download the generated XLSX file
           content:
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-              schema:
-                type: string
-                format: binary
+            application/json:
+              schema: { $ref: '#/components/schemas/DiplomaExportResponse' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   # ---------- Tracks ----------
@@ -231,6 +237,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GroupResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
 
   # ---------- Academic structure ----------
   /academic-years:
@@ -1728,4 +1737,15 @@ components:
               type: array
               items: { $ref: '#/components/schemas/DiplomaResponse' }
           required: [content]
+
+    DiplomaExportResponse:
+      type: object
+      description: >
+        Reference to an XLSX graduate list stored in S3. The file is
+        uploaded to the private bucket and `downloadUrl` is a pre-signed
+        URL valid for a short period.
+      properties:
+        fileName: { type: string, description: "Object key of the XLSX file in the bucket." }
+        downloadUrl: { type: string, description: "Pre-signed S3 URL to download the XLSX file." }
+      required: [fileName, downloadUrl]
 
