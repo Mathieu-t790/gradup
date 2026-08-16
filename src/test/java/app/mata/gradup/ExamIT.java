@@ -9,21 +9,13 @@ import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.ExamResponse;
 import app.mata.gradup.model.Role;
-import app.mata.gradup.repository.AcademicYearRepository;
-import app.mata.gradup.repository.CohortRepository;
+import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.ExamRepository;
-import app.mata.gradup.repository.GroupRepository;
-import app.mata.gradup.repository.SemesterRepository;
-import app.mata.gradup.repository.TrackRepository;
 import app.mata.gradup.repository.UserRepository;
-import app.mata.gradup.repository.model.JAcademicYear;
-import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JCourse;
 import app.mata.gradup.repository.model.JCourseOffering;
 import app.mata.gradup.repository.model.JExam;
 import app.mata.gradup.repository.model.JGroup;
-import app.mata.gradup.repository.model.JSemester;
-import app.mata.gradup.repository.model.JTrack;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -39,11 +31,6 @@ class ExamIT extends SecuredFacadeIT {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
 
-  @Autowired private AcademicYearRepository academicYearRepository;
-  @Autowired private SemesterRepository semesterRepository;
-  @Autowired private CohortRepository cohortRepository;
-  @Autowired private TrackRepository trackRepository;
-  @Autowired private GroupRepository groupRepository;
   @Autowired private ExamRepository examRepository;
   @Autowired private UserRepository userRepository;
 
@@ -127,39 +114,7 @@ class ExamIT extends SecuredFacadeIT {
   private JExam seedExam(String label, LocalTime examTime) {
     return seeder.inTransaction(
         () -> {
-          JAcademicYear year =
-              academicYearRepository.save(
-                  JAcademicYear.builder()
-                      .label("2024-2025")
-                      .startDate(LocalDate.of(2024, 9, 1))
-                      .endDate(LocalDate.of(2025, 8, 31))
-                      .build());
-          JSemester semester =
-              semesterRepository.save(
-                  JSemester.builder()
-                      .number(1)
-                      .academicYear(year)
-                      .startDate(LocalDate.of(2024, 9, 1))
-                      .endDate(LocalDate.of(2025, 1, 31))
-                      .build());
-          JCohort cohort =
-              cohortRepository.save(
-                  JCohort.builder()
-                      .label("Mpamakilay")
-                      .entryYear(2021)
-                      .expectedGraduationYear(2024)
-                      .build());
-          JTrack track =
-              trackRepository.save(
-                  JTrack.builder()
-                      .code(app.mata.gradup.model.TrackCode.EL)
-                      .label("Ecosysteme Logiciel")
-                      .build());
-          JGroup group =
-              groupRepository.save(
-                  JGroup.builder().reference("K1").cohort(cohort).track(track).build());
-          JCourse course = seeder.course("Pro1", 5, 1, track);
-          JCourseOffering offering = seeder.offering(course, group, semester);
+          JCourseOffering offering = seedOffering();
           return examRepository.save(
               JExam.builder()
                   .offering(offering)
@@ -170,5 +125,16 @@ class ExamIT extends SecuredFacadeIT {
                   .weightDenominator(1)
                   .build());
         });
+  }
+
+  private JCourseOffering seedOffering() {
+    var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+    var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+    JGroup group = seeder.group("K1", cohort, track);
+    JCourse course = seeder.course("Pro1", 5, 1, track);
+    var year =
+        seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
+    var semester = seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
+    return seeder.offering(course, group, semester);
   }
 }
