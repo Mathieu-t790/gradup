@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.Error;
+import app.mata.gradup.endpoint.rest.model.TrackCode;
 import app.mata.gradup.endpoint.rest.model.TrackCreateRequest;
 import app.mata.gradup.endpoint.rest.model.TrackResponse;
-import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.TrackRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,8 +33,8 @@ public class TrackIT extends SecuredFacadeIT {
 
   @Test
   void listTracks_shouldReturnAllTracks() {
-    seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
-    seeder.track(TrackCode.TN, "Transformation Numerique");
+    seeder.track("EL", "Ecosysteme Logiciel");
+    seeder.track("TN", "Transformation Numerique");
 
     var response = restTemplate.getForEntity("/tracks", TrackResponse[].class);
 
@@ -42,9 +42,7 @@ public class TrackIT extends SecuredFacadeIT {
     var tracks = List.of(response.getBody());
     assertEquals(2, tracks.size());
     assertEquals(
-        List.of(
-            app.mata.gradup.endpoint.rest.model.TrackCode.EL,
-            app.mata.gradup.endpoint.rest.model.TrackCode.TN),
+        List.of(TrackCode.EL, TrackCode.TN),
         tracks.stream().map(TrackResponse::getCode).sorted().toList());
     assertEquals(
         List.of("Ecosysteme Logiciel", "Transformation Numerique"),
@@ -56,21 +54,19 @@ public class TrackIT extends SecuredFacadeIT {
     var response =
         restTemplate.postForEntity(
             "/tracks",
-            new TrackCreateRequest()
-                .code(app.mata.gradup.endpoint.rest.model.TrackCode.EL)
-                .label("Ecosysteme Logiciel"),
+            new TrackCreateRequest().code(TrackCode.EL).label("Ecosysteme Logiciel"),
             TrackResponse.class);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     var track = response.getBody();
     assertNotNull(track);
     assertNotNull(track.getId());
-    assertEquals(app.mata.gradup.endpoint.rest.model.TrackCode.EL, track.getCode());
+    assertEquals(TrackCode.EL, track.getCode());
     assertEquals("Ecosysteme Logiciel", track.getLabel());
 
     var saved = trackRepository.findById(track.getId());
     assertTrue(saved.isPresent());
-    assertEquals(TrackCode.EL, saved.get().getCode());
+    assertEquals(TrackCode.EL.name(), saved.get().getCode().name());
     assertEquals("Ecosysteme Logiciel", saved.get().getLabel());
   }
 
@@ -78,25 +74,19 @@ public class TrackIT extends SecuredFacadeIT {
   void createTrack_shouldReturn400_whenBlankLabel() {
     var response =
         restTemplate.postForEntity(
-            "/tracks",
-            new TrackCreateRequest()
-                .code(app.mata.gradup.endpoint.rest.model.TrackCode.EL)
-                .label(""),
-            Error.class);
+            "/tracks", new TrackCreateRequest().code(TrackCode.EL).label(""), Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
   }
 
   @Test
   void createTrack_shouldReturn409_whenDuplicateCode() {
-    seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+    seeder.track("EL", "Ecosysteme Logiciel");
 
     var response =
         restTemplate.postForEntity(
             "/tracks",
-            new TrackCreateRequest()
-                .code(app.mata.gradup.endpoint.rest.model.TrackCode.EL)
-                .label("Duplicated"),
+            new TrackCreateRequest().code(TrackCode.EL).label("Duplicated"),
             Error.class);
 
     assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
