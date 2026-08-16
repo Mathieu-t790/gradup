@@ -10,6 +10,7 @@ import app.mata.gradup.repository.model.JSemester;
 import app.mata.gradup.repository.model.JSemesterCreditValidation;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(
@@ -19,7 +20,7 @@ import org.mapstruct.ReportingPolicy;
 public interface SemesterMapper {
 
   @Mapping(source = "entity.id", target = "id")
-  @Mapping(source = "entity.semester", target = "semester")
+  @Mapping(source = "entity.semester", target = "semester", qualifiedByName = "toSemester")
   @Mapping(source = "entity.track", target = "track")
   @Mapping(source = "entity.totalCredits", target = "totalCredits")
   @Mapping(source = "entity.validatedAt", target = "validatedAt")
@@ -28,6 +29,7 @@ public interface SemesterMapper {
 
   SemesterCreditValidationResponse toRest(SemesterCreditValidation domain);
 
+  @Named("toSemester")
   Semester toDomain(JSemester entity);
 
   SemesterResponse toRest(Semester semester);
