@@ -28,11 +28,8 @@ public class TrackService {
 
   @Transactional
   public TrackResponse createTrack(TrackCreateRequest request) {
-    if (request.getLabel() == null || request.getLabel().isBlank()) {
+    if (request.getLabel().isBlank()) {
       throw new BadRequestException("Track label must not be blank");
-    }
-    if (request.getCode() == null) {
-      throw new BadRequestException("Track code must not be null");
     }
     var track = trackMapper.toDomain(request);
     if (trackRepository.existsByCode(track.code())) {
