@@ -263,8 +263,8 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   @Test
   void createCourseOffering_commonGroup_skipsCreditRule() {
     Seed seed = seed();
-    var commonGroup = seed.group(seed.cohort, null);
-    var course = seed.course(null);
+    var commonGroup = seed.group(seed.cohort, "C1", null);
+    var course = seed.course("Pro1", 30, 1, null);
 
     ResponseEntity<CourseOfferingResponse> response =
         restTemplate.postForEntity(
@@ -471,6 +471,10 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
       return seeder.group(reference, cohort, track);
     }
 
+    private JGroup group(JCohort cohort, String reference, JTrack groupTrack) {
+      return seeder.group(reference, cohort, groupTrack);
+    }
+
     private JSemester semester(JAcademicYear year) {
       return seeder.semester(2, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
     }
@@ -481,6 +485,10 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
 
     private JCourse course(String reference, int credits, int semesterNumber) {
       return seeder.course(reference, credits, semesterNumber, track);
+    }
+
+    private JCourse course(String reference, int credits, int semesterNumber, JTrack courseTrack) {
+      return seeder.course(reference, credits, semesterNumber, courseTrack);
     }
   }
 
