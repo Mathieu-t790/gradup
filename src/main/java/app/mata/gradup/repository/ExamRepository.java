@@ -4,10 +4,17 @@ import app.mata.gradup.repository.model.JExam;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ExamRepository extends JpaRepository<JExam, UUID> {
 
   List<JExam> findByOfferingId(UUID offeringId);
+
+  @Query(
+      "select coalesce(sum(e.weightNumerator * 1.0 / e.weightDenominator), 0) "
+          + "from JExam e where e.offering.id = :offeringId")
+  Double sumWeightsByOfferingId(@Param("offeringId") UUID offeringId);
 }
