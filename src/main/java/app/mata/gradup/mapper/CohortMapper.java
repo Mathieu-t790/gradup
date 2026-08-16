@@ -6,8 +6,9 @@ import app.mata.gradup.model.Cohort;
 import app.mata.gradup.repository.model.JCohort;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CohortMapper {
 
   Cohort toDomain(JCohort jCohort);

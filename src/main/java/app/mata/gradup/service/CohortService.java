@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
-@Transactional
 public class CohortService {
 
   private final CohortRepository cohortRepository;
@@ -28,6 +27,7 @@ public class CohortService {
         .toList();
   }
 
+  @Transactional
   public CohortResponse createCohort(CohortCreateRequest request) {
     if (request.getLabel() == null || request.getLabel().isBlank()) {
       throw new BadRequestException("Cohort label must not be blank");
@@ -43,7 +43,7 @@ public class CohortService {
     var jCohort =
         cohortRepository
             .findById(cohortId)
-            .orElseThrow(() -> new NotFoundException("Cohort not found with id: " + cohortId));
+            .orElseThrow(() -> new NotFoundException("Cohort not found: " + cohortId));
     return cohortMapper.toRest(cohortMapper.toDomain(jCohort));
   }
 }

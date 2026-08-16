@@ -5,20 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
+import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.repository.CohortRepository;
-import app.mata.gradup.repository.GroupRepository;
-import app.mata.gradup.repository.StudentGroupHistoryRepository;
-import app.mata.gradup.repository.StudentRepository;
-import app.mata.gradup.repository.StudentTrackHistoryRepository;
-import app.mata.gradup.repository.TrackRepository;
-import app.mata.gradup.repository.UserRepository;
-import app.mata.gradup.repository.model.JCohort;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,34 +21,14 @@ import org.springframework.http.HttpStatus;
 public class CohortIT extends SecuredFacadeIT {
 
   @Autowired protected TestRestTemplate restTemplate;
+  @Autowired private TestDataSeeder seeder;
   @Autowired private CohortRepository cohortRepository;
-  @Autowired private GroupRepository groupRepository;
-  @Autowired private TrackRepository trackRepository;
-  @Autowired private UserRepository userRepository;
-  @Autowired private StudentRepository studentRepository;
-  @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
-  @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
 
   @BeforeEach
   void setUp() {
     useCookieAwareClient(restTemplate);
-    cleanDatabase();
+    seeder.cleanDatabase();
     loginAsAdmin(restTemplate);
-  }
-
-  @AfterEach
-  void tearDown() {
-    cleanDatabase();
-  }
-
-  private void cleanDatabase() {
-    groupHistoryRepository.deleteAll();
-    trackHistoryRepository.deleteAll();
-    studentRepository.deleteAll();
-    groupRepository.deleteAll();
-    cohortRepository.deleteAll();
-    trackRepository.deleteAll();
-    userRepository.deleteAll();
   }
 
   @Test
@@ -84,8 +57,8 @@ public class CohortIT extends SecuredFacadeIT {
 
   @Test
   void listCohorts_shouldReturnAllCohorts() {
-    saveCohort("Promo 2024", 2024, 2027);
-    saveCohort("Promo 2025", 2025, 2028);
+    seeder.cohort("Promo 2024", 2024, 2027);
+    seeder.cohort("Promo 2025", 2025, 2028);
 
     var response = restTemplate.getForEntity("/cohorts", CohortResponse[].class);
 
@@ -99,7 +72,7 @@ public class CohortIT extends SecuredFacadeIT {
 
   @Test
   void getCohort_shouldReturnCohort_whenExists() {
-    var saved = saveCohort("Promo 2026", 2026, 2029);
+    var saved = seeder.cohort("Promo 2026", 2026, 2029);
 
     var response = restTemplate.getForEntity("/cohorts/" + saved.getId(), CohortResponse.class);
 
@@ -122,7 +95,7 @@ public class CohortIT extends SecuredFacadeIT {
     var error = response.getBody();
     assertNotNull(error);
     assertEquals("NOT_FOUND", error.getCode());
-    assertTrue(error.getMessage().contains("Cohort not found with id: " + randomId));
+    assertTrue(error.getMessage().contains("Cohort not found: " + randomId));
   }
 
   @Test
@@ -134,14 +107,5 @@ public class CohortIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-  }
-
-  private JCohort saveCohort(String label, int entryYear, int expectedGraduationYear) {
-    return cohortRepository.save(
-        JCohort.builder()
-            .label(label)
-            .entryYear(entryYear)
-            .expectedGraduationYear(expectedGraduationYear)
-            .build());
   }
 }
