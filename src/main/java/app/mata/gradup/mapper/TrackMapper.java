@@ -6,8 +6,12 @@ import app.mata.gradup.model.Track;
 import app.mata.gradup.repository.model.JTrack;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+    componentModel = "spring",
+    unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    uses = ReferenceMapper.class)
 public interface TrackMapper {
 
   Track toDomain(JTrack jTrack);
@@ -18,14 +22,4 @@ public interface TrackMapper {
 
   @Mapping(target = "id", ignore = true)
   JTrack toEntity(Track track);
-
-  default app.mata.gradup.endpoint.rest.model.TrackCode toRestTrackCode(
-      app.mata.gradup.model.TrackCode code) {
-    return code == null ? null : app.mata.gradup.endpoint.rest.model.TrackCode.valueOf(code.name());
-  }
-
-  default app.mata.gradup.model.TrackCode toDomainTrackCode(
-      app.mata.gradup.endpoint.rest.model.TrackCode code) {
-    return code == null ? null : app.mata.gradup.model.TrackCode.valueOf(code.name());
-  }
 }

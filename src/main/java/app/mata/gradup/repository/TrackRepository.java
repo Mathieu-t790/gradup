@@ -11,4 +11,6 @@ import org.springframework.stereotype.Repository;
 public interface TrackRepository extends JpaRepository<JTrack, UUID> {
 
   Optional<JTrack> findByCode(TrackCode code);
+
+  boolean existsByCode(TrackCode code);
 }

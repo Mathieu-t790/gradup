@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
-@Transactional
 public class TrackService {
 
   private final TrackRepository trackRepository;
@@ -27,6 +26,7 @@ public class TrackService {
         .toList();
   }
 
+  @Transactional
   public TrackResponse createTrack(TrackCreateRequest request) {
     if (request.getLabel() == null || request.getLabel().isBlank()) {
       throw new BadRequestException("Track label must not be blank");
@@ -35,7 +35,7 @@ public class TrackService {
       throw new BadRequestException("Track code must not be null");
     }
     var track = trackMapper.toDomain(request);
-    if (trackRepository.findByCode(track.code()).isPresent()) {
+    if (trackRepository.existsByCode(track.code())) {
       throw new ConflictException("A track with code " + track.code() + " already exists");
     }
     var saved = trackRepository.save(trackMapper.toEntity(track));
