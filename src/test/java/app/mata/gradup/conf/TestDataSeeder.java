@@ -12,6 +12,7 @@ import app.mata.gradup.repository.GradeDisputeRepository;
 import app.mata.gradup.repository.GradeHistoryRepository;
 import app.mata.gradup.repository.GradeRepository;
 import app.mata.gradup.repository.GroupRepository;
+import app.mata.gradup.repository.SemesterCreditValidationRepository;
 import app.mata.gradup.repository.SemesterRepository;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentRepository;
@@ -54,6 +55,7 @@ public class TestDataSeeder {
   @Autowired private StudentRepository studentRepository;
   @Autowired private CourseRepository courseRepository;
   @Autowired private SemesterRepository semesterRepository;
+  @Autowired private SemesterCreditValidationRepository semesterCreditValidationRepository;
   @Autowired private GroupRepository groupRepository;
   @Autowired private AcademicYearRepository academicYearRepository;
   @Autowired private TeacherRepository teacherRepository;
@@ -75,6 +77,7 @@ public class TestDataSeeder {
     studentGroupHistoryRepository.deleteAll();
     studentRepository.deleteAll();
     courseRepository.deleteAll();
+    semesterCreditValidationRepository.deleteAll();
     semesterRepository.deleteAll();
     groupRepository.deleteAll();
     academicYearRepository.deleteAll();
