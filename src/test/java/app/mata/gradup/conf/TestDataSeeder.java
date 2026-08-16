@@ -1,7 +1,6 @@
 package app.mata.gradup.conf;
 
 import app.mata.gradup.model.Role;
-import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.AcademicYearRepository;
 import app.mata.gradup.repository.CohortRepository;
 import app.mata.gradup.repository.CourseOfferingRepository;
