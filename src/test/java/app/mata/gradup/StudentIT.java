@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
+import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.StudentCreateRequest;
 import app.mata.gradup.endpoint.rest.model.StudentGroupHistoryResponse;
@@ -56,6 +57,7 @@ public class StudentIT extends SecuredFacadeIT {
   @MockBean private Mailer mailer;
 
   @Autowired private TestRestTemplate restTemplate;
+  @Autowired private TestDataSeeder seeder;
   @Autowired private CohortRepository cohortRepository;
   @Autowired private TrackRepository trackRepository;
   @Autowired private GroupRepository groupRepository;
@@ -68,18 +70,8 @@ public class StudentIT extends SecuredFacadeIT {
   @BeforeEach
   void setUp() {
     useCookieAwareClient(restTemplate);
-    cleanDatabase();
+    seeder.cleanDatabase();
     loginAsAdmin(restTemplate);
-  }
-
-  private void cleanDatabase() {
-    groupHistoryRepository.deleteAll();
-    trackHistoryRepository.deleteAll();
-    studentRepository.deleteAll();
-    groupRepository.deleteAll();
-    cohortRepository.deleteAll();
-    trackRepository.deleteAll();
-    userRepository.deleteAll();
   }
 
   @Test
