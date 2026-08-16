@@ -1,6 +1,8 @@
 package app.mata.gradup.security.userDetails;
 
 import app.mata.gradup.repository.model.JUser;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -13,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @AllArgsConstructor
 public class JUserDetails implements UserDetails, Serializable {
 
+  @Serial
   private static final long serialVersionUID = 1L;
 
   private final JUser user;
