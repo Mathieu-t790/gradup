@@ -14,6 +14,7 @@ import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.CourseRepository;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -136,6 +137,7 @@ public class CourseIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("BAD_REQUEST", response.getBody().getCode());
   }
 
@@ -152,6 +154,7 @@ public class CourseIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("BAD_REQUEST", response.getBody().getCode());
   }
 
@@ -168,6 +171,7 @@ public class CourseIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("BAD_REQUEST", response.getBody().getCode());
   }
 
@@ -274,7 +278,7 @@ public class CourseIT extends SecuredFacadeIT {
     assertNotNull(response.getBody());
     var courses = List.of(response.getBody());
     assertEquals(1, courses.size());
-    assertEquals("THEORIE1", courses.get(0).getReference());
+    assertEquals("THEORIE1", courses.getFirst().getReference());
   }
 
   @Test
@@ -315,7 +319,7 @@ public class CourseIT extends SecuredFacadeIT {
     assertEquals("Algorithmique avancee", course.getTitle());
     assertEquals(8, course.getCredits());
     assertEquals(1, course.getSemesterNumber());
-    assertEquals(track.getId(), course.getTrack().getId());
+    assertEquals(track.getId(), Objects.requireNonNull(course.getTrack()).getId());
     var reloaded = courseRepository.findById(saved.getId()).orElseThrow();
     assertEquals("Algorithmique avancee", reloaded.getTitle());
     assertEquals(8, reloaded.getCredits());
@@ -385,6 +389,7 @@ public class CourseIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("NOT_FOUND", response.getBody().getCode());
   }
 
@@ -396,6 +401,7 @@ public class CourseIT extends SecuredFacadeIT {
         patch("/courses/" + saved.getId(), new CourseUpdateRequest().credits(0), Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
     assertEquals("BAD_REQUEST", response.getBody().getCode());
   }
 
