@@ -1,11 +1,13 @@
 package app.mata.gradup.service;
 
 import app.mata.gradup.endpoint.rest.model.GradeCreateRequest;
+import app.mata.gradup.endpoint.rest.model.GradeHistoryEntryResponse;
 import app.mata.gradup.endpoint.rest.model.GradePageResponse;
 import app.mata.gradup.endpoint.rest.model.GradeResponse;
 import app.mata.gradup.endpoint.rest.model.GradeUpdateRequest;
 import app.mata.gradup.exception.ConflictException;
 import app.mata.gradup.exception.NotFoundException;
+import app.mata.gradup.mapper.GradeHistoryMapper;
 import app.mata.gradup.mapper.GradeMapper;
 import app.mata.gradup.repository.ExamRepository;
 import app.mata.gradup.repository.GradeHistoryRepository;
@@ -39,6 +41,7 @@ public class GradeService {
   private final StudentRepository studentRepository;
   private final UserRepository userRepository;
   private final GradeMapper gradeMapper;
+  private final GradeHistoryMapper gradeHistoryMapper;
 
   @Transactional
   public GradeResponse recordGrade(UUID examId, GradeCreateRequest request, UUID currentUserId) {
@@ -109,8 +112,56 @@ public class GradeService {
                         recordedNames.get(grade.getRecordedBy())))));
   }
 
+  @Transactional(readOnly = true)
+  public List<GradeResponse> listExamGrades(UUID examId) {
+    examRepository.findById(examId).orElseThrow(() -> new NotFoundException("Exam not found"));
+    var grades = gradeRepository.findByExamId(examId);
+    var recordedNames = recordedNamesBy(grades);
+    return grades.stream()
+        .sorted(
+            Comparator.comparing(
+                    (JGrade grade) -> grade.getStudent().getUser().getLastName(),
+                    String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(
+                    grade -> grade.getStudent().getUser().getFirstName(),
+                    String.CASE_INSENSITIVE_ORDER))
+        .map(
+            grade ->
+                gradeMapper.toRest(
+                    gradeMapper.toDomain(
+                        grade,
+                        Users.fullName(grade.getStudent().getUser()),
+                        grade.getExam().getLabel(),
+                        grade.getExam().getOffering().getCourse().getReference(),
+                        recordedNames.get(grade.getRecordedBy()))))
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<GradeHistoryEntryResponse> listGradeHistory(UUID gradeId) {
+    gradeRepository.findById(gradeId).orElseThrow(() -> new NotFoundException("Grade not found"));
+    var entries = gradeHistoryRepository.findByGradeId(gradeId);
+    var modifiedNames = modifiedNamesBy(entries);
+    return entries.stream()
+        .sorted(Comparator.comparing(JGradeHistory::getModifiedAt))
+        .map(
+            entry ->
+                gradeHistoryMapper.toRest(
+                    gradeHistoryMapper.toDomain(entry, modifiedNames.get(entry.getModifiedBy()))))
+        .toList();
+  }
+
   private Map<UUID, String> recordedNamesBy(List<JGrade> grades) {
     var userIds = grades.stream().map(JGrade::getRecordedBy).distinct().toList();
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+    return userRepository.findAllById(userIds).stream()
+        .collect(Collectors.toMap(JUser::getId, Users::fullName));
+  }
+
+  private Map<UUID, String> modifiedNamesBy(List<JGradeHistory> entries) {
+    var userIds = entries.stream().map(JGradeHistory::getModifiedBy).distinct().toList();
     if (userIds.isEmpty()) {
       return Map.of();
     }
