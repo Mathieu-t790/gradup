@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Tableau de bord</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
+
+  <div class="main-content">
+    <div th:replace="~{fragments/layout :: header('Tableau de bord')}"></div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-bottom:32px;">
+      <div class="card stat-card">
+        <div class="icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <div class="value" th:text="${studentCount}">0</div>
+          <div class="label">Étudiants</div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div>
+          <div class="value" th:text="${courseCount}">0</div>
+          <div class="label">Cours</div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="icon gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <div>
+          <div class="value" th:text="${examCount}">0</div>
+          <div class="label">Examens</div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="icon orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div>
+          <div class="value" th:text="${disputeCount}">0</div>
+          <div class="label">Litiges en cours</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-bottom:32px;">
+      <div class="card stat-card">
+        <div class="icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        </div>
+        <div>
+          <div class="value" th:text="${cohortCount}">0</div>
+          <div class="label">Promotions</div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div>
+          <div class="value" th:text="${academicYearCount}">0</div>
+          <div class="label">Années académiques</div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="icon gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <div class="value" th:text="${semesterCount}">0</div>
+          <div class="label">Semestres</div>
+        </div>
+      </div>
+      <div class="card stat-card">
+        <div class="icon orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+        <div>
+          <div class="value" th:text="${gradeCount}">0</div>
+          <div class="label">Notes enregistrées</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card animate-fade-in-up stagger-5" sec:authorize="hasRole('ADMIN')">
+      <h3 style="font-size:16px;font-weight:700;color:var(--hei-blue);margin-bottom:16px;">Accès rapide</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;">
+        <a th:href="@{/students}" class="btn btn-outline btn-sm">Gérer les étudiants</a>
+        <a th:href="@{/academic-years}" class="btn btn-outline btn-sm">Années académiques</a>
+        <a th:href="@{/semesters}" class="btn btn-outline btn-sm">Semestres</a>
+        <a th:href="@{/courses}" class="btn btn-outline btn-sm">Cours</a>
+        <a th:href="@{/cohorts}" class="btn btn-outline btn-sm">Promotions</a>
+      </div>
+    </div>
+  </div>
+
+  <div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>
