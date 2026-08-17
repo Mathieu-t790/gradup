@@ -1,5 +1,6 @@
 package app.mata.gradup.security.userDetails;
 
+import app.mata.gradup.model.Role;
 import app.mata.gradup.repository.model.JUser;
 import java.io.Serializable;
 import java.util.Collection;
@@ -54,5 +55,9 @@ public class JUserDetails implements UserDetails, Serializable {
 
   public UUID userId() {
     return user.getId();
+  }
+
+  public Role getRole() {
+    return user.getRole();
   }
 }
