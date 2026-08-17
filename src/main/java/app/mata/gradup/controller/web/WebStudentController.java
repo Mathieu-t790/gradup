@@ -19,7 +19,7 @@ public class WebStudentController {
   private final StudentGroupHistoryRepository studentGroupHistoryRepository;
   private final GradeRepository gradeRepository;
 
-  @GetMapping("/students")
+  @GetMapping("/web/students")
   public String listStudents(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size,
@@ -33,7 +33,7 @@ public class WebStudentController {
     return "students/list";
   }
 
-  @GetMapping("/students/{studentId}")
+  @GetMapping("/web/students/{studentId}")
   public String getStudent(@PathVariable java.util.UUID studentId, Model model) {
     var student = studentRepository.findById(studentId).orElseThrow();
     var groupHistory = studentGroupHistoryRepository.findByStudentIdOrderByStartDateDesc(studentId);

@@ -15,13 +15,13 @@ public class WebCohortController {
 
   private final CohortRepository cohortRepository;
 
-  @GetMapping("/cohorts")
+  @GetMapping("/web/cohorts")
   public String listCohorts(Model model) {
     model.addAttribute("cohorts", cohortRepository.findAll());
     return "cohorts/list";
   }
 
-  @PostMapping("/cohorts")
+  @PostMapping("/web/cohorts")
   public String createCohort(
       @RequestParam String label,
       @RequestParam int entryYear,
@@ -33,6 +33,6 @@ public class WebCohortController {
             .expectedGraduationYear(expectedGraduationYear)
             .build();
     cohortRepository.save(cohort);
-    return "redirect:/cohorts";
+    return "redirect:/web/cohorts";
   }
 }

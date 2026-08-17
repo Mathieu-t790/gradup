@@ -19,14 +19,14 @@ public class WebSemesterController {
   private final SemesterRepository semesterRepository;
   private final AcademicYearRepository academicYearRepository;
 
-  @GetMapping("/semesters")
+  @GetMapping("/web/semesters")
   public String listSemesters(Model model) {
     model.addAttribute("semesters", semesterRepository.findAll());
     model.addAttribute("academicYears", academicYearRepository.findAll());
     return "semesters/list";
   }
 
-  @PostMapping("/semesters")
+  @PostMapping("/web/semesters")
   public String createSemester(
       @RequestParam int number,
       @RequestParam UUID academicYearId,
@@ -41,6 +41,6 @@ public class WebSemesterController {
             .endDate(endDate)
             .build();
     semesterRepository.save(semester);
-    return "redirect:/semesters";
+    return "redirect:/web/semesters";
   }
 }

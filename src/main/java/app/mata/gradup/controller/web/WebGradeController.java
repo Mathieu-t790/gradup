@@ -13,7 +13,7 @@ public class WebGradeController {
 
   private final GradeRepository gradeRepository;
 
-  @GetMapping("/grades")
+  @GetMapping("/web/grades")
   public String listGrades(Model model) {
     var grades = gradeRepository.findAll(PageRequest.of(0, 50));
     model.addAttribute("grades", grades.getContent());

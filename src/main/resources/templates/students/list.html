@@ -38,7 +38,7 @@
                       th:text="${student.user.active} ? 'Actif' : 'Inactif'"></span>
               </td>
               <td>
-                <a th:href="@{/students/{id}(id=${student.id})}" class="btn btn-outline btn-sm">Détail</a>
+                <a th:href="@{/web/students/{id}(id=${student.id})}" class="btn btn-outline btn-sm">Détail</a>
               </td>
             </tr>
           </tbody>
@@ -54,18 +54,18 @@
 
     <div class="pagination" th:if="${totalPages > 1}">
       <a th:if="${currentPage > 0}"
-         th:href="@{/students(page=${currentPage - 1},size=${pageSize})}"
+         th:href="@{/web/students(page=${currentPage - 1},size=${pageSize})}"
          class="btn btn-outline btn-sm">&laquo; Précédent</a>
       <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
             th:classappend="${i == currentPage} ? 'active'"
             th:if="${totalPages <= 10 or (i >= currentPage - 2 and i <= currentPage + 2)}">
         <a th:if="${i != currentPage}"
-           th:href="@{/students(page=${i},size=${pageSize})}"
+           th:href="@{/web/students(page=${i},size=${pageSize})}"
            th:text="${i + 1}"></a>
         <span th:if="${i == currentPage}" th:text="${i + 1}"></span>
       </span>
       <a th:if="${currentPage < totalPages - 1}"
-         th:href="@{/students(page=${currentPage + 1},size=${pageSize})}"
+         th:href="@{/web/students(page=${currentPage + 1},size=${pageSize})}"
          class="btn btn-outline btn-sm">Suivant &raquo;</a>
     </div>
   </div>

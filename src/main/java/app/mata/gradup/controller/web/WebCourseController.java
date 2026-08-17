@@ -12,7 +12,7 @@ public class WebCourseController {
 
   private final CourseRepository courseRepository;
 
-  @GetMapping("/courses")
+  @GetMapping("/web/courses")
   public String listCourses(Model model) {
     model.addAttribute("courses", courseRepository.findAll());
     return "courses/list";

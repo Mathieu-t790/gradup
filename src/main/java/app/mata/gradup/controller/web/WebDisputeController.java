@@ -12,7 +12,7 @@ public class WebDisputeController {
 
   private final GradeDisputeRepository gradeDisputeRepository;
 
-  @GetMapping("/disputes")
+  @GetMapping("/web/disputes")
   public String listDisputes(Model model) {
     model.addAttribute("disputes", gradeDisputeRepository.findAll());
     return "disputes/list";

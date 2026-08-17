@@ -16,19 +16,19 @@ public class WebAcademicYearController {
 
   private final AcademicYearRepository academicYearRepository;
 
-  @GetMapping("/academic-years")
+  @GetMapping("/web/academic-years")
   public String listAcademicYears(Model model) {
     model.addAttribute("academicYears", academicYearRepository.findAll());
     return "academic-years/list";
   }
 
-  @PostMapping("/academic-years")
+  @PostMapping("/web/academic-years")
   public String createAcademicYear(
       @RequestParam String label,
       @RequestParam LocalDate startDate,
       @RequestParam LocalDate endDate) {
     var year = JAcademicYear.builder().label(label).startDate(startDate).endDate(endDate).build();
     academicYearRepository.save(year);
-    return "redirect:/academic-years";
+    return "redirect:/web/academic-years";
   }
 }

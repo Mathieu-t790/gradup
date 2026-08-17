@@ -13,7 +13,7 @@
 
     <div class="card animate-fade-in-up" style="margin-bottom:24px;" sec:authorize="hasRole('ADMIN')">
       <h3 style="font-size:16px;font-weight:700;color:var(--hei-blue);margin-bottom:16px;">Créer une promotion</h3>
-      <form th:action="@{/cohorts}" method="post" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+      <form th:action="@{/web/cohorts}" method="post" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
         <div class="form-group" style="margin:0;">
           <label for="label">Label</label>
           <input type="text" id="label" name="label" class="form-control" placeholder="PROMO 2024" required>

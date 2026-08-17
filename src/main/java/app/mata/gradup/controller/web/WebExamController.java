@@ -12,7 +12,7 @@ public class WebExamController {
 
   private final ExamRepository examRepository;
 
-  @GetMapping("/exams")
+  @GetMapping("/web/exams")
   public String listExams(Model model) {
     model.addAttribute("exams", examRepository.findAll());
     return "exams/list";
