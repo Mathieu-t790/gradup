@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Notes</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/layout :: sidebar('grades')}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/layout :: header('Notes')}"></div>
+    <div class="card animate-fade-in-up">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Étudiant</th>
+              <th>Examen</th>
+              <th>Cours</th>
+              <th>Note</th>
+              <th>Enregistré par</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="grade : ${grades}" class="animate-fade-in-up">
+              <td th:text="${grade.student.user.firstName} + ' ' + ${grade.student.user.lastName}"></td>
+              <td th:text="${grade.exam.label}"></td>
+              <td><span class="badge badge-blue" th:text="${grade.exam.offering.course.reference}"></span></td>
+              <td>
+                <span class="badge" th:classappend="${grade.score.doubleValue() >= 10} ? 'badge-green' : 'badge-red'"
+                      th:text="${#numbers.formatDecimal(grade.score, 1, 1)} + ' / 20'"></span>
+              </td>
+              <td th:text="${grade.recordedBy}"></td>
+              <td th:text="${#temporals.format(grade.recordedAt, 'dd/MM/yyyy HH:mm')}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${#lists.isEmpty(grades)}" class="empty-state">
+        <div class="icon">&#128202;</div>
+        <h3>Aucune note enregistrée</h3>
+        <p>Les notes apparaîtront ici une fois enregistrées par les enseignants.</p>
+      </div>
+    </div>
+  </div>
+  <div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

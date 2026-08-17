@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Examens</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/layout :: sidebar('exams')}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/layout :: header('Examens')}"></div>
+    <div class="card animate-fade-in-up">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Examen</th>
+              <th>Cours</th>
+              <th>Date</th>
+              <th>Heure</th>
+              <th>Poids</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="exam : ${exams}" class="animate-fade-in-up">
+              <td th:text="${exam.label}"></td>
+              <td><span class="badge badge-blue" th:text="${exam.offering.course.reference}"></span></td>
+              <td th:text="${exam.examDate} ?: '—'"></td>
+              <td th:text="${exam.examTime} ?: '—'"></td>
+              <td>
+                <span class="badge badge-gold"
+                      th:text="${exam.weightNumerator} + '/' + ${exam.weightDenominator}"></span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${#lists.isEmpty(exams)}" class="empty-state">
+        <div class="icon">&#128221;</div>
+        <h3>Aucun examen trouvé</h3>
+        <p>Les examens seront affichés ici une fois créés.</p>
+      </div>
+    </div>
+  </div>
+  <div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

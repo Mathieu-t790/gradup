@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Cours</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/layout :: sidebar('courses')}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/layout :: header('Cours')}"></div>
+    <div class="card animate-fade-in-up">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Titre</th>
+              <th>Crédits</th>
+              <th>Semestre</th>
+              <th>Filière</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="course : ${courses}" class="animate-fade-in-up">
+              <td><span class="badge badge-blue" th:text="${course.reference}"></span></td>
+              <td th:text="${course.title}"></td>
+              <td>
+                <span class="badge badge-gold" th:text="${course.credits}"></span>
+              </td>
+              <td th:text="'S' + ${course.semesterNumber}"></td>
+              <td>
+                <span class="badge badge-green" th:if="${course.track != null}" th:text="${course.track.code}"></span>
+                <span class="badge badge-gray" th:if="${course.track == null}">Général</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${#lists.isEmpty(courses)}" class="empty-state">
+        <div class="icon">&#128218;</div>
+        <h3>Aucun cours trouvé</h3>
+        <p>Les cours seront affichés ici une fois ajoutés.</p>
+      </div>
+    </div>
+  </div>
+  <div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>
