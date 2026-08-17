@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface SemesterRepository extends JpaRepository<JSemester, UUID> {
 
   List<JSemester> findByAcademicYearId(UUID academicYearId);
+
+  boolean existsByNumberAndAcademicYearId(int number, UUID academicYearId);
 }
