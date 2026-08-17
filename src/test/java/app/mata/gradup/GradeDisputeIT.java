@@ -8,26 +8,15 @@ import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.GradeDisputePageResponse;
+import app.mata.gradup.model.DisputeStatus;
 import app.mata.gradup.model.Role;
-import app.mata.gradup.repository.AcademicYearRepository;
-import app.mata.gradup.repository.CohortRepository;
-import app.mata.gradup.repository.ExamRepository;
+import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.GradeDisputeRepository;
 import app.mata.gradup.repository.GradeRepository;
-import app.mata.gradup.repository.GroupRepository;
-import app.mata.gradup.repository.SemesterRepository;
-import app.mata.gradup.repository.TrackRepository;
-import app.mata.gradup.repository.model.JAcademicYear;
-import app.mata.gradup.repository.model.JCohort;
-import app.mata.gradup.repository.model.JCourse;
 import app.mata.gradup.repository.model.JCourseOffering;
 import app.mata.gradup.repository.model.JExam;
 import app.mata.gradup.repository.model.JGradeDispute;
-import app.mata.gradup.repository.model.JGroup;
-import app.mata.gradup.repository.model.JSemester;
-import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JTeacher;
-import app.mata.gradup.repository.model.JTrack;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -45,12 +34,6 @@ class GradeDisputeIT extends SecuredFacadeIT {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
 
-  @Autowired private AcademicYearRepository academicYearRepository;
-  @Autowired private SemesterRepository semesterRepository;
-  @Autowired private CohortRepository cohortRepository;
-  @Autowired private TrackRepository trackRepository;
-  @Autowired private GroupRepository groupRepository;
-  @Autowired private ExamRepository examRepository;
   @Autowired private GradeRepository gradeRepository;
   @Autowired private GradeDisputeRepository gradeDisputeRepository;
 
@@ -135,7 +118,8 @@ class GradeDisputeIT extends SecuredFacadeIT {
     var fixture = seedFixture();
     var otherOffering = seedAdditionalOffering(fixture);
     seedDispute(fixture, "STD21001", "assigned offering", 12);
-    seedDisputeOnOffering(fixture, "STD21002", otherOffering, "other offering", 12);
+    seedDisputeOnOffering(
+        fixture, "STD21002", otherOffering.offering, otherOffering.exam, "other offering", 12);
 
     seedTeacherAssignedTo(fixture.offering);
     loginAsTeacher();
@@ -213,15 +197,19 @@ class GradeDisputeIT extends SecuredFacadeIT {
   }
 
   private UUID seedDispute(Fixture fixture, String reference, String reason, int score) {
-    return seedDisputeOnOffering(fixture, reference, fixture.offering, reason, score);
+    return seedDisputeOnOffering(fixture, reference, fixture.offering, fixture.exam, reason, score);
   }
 
   private UUID seedDisputeOnOffering(
-      Fixture fixture, String reference, JCourseOffering offering, String reason, int score) {
+      Fixture fixture,
+      String reference,
+      JCourseOffering offering,
+      JExam exam,
+      String reason,
+      int score) {
     return seeder.inTransaction(
         () -> {
-          JExam exam = examRepository.findByOfferingId(offering.getId()).getFirst();
-          JStudent student =
+          var student =
               seeder.student(
                   reference,
                   "Rakoto",
@@ -241,7 +229,7 @@ class GradeDisputeIT extends SecuredFacadeIT {
     seeder.inTransaction(
         () -> {
           JGradeDispute dispute = gradeDisputeRepository.findById(disputeId).orElseThrow();
-          dispute.setStatus(app.mata.gradup.model.DisputeStatus.RESOLVED);
+          dispute.setStatus(DisputeStatus.RESOLVED);
           dispute.setResolvedAt(Instant.now());
           dispute.setResolvedBy(seeder.adminUserId());
           gradeDisputeRepository.save(dispute);
@@ -252,69 +240,36 @@ class GradeDisputeIT extends SecuredFacadeIT {
   private Fixture seedFixture() {
     return seeder.inTransaction(
         () -> {
-          JAcademicYear year =
-              academicYearRepository.save(
-                  JAcademicYear.builder()
-                      .label("2024-2025")
-                      .startDate(LocalDate.of(2024, 9, 1))
-                      .endDate(LocalDate.of(2025, 8, 31))
-                      .build());
-          JSemester semester =
-              semesterRepository.save(
-                  JSemester.builder()
-                      .number(1)
-                      .academicYear(year)
-                      .startDate(LocalDate.of(2024, 9, 1))
-                      .endDate(LocalDate.of(2025, 1, 31))
-                      .build());
-          JCohort cohort =
-              cohortRepository.save(
-                  JCohort.builder()
-                      .label("Mpamakilay")
-                      .entryYear(2021)
-                      .expectedGraduationYear(2024)
-                      .build());
-          JTrack track =
-              trackRepository.save(
-                  JTrack.builder()
-                      .code(app.mata.gradup.model.TrackCode.EL)
-                      .label("Ecosysteme Logiciel")
-                      .build());
-          JGroup group =
-              groupRepository.save(
-                  JGroup.builder().reference("K1").cohort(cohort).track(track).build());
-          JCourse course = seeder.course("Pro1", 5, 1, track);
-          JCourseOffering offering = seeder.offering(course, group, semester);
-          examRepository.save(
-              JExam.builder()
-                  .offering(offering)
-                  .label("Final")
-                  .examDate(LocalDate.of(2022, 5, 30))
-                  .weightNumerator(1)
-                  .weightDenominator(1)
-                  .build());
-          return new Fixture(cohort, track, group, offering);
+          var year =
+              seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
+          var semester =
+              seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
+          var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+          var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+          var group = seeder.group("K1", cohort, track);
+          var course = seeder.course("Pro1", 5, 1, track);
+          var offering = seeder.offering(course, group, semester);
+          var exam = seeder.exam(offering);
+          return new Fixture(cohort, track, group, offering, exam);
         });
   }
 
-  private JCourseOffering seedAdditionalOffering(Fixture fixture) {
+  private OfferingSeed seedAdditionalOffering(Fixture fixture) {
     return seeder.inTransaction(
         () -> {
-          JSemester managedSemester =
-              semesterRepository.findById(fixture.offering.getSemester().getId()).orElseThrow();
-          JCourse course = seeder.course("Pro2", 5, 2, fixture.track);
-          JCourseOffering offering = seeder.offering(course, fixture.group, managedSemester);
-          examRepository.save(
-              JExam.builder()
-                  .offering(offering)
-                  .label("Final")
-                  .examDate(LocalDate.of(2022, 6, 30))
-                  .weightNumerator(1)
-                  .weightDenominator(1)
-                  .build());
-          return offering;
+          var course = seeder.course("Pro2", 5, 2, fixture.track);
+          var offering = seeder.offering(course, fixture.group, fixture.offering.getSemester());
+          var exam = seeder.exam(offering);
+          return new OfferingSeed(offering, exam);
         });
   }
 
-  private record Fixture(JCohort cohort, JTrack track, JGroup group, JCourseOffering offering) {}
+  private record Fixture(
+      app.mata.gradup.repository.model.JCohort cohort,
+      app.mata.gradup.repository.model.JTrack track,
+      app.mata.gradup.repository.model.JGroup group,
+      JCourseOffering offering,
+      JExam exam) {}
+
+  private record OfferingSeed(JCourseOffering offering, JExam exam) {}
 }

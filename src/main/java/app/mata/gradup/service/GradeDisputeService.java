@@ -114,7 +114,7 @@ public class GradeDisputeService {
       page =
           offeringIds.isEmpty()
               ? Page.empty(pageable)
-              : gradeDisputeRepository.findByStatusAndGrade_Exam_Offering_IdIn(
+              : gradeDisputeRepository.findByStatusAndOfferingIds(
                   effectiveStatus, offeringIds, pageable);
     }
     return toPageResponse(page);

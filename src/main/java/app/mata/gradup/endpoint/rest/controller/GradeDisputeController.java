@@ -4,6 +4,7 @@ import app.mata.gradup.endpoint.rest.model.GradeDisputeCreateRequest;
 import app.mata.gradup.endpoint.rest.model.GradeDisputePageResponse;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResolveRequest;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
+import app.mata.gradup.model.DisputeStatus;
 import app.mata.gradup.security.userDetails.JUserDetails;
 import app.mata.gradup.service.GradeDisputeService;
 import java.util.List;
@@ -54,8 +55,7 @@ public class GradeDisputeController {
       @RequestParam(required = false) app.mata.gradup.endpoint.rest.model.DisputeStatus status,
       Pageable pageable,
       @AuthenticationPrincipal JUserDetails userDetails) {
-    app.mata.gradup.model.DisputeStatus domainStatus =
-        status == null ? null : app.mata.gradup.model.DisputeStatus.valueOf(status.name());
+    DisputeStatus domainStatus = status == null ? null : DisputeStatus.valueOf(status.name());
     return gradeDisputeService.listDisputes(
         domainStatus, pageable, userDetails.userId(), userDetails.getRole());
   }
