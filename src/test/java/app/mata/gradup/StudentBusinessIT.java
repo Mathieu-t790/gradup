@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.support.TransactionTemplate;
 
 class StudentBusinessIT extends SecuredFacadeIT {
 
@@ -46,7 +45,6 @@ class StudentBusinessIT extends SecuredFacadeIT {
   @Autowired private GroupRepository groupRepository;
   @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
-  @Autowired private TransactionTemplate transactionTemplate;
 
   @BeforeEach
   void setUp() {
@@ -365,8 +363,8 @@ class StudentBusinessIT extends SecuredFacadeIT {
   }
 
   private Fixture seed() {
-    return transactionTemplate.execute(
-        status -> {
+    return seeder.inTransaction(
+        () -> {
           JCohort cohort = seeder.cohort("Mpamakilay", 2021, 2024);
           JTrack trackEl = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
           JTrack trackTn = seeder.track(TrackCode.TN, "Transformation Numerique");

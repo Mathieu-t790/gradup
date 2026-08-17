@@ -12,6 +12,7 @@ import app.mata.gradup.repository.GradeDisputeRepository;
 import app.mata.gradup.repository.GradeHistoryRepository;
 import app.mata.gradup.repository.GradeRepository;
 import app.mata.gradup.repository.GroupRepository;
+import app.mata.gradup.repository.SemesterCreditValidationRepository;
 import app.mata.gradup.repository.SemesterRepository;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentRepository;
@@ -54,6 +55,7 @@ public class TestDataSeeder {
   @Autowired private StudentRepository studentRepository;
   @Autowired private CourseRepository courseRepository;
   @Autowired private SemesterRepository semesterRepository;
+  @Autowired private SemesterCreditValidationRepository semesterCreditValidationRepository;
   @Autowired private GroupRepository groupRepository;
   @Autowired private AcademicYearRepository academicYearRepository;
   @Autowired private TeacherRepository teacherRepository;
@@ -75,6 +77,7 @@ public class TestDataSeeder {
     studentGroupHistoryRepository.deleteAll();
     studentRepository.deleteAll();
     courseRepository.deleteAll();
+    semesterCreditValidationRepository.deleteAll();
     semesterRepository.deleteAll();
     groupRepository.deleteAll();
     academicYearRepository.deleteAll();
@@ -206,6 +209,34 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             .weightNumerator(1)
             .weightDenominator(1)
             .build());
+  }
+
+  public JTeacher teacher(String email, String lastName, String firstName) {
+    JUser user =
+        userRepository.save(
+            JUser.builder()
+                .reference("TEA-" + email)
+                .lastName(lastName)
+                .firstName(firstName)
+                .email(email)
+                .passwordHash("hashed")
+                .role(Role.TEACHER)
+                .isActive(true)
+                .build());
+    return teacherRepository.save(JTeacher.builder().user(user).specialty(null).build());
+  }
+
+  public JTeacherAssignment teacherAssignment(JTeacher teacher, JCourseOffering offering) {
+    JTeacher managedTeacher = teacherRepository.findById(teacher.getId()).orElseThrow();
+    JCourseOffering managedOffering =
+        courseOfferingRepository.findById(offering.getId()).orElseThrow();
+    return teacherAssignmentRepository.save(
+        JTeacherAssignment.builder().offering(managedOffering).teacher(managedTeacher).build());
+  }
+
+  public JGradeDispute dispute(JGrade grade, JStudent student, String reason) {
+    return gradeDisputeRepository.save(
+        JGradeDispute.builder().grade(grade).student(student).reason(reason).build());
   }
 
   public void grade(JStudent student, JExam exam, String score) {
