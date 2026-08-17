@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Accès refusé</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div class="access-denied-page">
+    <div class="code animate-fade-in">403</div>
+    <h2 class="animate-fade-in-up stagger-1">Accès refusé</h2>
+    <p class="animate-fade-in-up stagger-2">Vous n'avez pas les droits nécessaires pour accéder à cette page.</p>
+    <a th:href="@{/}" class="btn btn-primary animate-fade-in-up stagger-3">Retour au tableau de bord</a>
+  </div>
+</body>
+</html>

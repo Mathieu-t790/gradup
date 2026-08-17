@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Litiges</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/layout :: sidebar('disputes')}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/layout :: header('Litiges de notes')}"></div>
+    <div class="card animate-fade-in-up">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Étudiant</th>
+              <th>Cours</th>
+              <th>Examen</th>
+              <th>Motif</th>
+              <th>Statut</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="dispute : ${disputes}" class="animate-fade-in-up">
+              <td th:text="${dispute.student.user.firstName} + ' ' + ${dispute.student.user.lastName}"></td>
+              <td><span class="badge badge-blue" th:text="${dispute.grade.exam.offering.course.reference}"></span></td>
+              <td th:text="${dispute.grade.exam.label}"></td>
+              <td th:text="${#strings.abbreviate(dispute.reason, 50)}"></td>
+              <td>
+                <span class="badge"
+                      th:classappend="${dispute.status.name() == 'PENDING'} ? 'badge-gold' : (${dispute.status.name() == 'RESOLVED'} ? 'badge-green' : 'badge-red')"
+                      th:text="${dispute.status}"></span>
+              </td>
+              <td th:text="${#temporals.format(dispute.createdAt, 'dd/MM/yyyy')}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${#lists.isEmpty(disputes)}" class="empty-state">
+        <div class="icon">&#9888;</div>
+        <h3>Aucun litige</h3>
+        <p>Les litiges de notes seront affichés ici.</p>
+      </div>
+    </div>
+  </div>
+  <div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

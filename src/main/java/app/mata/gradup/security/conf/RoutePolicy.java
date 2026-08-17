@@ -29,7 +29,8 @@ public class RoutePolicy {
         "/teachers/**",
         "/exams/**",
         "/grades/**",
-        "/disputes/**"
+        "/disputes/**",
+        "/web/**"
       };
 
   private final StudentAuthorizer studentAuthorizer;
@@ -40,7 +41,15 @@ public class RoutePolicy {
       AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
           auth) {
     auth.requestMatchers(
-            "/", "/login", "/ping", "/health/**", "/error", "/css/**", "/js/**", "/images/**")
+            "/",
+            "/login",
+            "/access-denied",
+            "/ping",
+            "/health/**",
+            "/error",
+            "/css/**",
+            "/js/**",
+            "/images/**")
         .permitAll()
         .requestMatchers(
             HttpMethod.GET,

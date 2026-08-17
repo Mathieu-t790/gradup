@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Connexion</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-left">
+      <div class="brand">
+        <img th:src="@{/images/HEI_logo.png}" alt="HEI">
+        <h2>Gradup</h2>
+        <p>Gestion académique et suivi des progresses des étudiants</p>
+      </div>
+    </div>
+    <div class="login-right">
+      <div class="login-form">
+        <h1>Connexion</h1>
+        <p class="subtitle">Accédez à votre espace Gradup</p>
+
+        <div th:if="${param.error}" class="login-error">
+          Email ou mot de passe incorrect.
+        </div>
+
+        <div th:if="${param.logout}" class="login-error" style="background:rgba(97,206,112,0.08);border-color:rgba(97,206,112,0.2);color:#2E7D32;">
+          Vous avez été déconnecté avec succès.
+        </div>
+
+        <form th:action="@{/login}" method="post">
+          <div class="form-group">
+            <label for="email">Adresse email</label>
+            <input type="email" id="email" name="email" class="form-control"
+                   placeholder="votre.email@hei.school" required autofocus>
+          </div>
+          <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" class="form-control"
+                   placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Se connecter</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

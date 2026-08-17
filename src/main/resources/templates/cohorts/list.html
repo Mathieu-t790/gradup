@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Promotions</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/layout :: sidebar('cohorts')}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/layout :: header('Promotions')}"></div>
+
+    <div class="card animate-fade-in-up" style="margin-bottom:24px;" sec:authorize="hasRole('ADMIN')">
+      <h3 style="font-size:16px;font-weight:700;color:var(--hei-blue);margin-bottom:16px;">Créer une promotion</h3>
+      <form th:action="@{/web/cohorts}" method="post" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+        <div class="form-group" style="margin:0;">
+          <label for="label">Label</label>
+          <input type="text" id="label" name="label" class="form-control" placeholder="PROMO 2024" required>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="entryYear">Année d'entrée</label>
+          <input type="number" id="entryYear" name="entryYear" class="form-control" min="2020" max="2030" required>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="expectedGraduationYear">Année de diplomation</label>
+          <input type="number" id="expectedGraduationYear" name="expectedGraduationYear" class="form-control" min="2020" max="2035" required>
+        </div>
+        <button type="submit" class="btn btn-success btn-sm">Créer</button>
+      </form>
+    </div>
+
+    <div class="card animate-fade-in-up stagger-2">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Année d'entrée</th>
+              <th>Année de diplomation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="cohort : ${cohorts}" class="animate-fade-in-up">
+              <td><span class="badge badge-blue" th:text="${cohort.label}"></span></td>
+              <td th:text="${cohort.entryYear}"></td>
+              <td th:text="${cohort.expectedGraduationYear}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${#lists.isEmpty(cohorts)}" class="empty-state">
+        <div class="icon">&#127891;</div>
+        <h3>Aucune promotion</h3>
+        <p>Créez votre première promotion ci-dessus.</p>
+      </div>
+    </div>
+  </div>
+  <div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

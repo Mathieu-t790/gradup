@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Semestres</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/layout :: sidebar('semesters')}"></div>
+  <div class="main-content">
+    <div th:replace="~{fragments/layout :: header('Semestres')}"></div>
+
+    <div class="card animate-fade-in-up" style="margin-bottom:24px;">
+      <h3 style="font-size:16px;font-weight:700;color:var(--hei-blue);margin-bottom:16px;">Créer un semestre</h3>
+      <form th:action="@{/web/semesters}" method="post" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end;">
+        <div class="form-group" style="margin:0;">
+          <label for="number">Numéro</label>
+          <select id="number" name="number" class="form-control" required>
+            <option value="1">Semestre 1</option>
+            <option value="2">Semestre 2</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="academicYearId">Année académique</label>
+          <select id="academicYearId" name="academicYearId" class="form-control" required>
+            <option th:each="year : ${academicYears}" th:value="${year.id}" th:text="${year.label}"></option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="startDate">Date de début</label>
+          <input type="date" id="startDate" name="startDate" class="form-control" required>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="endDate">Date de fin</label>
+          <input type="date" id="endDate" name="endDate" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success btn-sm">Créer</button>
+      </form>
+    </div>
+
+    <div class="card animate-fade-in-up stagger-2">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Semestre</th>
+              <th>Année académique</th>
+              <th>Date de début</th>
+              <th>Date de fin</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="semester : ${semesters}" class="animate-fade-in-up">
+              <td><span class="badge badge-blue" th:text="'S' + ${semester.number}"></span></td>
+              <td th:text="${semester.academicYear.label}"></td>
+              <td th:text="${semester.startDate}"></td>
+              <td th:text="${semester.endDate}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div th:if="${#lists.isEmpty(semesters)}" class="empty-state">
+        <div class="icon">&#9201;</div>
+        <h3>Aucun semestre</h3>
+        <p>Créez votre premier semestre ci-dessus.</p>
+      </div>
+    </div>
+  </div>
+  <div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 package app.mata.gradup.security.conf;
 
-import app.mata.gradup.security.error.RestAccessDeniedHandler;
-import app.mata.gradup.security.error.RestAuthenticationEntryPoint;
+import app.mata.gradup.security.error.WebAccessDeniedHandler;
+import app.mata.gradup.security.error.WebAuthenticationEntryPoint;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,10 +16,9 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConf {
 
   private final UserDetailsService userDetailsService;
-  private final RestAuthenticationEntryPoint authenticationEntryPoint;
-  private final RestAccessDeniedHandler accessDeniedHandler;
+  private final WebAuthenticationEntryPoint authenticationEntryPoint;
+  private final WebAccessDeniedHandler accessDeniedHandler;
   private final RoutePolicy routePolicy;
-  private final LoginPageRegistration loginPageRegistration;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -33,7 +32,6 @@ public class SecurityConf {
                 exceptions
                     .authenticationEntryPoint(authenticationEntryPoint)
                     .accessDeniedHandler(accessDeniedHandler));
-    loginPageRegistration.register(http);
     return http.build();
   }
 }
