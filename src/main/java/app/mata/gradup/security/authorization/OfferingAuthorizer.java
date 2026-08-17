@@ -1,5 +1,6 @@
 package app.mata.gradup.security.authorization;
 
+import app.mata.gradup.model.Role;
 import app.mata.gradup.repository.ExamRepository;
 import app.mata.gradup.repository.GradeDisputeRepository;
 import app.mata.gradup.repository.GradeRepository;
@@ -29,11 +30,11 @@ public class OfferingAuthorizer implements AuthorizationManager<RequestAuthoriza
   public AuthorizationDecision check(
       Supplier<Authentication> authentication, RequestAuthorizationContext context) {
     var auth = authentication.get();
-    if (AuthorizationUtils.hasRole(auth, "ADMIN")) {
+    if (AuthorizationUtils.hasRole(auth, Role.ADMIN)) {
       return new AuthorizationDecision(true);
     }
     var userDetails = AuthorizationUtils.userDetails(auth);
-    if (!AuthorizationUtils.hasRole(auth, "TEACHER") || userDetails.isEmpty()) {
+    if (!AuthorizationUtils.hasRole(auth, Role.TEACHER) || userDetails.isEmpty()) {
       return new AuthorizationDecision(false);
     }
     var offeringId = resolveOfferingId(context.getVariables());
