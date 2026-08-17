@@ -12,11 +12,15 @@ import app.mata.gradup.repository.StudentRepository;
 import app.mata.gradup.repository.StudentTrackHistoryRepository;
 import app.mata.gradup.repository.VCourseAverageRepository;
 import app.mata.gradup.repository.VGraduationEligibilityRepository;
+import app.mata.gradup.repository.model.JCourse;
+import app.mata.gradup.repository.model.JVCourseAverage;
 import app.mata.gradup.service.utils.Pages;
 import app.mata.gradup.service.utils.Students;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,20 +52,26 @@ public class GraduationEligibilityService {
   }
 
   private List<FailingCourse> failingCourses(UUID studentId) {
-    return Pages.allPages(
+    var averages =
+        Pages.allPages(
             pageable ->
                 courseAverageRepository.findByStudentIdAndAverageLessThan(
                     studentId, PASSING_THRESHOLD, pageable),
-            Pages.DEFAULT_PAGE_SIZE)
-        .stream()
+            Pages.DEFAULT_PAGE_SIZE);
+    if (averages.isEmpty()) {
+      return List.of();
+    }
+    var courseIds = averages.stream().map(JVCourseAverage::getCourseId).collect(Collectors.toSet());
+    var coursesByCourseId =
+        courseRepository.findAllById(courseIds).stream()
+            .collect(Collectors.toMap(JCourse::getId, Function.identity()));
+    return averages.stream()
         .map(
             average -> {
-              var course =
-                  courseRepository
-                      .findById(average.getCourseId())
-                      .orElseThrow(
-                          () ->
-                              new NotFoundException("Course not found: " + average.getCourseId()));
+              var course = coursesByCourseId.get(average.getCourseId());
+              if (course == null) {
+                throw new NotFoundException("Course not found: " + average.getCourseId());
+              }
               return new FailingCourse(studentMapper.toCourse(course), average.getAverage());
             })
         .toList();
