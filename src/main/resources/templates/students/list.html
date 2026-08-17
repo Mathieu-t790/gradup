@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradup - Étudiants</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/layout :: sidebar('students')}"></div>
+
+  <div class="main-content">
+    <div th:replace="~{fragments/layout :: header('Étudiants')}"></div>
+
+    <div class="card animate-fade-in-up">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Nom</th>
+              <th>Prénom</th>
+              <th>Email</th>
+              <th>Promotion</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="student : ${students}" class="animate-fade-in-up">
+              <td><span class="badge badge-blue" th:text="${student.user.reference}"></span></td>
+              <td th:text="${student.user.lastName}"></td>
+              <td th:text="${student.user.firstName}"></td>
+              <td th:text="${student.user.email}"></td>
+              <td th:text="${student.cohort.label}"></td>
+              <td>
+                <span class="badge" th:classappend="${student.user.active} ? 'badge-green' : 'badge-red'"
+                      th:text="${student.user.active} ? 'Actif' : 'Inactif'"></span>
+              </td>
+              <td>
+                <a th:href="@{/students/{id}(id=${student.id})}" class="btn btn-outline btn-sm">Détail</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:if="${#lists.isEmpty(students)}" class="empty-state">
+        <div class="icon">&#128214;</div>
+        <h3>Aucun étudiant trouvé</h3>
+        <p>Il n'y a pas encore d'étudiants enregistrés dans le système.</p>
+      </div>
+    </div>
+
+    <div class="pagination" th:if="${totalPages > 1}">
+      <a th:if="${currentPage > 0}"
+         th:href="@{/students(page=${currentPage - 1},size=${pageSize})}"
+         class="btn btn-outline btn-sm">&laquo; Précédent</a>
+      <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+            th:classappend="${i == currentPage} ? 'active'"
+            th:if="${totalPages <= 10 or (i >= currentPage - 2 and i <= currentPage + 2)}">
+        <a th:if="${i != currentPage}"
+           th:href="@{/students(page=${i},size=${pageSize})}"
+           th:text="${i + 1}"></a>
+        <span th:if="${i == currentPage}" th:text="${i + 1}"></span>
+      </span>
+      <a th:if="${currentPage < totalPages - 1}"
+         th:href="@{/students(page=${currentPage + 1},size=${pageSize})}"
+         class="btn btn-outline btn-sm">Suivant &raquo;</a>
+    </div>
+  </div>
+
+  <div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>
