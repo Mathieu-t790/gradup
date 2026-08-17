@@ -79,7 +79,7 @@ class GradeIT extends SecuredFacadeIT {
     assertEquals(andriaId, first.getStudentId());
     assertEquals(exam.getId(), first.getExamId());
     assertEquals("Final", first.getExamLabel());
-    assertEquals("Pro1", first.getCourseReference());
+    assertEquals("PROG1", first.getCourseReference());
     assertEquals(15.0, first.getScore());
     assertNotNull(first.getRecordedAt());
     assertEquals("Tafita Mathieu", first.getRecordedByName());
@@ -117,8 +117,8 @@ class GradeIT extends SecuredFacadeIT {
                   .orElseThrow()
                   .getId();
             });
-    seeder.changeScore("STD21001", "Pro1", new BigDecimal("14.00"));
-    seeder.changeScore("STD21001", "Pro1", new BigDecimal("16.00"));
+    seeder.changeScore("STD21001", "PROG1", new BigDecimal("14.00"));
+    seeder.changeScore("STD21001", "PROG1", new BigDecimal("16.00"));
 
     ResponseEntity<GradeHistoryEntryResponse[]> response =
         restTemplate.getForEntity(
@@ -250,7 +250,7 @@ class GradeIT extends SecuredFacadeIT {
           var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
           var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
           var group = seeder.group("K1", cohort, track);
-          var course = seeder.course("Pro1", 5, 1, track);
+          var course = seeder.course("PROG1", 6, 1, track);
           var offering = seeder.offering(course, group, semester);
           var exam = seeder.exam(offering);
           return new Fixture(cohort, track, group, exam);

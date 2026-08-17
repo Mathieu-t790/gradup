@@ -64,7 +64,7 @@ class GradeWriteIT extends SecuredFacadeIT {
     assertNotNull(body.getId());
     assertEquals(student.getId(), body.getStudentId());
     assertEquals(fixture.exam.getId(), body.getExamId());
-    assertEquals("Pro1", body.getCourseReference());
+    assertEquals("PROG1", body.getCourseReference());
     assertEquals(14.5, body.getScore());
     assertEquals("Tafita Mathieu", body.getRecordedByName());
   }
@@ -196,7 +196,7 @@ class GradeWriteIT extends SecuredFacadeIT {
               seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
           JSemester semester =
               seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
-          JCourse course = seeder.course("Pro1", 5, 1, track);
+          JCourse course = seeder.course("PROG1", 6, 1, track);
           JCourseOffering offering = seeder.offering(course, group, semester);
           JExam exam = seeder.exam(offering);
           JStudent student =

@@ -110,6 +110,6 @@ class ExamIT extends SecuredFacadeIT {
   private JCourseOffering seedOffering() {
     var base = seeder.semesterScenario();
     return seeder.offering(
-        seeder.course("Pro1", 5, 1, base.track()), base.group(), base.semester());
+        seeder.course("PROG1", 6, 1, base.track()), base.group(), base.semester());
   }
 }

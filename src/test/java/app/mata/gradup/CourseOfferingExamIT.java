@@ -51,8 +51,8 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   @Test
   void listCourseOfferings_returnsPagedOfferings() {
     Seed seed = seed();
-    seedOffering(seed.course("Pro1"), seed.group, seed.semester, true);
-    seedOffering(seed.course("Pro2"), seed.group, seed.semester, false);
+    seedOffering(seed.course("PROG1"), seed.group, seed.semester, true);
+    seedOffering(seed.course("PROG2", 6, 2), seed.group, seed.semester, false);
 
     ResponseEntity<CourseOfferingPageResponse> response =
         restTemplate.getForEntity(
@@ -71,10 +71,13 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   @Test
   void listCourseOfferings_filtersBySemesterGroupAndCourse() {
     Seed seed = seed();
-    var offering1 = seedOffering(seed.course("Pro1"), seed.group, seed.semester, true);
+    var offering1 = seedOffering(seed.course("PROG1"), seed.group, seed.semester, true);
     var offering2 =
         seedOffering(
-            seed.course("Pro2"), seed.group(seed.cohort, "K2"), seed.semester(seed.year), true);
+            seed.course("PROG2", 6, 2),
+            seed.group(seed.cohort, "K2"),
+            seed.semester(seed.year),
+            true);
 
     ResponseEntity<CourseOfferingPageResponse> semesterFilter =
         restTemplate.getForEntity(
@@ -89,7 +92,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
             CourseOfferingPageResponse.class);
     assertNotNull(groupFilter.getBody());
     assertEquals(1L, groupFilter.getBody().getTotalElements());
-    assertEquals("Pro2", groupFilter.getBody().getContent().getFirst().getCourse().getReference());
+    assertEquals("PROG2", groupFilter.getBody().getContent().getFirst().getCourse().getReference());
 
     ResponseEntity<CourseOfferingPageResponse> courseFilter =
         restTemplate.getForEntity(
@@ -107,7 +110,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   @Test
   void listCourseOfferings_returnsTeachersPerOffering() {
     Seed seed = seed();
-    var offering = seedOffering(seed.course("Pro1"), seed.group, seed.semester, true);
+    var offering = seedOffering(seed.course("PROG1"), seed.group, seed.semester, true);
     seedTeacher(offering);
 
     ResponseEntity<CourseOfferingPageResponse> response =
@@ -122,7 +125,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   @Test
   void createCourseOffering_returnsCreatedOffering() {
     Seed seed = seed();
-    var course = seed.course("Pro1");
+    var course = seed.course("PROG1");
 
     ResponseEntity<CourseOfferingResponse> response =
         restTemplate.postForEntity(
@@ -137,7 +140,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
     CourseOfferingResponse body = response.getBody();
     assertNotNull(body);
     assertNotNull(body.getId());
-    assertEquals("Pro1", body.getCourse().getReference());
+    assertEquals("PROG1", body.getCourse().getReference());
     assertEquals("K1", body.getGroup().getReference());
     assertEquals(1, body.getSemester().getNumber());
     assertFalse(body.getGradingFinalized());
@@ -147,7 +150,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   @Test
   void createCourseOffering_duplicate_returnsConflict() {
     Seed seed = seed();
-    var course = seed.course("Pro1");
+    var course = seed.course("PROG1");
     seedOffering(course, seed.group, seed.semester, true);
 
     ResponseEntity<Error> response =
@@ -167,7 +170,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   @Test
   void createCourseOffering_semesterMismatch_returnsUnprocessableEntity() {
     Seed seed = seed();
-    var course = seed.course("Pro1", 5, 2);
+    var course = seed.course("PROG2", 6, 2);
 
     ResponseEntity<Error> response =
         restTemplate.postForEntity(
@@ -235,7 +238,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
     assertEquals(HttpStatus.NOT_FOUND, courseNotFound.getStatusCode());
 
     Seed seed = seed();
-    var course = seed.course("Pro1");
+    var course = seed.course("PROG1");
     ResponseEntity<Error> groupNotFound =
         restTemplate.postForEntity(
             "/course-offerings",
@@ -251,7 +254,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   void createCourseOffering_commonGroup_skipsCreditRule() {
     Seed seed = seed();
     var commonGroup = seed.group(seed.cohort, "C1", null);
-    var course = seed.course("Pro1", 30, 1, null);
+    var course = seed.course("Heavy", 30, 1, null);
 
     ResponseEntity<CourseOfferingResponse> response =
         restTemplate.postForEntity(
@@ -459,7 +462,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
     }
 
     private JCourse course(String reference) {
-      return seeder.course(reference, 5, 1, track);
+      return seeder.course(reference, 6, 1, track);
     }
 
     private JCourse course(String reference, int credits, int semesterNumber) {
@@ -473,7 +476,7 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
 
   private JCourseOffering seedOfferingFromScratch() {
     Seed seed = seed();
-    return seedOffering(seed.course("Pro1"), seed.group, seed.semester, false);
+    return seedOffering(seed.course("PROG1"), seed.group, seed.semester, false);
   }
 
   private JCourseOffering seedOffering(

@@ -215,7 +215,7 @@ class TranscriptIT extends SecuredFacadeIT {
               seeder.studentWithoutHistories(
                   "STD21001", "Mathieu", "Tafita", "tafita@cu.te", cohort);
           seeder.addGroupHistory(student, group, LocalDate.of(2025, 9, 1), null);
-          var course = seeder.course("PROG1", "Programming", 6, 1, track);
+          var course = seeder.course("PROG1", "Algorithmique", 6, 1, track);
           var offering = seeder.offering(course, group, semester);
           if (withGrade) {
             var exam = seeder.exam(offering);

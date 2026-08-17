@@ -377,7 +377,7 @@ class StudentBusinessIT extends SecuredFacadeIT {
           seeder.grade(std01, exam, "14.00");
           seeder.grade(std02, exam, "16.00");
 
-          var secondCourse = seeder.course("PROG2", 4, 2, trackEl);
+          var secondCourse = seeder.course("PROG2", 6, 2, trackEl);
           var secondOffering = seeder.offering(secondCourse, groupEl, secondSemester);
           var secondExam = seeder.exam(secondOffering);
           seeder.grade(std01, secondExam, "12.00");

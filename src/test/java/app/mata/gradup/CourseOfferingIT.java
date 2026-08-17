@@ -52,7 +52,7 @@ class CourseOfferingIT extends SecuredFacadeIT {
     CourseOfferingResponse body = response.getBody();
     assertNotNull(body);
     assertEquals(offering.getId(), body.getId());
-    assertEquals("Pro1", body.getCourse().getReference());
+    assertEquals("PROG1", body.getCourse().getReference());
     assertEquals("K1", body.getGroup().getReference());
     assertEquals(1, body.getSemester().getNumber());
     assertEquals("2024-2025", body.getSemester().getAcademicYearLabel());
@@ -264,7 +264,7 @@ class CourseOfferingIT extends SecuredFacadeIT {
   private JCourseOffering seedOffering() {
     var base = seeder.semesterScenario();
     return seeder.offering(
-        seeder.course("Pro1", 5, 1, base.track()), base.group(), base.semester());
+        seeder.course("PROG1", 6, 1, base.track()), base.group(), base.semester());
   }
 
   private JTeacher seedTeacher() {
