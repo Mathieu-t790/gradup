@@ -48,7 +48,7 @@ public class TranscriptScope {
   public List<JCourseOffering> byIds(Collection<UUID> offeringIds) {
     return offeringIds.isEmpty()
         ? List.of()
-        : new ArrayList<>(courseOfferingRepository.findAllById(offeringIds));
+        : new ArrayList<>(courseOfferingRepository.findAllWithCourseAndSemesterByIds(offeringIds));
   }
 
   public JGroup groupAt(JStudent student, LocalDate date) {

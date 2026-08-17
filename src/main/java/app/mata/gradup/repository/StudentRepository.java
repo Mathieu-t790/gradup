@@ -7,14 +7,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface StudentRepository extends JpaRepository<JStudent, UUID> {
 
+  // StudentService.listStudents needs user and cohort on every row.
   @Override
   @EntityGraph(attributePaths = {"user", "cohort"})
-  Page<JStudent> findAll(Pageable pageable);
+  Page<JStudent> findAll(@NonNull Pageable pageable);
 
   @EntityGraph(attributePaths = {"user", "cohort"})
   Page<JStudent> findByCohortId(UUID cohortId, Pageable pageable);

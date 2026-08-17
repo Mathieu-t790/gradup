@@ -15,6 +15,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CourseOfferingRepository extends JpaRepository<JCourseOffering, UUID> {
 
+  String OPTIONAL_FILTERS_WHERE =
+      """
+      where (cast(:semesterId as uuid) is null or o.semester.id = :semesterId)
+        and (cast(:groupId as uuid) is null or o.group.id = :groupId)
+        and (cast(:courseId as uuid) is null or o.course.id = :courseId)
+      """;
+
   Page<JCourseOffering> findBySemesterId(UUID semesterId, Pageable pageable);
 
   Page<JCourseOffering> findByGroupId(UUID groupId, Pageable pageable);
@@ -40,9 +47,8 @@ public interface CourseOfferingRepository extends JpaRepository<JCourseOffering,
       @Param("semesterIds") Collection<UUID> semesterIds,
       Pageable pageable);
 
-  @Override
   @EntityGraph(attributePaths = {"course", "semester", "semester.academicYear"})
-  List<JCourseOffering> findAllById(Iterable<UUID> ids);
+  List<JCourseOffering> findAllWithCourseAndSemesterByIds(@Param("ids") Collection<UUID> ids);
 
   @Query(
       value =
@@ -52,17 +58,9 @@ public interface CourseOfferingRepository extends JpaRepository<JCourseOffering,
           join fetch o.group
           join fetch o.semester s
           join fetch s.academicYear
-          where (cast(:semesterId as uuid) is null or o.semester.id = :semesterId)
-            and (cast(:groupId as uuid) is null or o.group.id = :groupId)
-            and (cast(:courseId as uuid) is null or o.course.id = :courseId)
-          """,
-      countQuery =
           """
-          select count(o) from JCourseOffering o
-          where (cast(:semesterId as uuid) is null or o.semester.id = :semesterId)
-            and (cast(:groupId as uuid) is null or o.group.id = :groupId)
-            and (cast(:courseId as uuid) is null or o.course.id = :courseId)
-          """)
+              + OPTIONAL_FILTERS_WHERE,
+      countQuery = "select count(o) from JCourseOffering o " + OPTIONAL_FILTERS_WHERE)
   Page<JCourseOffering> findByOptionalFilters(
       @Param("semesterId") UUID semesterId,
       @Param("groupId") UUID groupId,
