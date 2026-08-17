@@ -31,8 +31,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 
 class SecurityIT extends SecuredFacadeIT {
@@ -46,7 +44,6 @@ class SecurityIT extends SecuredFacadeIT {
   @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
   @Autowired private UserRepository userRepository;
-  @Autowired private PlatformTransactionManager transactionManager;
   @Autowired private TestDataSeeder seeder;
 
   @BeforeEach
@@ -174,7 +171,7 @@ class SecurityIT extends SecuredFacadeIT {
   }
 
   private <T> T inTransaction(java.util.function.Supplier<T> action) {
-    return new TransactionTemplate(transactionManager).execute(status -> action.get());
+    return seeder.inTransaction(action);
   }
 
   private JCohort saveCohort() {

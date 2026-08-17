@@ -49,8 +49,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 public class StudentIT extends SecuredFacadeIT {
 
@@ -67,7 +65,6 @@ public class StudentIT extends SecuredFacadeIT {
   @Autowired private StudentRepository studentRepository;
   @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
-  @Autowired private PlatformTransactionManager transactionManager;
 
   @BeforeEach
   void setUp() {
@@ -397,7 +394,7 @@ public class StudentIT extends SecuredFacadeIT {
   }
 
   private <T> T inTransaction(java.util.function.Supplier<T> action) {
-    return new TransactionTemplate(transactionManager).execute(status -> action.get());
+    return seeder.inTransaction(action);
   }
 
   private <T> ResponseEntity<T> patch(String url, Object body, Class<T> responseType) {
