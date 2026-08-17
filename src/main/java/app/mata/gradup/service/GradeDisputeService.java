@@ -73,7 +73,6 @@ public class GradeDisputeService {
     if (requestedStatus == DisputeStatus.RESOLVED && request.getNewScore() != null) {
       var grade = dispute.getGrade();
       grade.setScore(BigDecimal.valueOf(request.getNewScore()));
-      // The trigger archives the previous score with the current user as modified_by.
       grade.setRecordedBy(currentUserId);
       gradeRepository.save(grade);
       resultingHistoryId = latestHistoryId(grade.getId());
