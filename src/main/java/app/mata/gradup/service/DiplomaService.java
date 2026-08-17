@@ -153,15 +153,26 @@ public class DiplomaService {
             .collect(
                 Collectors.toMap(diploma -> diploma.getStudent().getId(), Function.identity()));
 
+    Map<UUID, JStudent> studentsByStudentId =
+        ranked.stream()
+            .map(JVGraduationEligibility::getStudentId)
+            .filter(studentId -> !existingByStudent.containsKey(studentId))
+            .collect(
+                Collectors.collectingAndThen(
+                    Collectors.toList(),
+                    studentIds ->
+                        studentIds.isEmpty()
+                            ? Map.of()
+                            : studentRepository.findAllById(studentIds).stream()
+                                .collect(Collectors.toMap(JStudent::getId, Function.identity()))));
+
     for (JVGraduationEligibility eligibility : ranked) {
       JDiploma existing = existingByStudent.get(eligibility.getStudentId());
       if (existing == null) {
-        JStudent student =
-            studentRepository
-                .findById(eligibility.getStudentId())
-                .orElseThrow(
-                    () ->
-                        new NotFoundException("Student not found: " + eligibility.getStudentId()));
+        JStudent student = studentsByStudentId.get(eligibility.getStudentId());
+        if (student == null) {
+          throw new NotFoundException("Student not found: " + eligibility.getStudentId());
+        }
         diplomaRepository.save(
             JDiploma.builder()
                 .student(student)
