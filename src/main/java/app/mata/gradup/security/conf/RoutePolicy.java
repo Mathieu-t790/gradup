@@ -40,7 +40,15 @@ public class RoutePolicy {
       AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
           auth) {
     auth.requestMatchers(
-            "/", "/login", "/ping", "/health/**", "/error", "/css/**", "/js/**", "/images/**")
+            "/",
+            "/login",
+            "/access-denied",
+            "/ping",
+            "/health/**",
+            "/error",
+            "/css/**",
+            "/js/**",
+            "/images/**")
         .permitAll()
         .requestMatchers(
             HttpMethod.GET,
