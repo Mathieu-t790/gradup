@@ -23,8 +23,30 @@ public interface CourseOfferingRepository extends JpaRepository<JCourseOffering,
       UUID groupId, Collection<UUID> semesterIds, Pageable pageable);
 
   @Query(
+      """
+      select o from JCourseOffering o
+      where (cast(:semesterId as uuid) is null or o.semester.id = :semesterId)
+        and (cast(:groupId as uuid) is null or o.group.id = :groupId)
+        and (cast(:courseId as uuid) is null or o.course.id = :courseId)
+      """)
+  Page<JCourseOffering> findByOptionalFilters(
+      @Param("semesterId") UUID semesterId,
+      @Param("groupId") UUID groupId,
+      @Param("courseId") UUID courseId,
+      Pageable pageable);
+
+  @Query(
       "select coalesce(sum(c.credits), 0) from JCourseOffering o join o.course c "
           + "where o.semester.id = :semesterId and o.group.track.id = :trackId")
   int sumCreditsBySemesterIdAndTrackId(
       @Param("semesterId") UUID semesterId, @Param("trackId") UUID trackId);
+
+  @Query(
+      "select coalesce(sum(c.credits), 0) from JCourseOffering o join o.course c "
+          + "join o.semester s where s.academicYear.id = :academicYearId "
+          + "and o.group.track.id = :trackId")
+  int sumCreditsByAcademicYearIdAndTrackId(
+      @Param("academicYearId") UUID academicYearId, @Param("trackId") UUID trackId);
+
+  boolean existsByCourseIdAndGroupIdAndSemesterId(UUID courseId, UUID groupId, UUID semesterId);
 }

@@ -56,7 +56,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.support.TransactionTemplate;
 
 class TranscriptIT extends SecuredFacadeIT {
 
@@ -78,7 +77,6 @@ class TranscriptIT extends SecuredFacadeIT {
   @Autowired private GradeRepository gradeRepository;
   @Autowired private TranscriptRepository transcriptRepository;
   @Autowired private TranscriptDetailRepository transcriptDetailRepository;
-  @Autowired private TransactionTemplate transactionTemplate;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -140,9 +138,7 @@ class TranscriptIT extends SecuredFacadeIT {
 
     assertEquals(TranscriptType.FULL, json.getType());
     assertEquals(
-        0,
-        new BigDecimal("12.50")
-            .compareTo(BigDecimal.valueOf(json.getOverallAverage().doubleValue())));
+        0, new BigDecimal("12.50").compareTo(BigDecimal.valueOf(json.getOverallAverage())));
     assertEquals(6, json.getCreditsEarned());
   }
 
@@ -234,8 +230,8 @@ class TranscriptIT extends SecuredFacadeIT {
   }
 
   private Fixture seed(boolean withGrade) {
-    return transactionTemplate.execute(
-        status -> {
+    return seeder.inTransaction(
+        () -> {
           JUser user =
               userRepository.save(
                   JUser.builder()
