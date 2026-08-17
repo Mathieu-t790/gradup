@@ -153,7 +153,7 @@ class GradeIT extends SecuredFacadeIT {
     var fixture = seedOffering();
     var exam = fixture.exam();
     seedUser("teacher@cu.te", Role.TEACHER);
-    loginAs(restTemplate, "teacher@cu.te");
+    loginAsUser(restTemplate, "teacher@cu.te");
 
     ResponseEntity<Error> response =
         restTemplate.getForEntity("/exams/" + exam.getId() + "/grades", Error.class);
@@ -185,8 +185,7 @@ class GradeIT extends SecuredFacadeIT {
                   .orElseThrow()
                   .getId();
             });
-    enableStudentLogin("hery@cu.te");
-    loginAs(restTemplate, "hery@cu.te");
+    loginAsUser(restTemplate, "hery@cu.te");
 
     ResponseEntity<GradeHistoryEntryResponse[]> response =
         restTemplate.getForEntity(
@@ -227,8 +226,7 @@ class GradeIT extends SecuredFacadeIT {
                   .orElseThrow()
                   .getId();
             });
-    enableStudentLogin("mialy@cu.te");
-    loginAs(restTemplate, "mialy@cu.te");
+    loginAsUser(restTemplate, "mialy@cu.te");
 
     ResponseEntity<Error> response =
         restTemplate.getForEntity("/grades/" + gradeId + "/history", Error.class);
@@ -236,12 +234,6 @@ class GradeIT extends SecuredFacadeIT {
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
     assertNotNull(response.getBody());
     assertEquals("FORBIDDEN", response.getBody().getCode());
-  }
-
-  private void enableStudentLogin(String email) {
-    var user = userRepository.findByEmail(email).orElseThrow();
-    user.setPasswordHash(passwordEncoder.encode(TEST_PASSWORD));
-    userRepository.save(user);
   }
 
   private Fixture seedOffering() {

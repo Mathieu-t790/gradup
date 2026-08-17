@@ -47,6 +47,7 @@ public class SemesterIT extends SecuredFacadeIT {
     var response = restTemplate.getForEntity("/semesters", SemesterResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var semesters = List.of(response.getBody());
     assertEquals(2, semesters.size());
     assertEquals(
@@ -63,9 +64,10 @@ public class SemesterIT extends SecuredFacadeIT {
             "/semesters?academicYearId=" + yearOne.getId(), SemesterResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var semesters = List.of(response.getBody());
     assertEquals(1, semesters.size());
-    assertEquals(yearOne.getId(), semesters.get(0).getAcademicYear().getId());
+    assertEquals(yearOne.getId(), semesters.getFirst().getAcademicYear().getId());
   }
 
   @Test
@@ -131,7 +133,7 @@ public class SemesterIT extends SecuredFacadeIT {
   @Test
   void listSemesters_shouldAllowAnyAuthenticatedUser() {
     seedUser("student@cu.te", Role.STUDENT);
-    loginAs(restTemplate, "student@cu.te");
+    loginAsUser(restTemplate, "student@cu.te");
 
     var response = restTemplate.getForEntity("/semesters", SemesterResponse[].class);
 
@@ -141,7 +143,7 @@ public class SemesterIT extends SecuredFacadeIT {
   @Test
   void createSemester_shouldReturn403_forStudent() {
     seedUser("student@cu.te", Role.STUDENT);
-    loginAs(restTemplate, "student@cu.te");
+    loginAsUser(restTemplate, "student@cu.te");
 
     var response =
         restTemplate.postForEntity(

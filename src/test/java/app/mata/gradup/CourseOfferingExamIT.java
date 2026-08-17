@@ -14,13 +14,7 @@ import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.ExamCreateRequest;
 import app.mata.gradup.endpoint.rest.model.ExamResponse;
 import app.mata.gradup.endpoint.rest.model.ExamUpdateRequest;
-import app.mata.gradup.model.Role;
-import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.CourseOfferingRepository;
-import app.mata.gradup.repository.ExamRepository;
-import app.mata.gradup.repository.TeacherAssignmentRepository;
-import app.mata.gradup.repository.TeacherRepository;
-import app.mata.gradup.repository.UserRepository;
 import app.mata.gradup.repository.model.JAcademicYear;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JCourse;
@@ -28,10 +22,7 @@ import app.mata.gradup.repository.model.JCourseOffering;
 import app.mata.gradup.repository.model.JExam;
 import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JSemester;
-import app.mata.gradup.repository.model.JTeacher;
-import app.mata.gradup.repository.model.JTeacherAssignment;
 import app.mata.gradup.repository.model.JTrack;
-import app.mata.gradup.repository.model.JUser;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,10 +40,6 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   @Autowired private TestDataSeeder seeder;
 
   @Autowired private CourseOfferingRepository courseOfferingRepository;
-  @Autowired private ExamRepository examRepository;
-  @Autowired private TeacherRepository teacherRepository;
-  @Autowired private TeacherAssignmentRepository teacherAssignmentRepository;
-  @Autowired private UserRepository userRepository;
 
   @BeforeEach
   void setUp() {
@@ -446,17 +433,9 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
   }
 
   private Seed seed() {
-    return seeder.inTransaction(
-        () -> {
-          JCohort cohort = seeder.cohort("Mpamakilay", 2021, 2024);
-          JTrack track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
-          JGroup group = seeder.group("K1", cohort, track);
-          JAcademicYear year =
-              seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
-          JSemester semester =
-              seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
-          return new Seed(seeder, cohort, track, group, year, semester);
-        });
+    var base = seeder.semesterScenario();
+    return new Seed(
+        seeder, base.cohort(), base.track(), base.group(), base.year(), base.semester());
   }
 
   private record Seed(
@@ -499,48 +478,14 @@ class CourseOfferingExamIT extends SecuredFacadeIT {
 
   private JCourseOffering seedOffering(
       JCourse course, JGroup group, JSemester semester, boolean gradingFinalized) {
-    return seeder.inTransaction(
-        () ->
-            courseOfferingRepository.save(
-                JCourseOffering.builder()
-                    .course(course)
-                    .group(group)
-                    .semester(semester)
-                    .gradingFinalized(gradingFinalized)
-                    .build()));
+    return seeder.offering(course, group, semester, gradingFinalized);
   }
 
   private JExam seedExam(JCourseOffering offering, int numerator, int denominator) {
-    return seeder.inTransaction(
-        () ->
-            examRepository.save(
-                JExam.builder()
-                    .offering(offering)
-                    .label("Final")
-                    .examDate(LocalDate.of(2022, 5, 30))
-                    .weightNumerator(numerator)
-                    .weightDenominator(denominator)
-                    .build()));
+    return seeder.exam(offering, "Final", LocalDate.of(2022, 5, 30), null, numerator, denominator);
   }
 
   private void seedTeacher(JCourseOffering offering) {
-    seeder.inTransaction(
-        () -> {
-          var user =
-              userRepository.save(
-                  JUser.builder()
-                      .lastName("Mathieu")
-                      .firstName("Tafita")
-                      .email("teacher@cu.te")
-                      .passwordHash("hashed")
-                      .role(Role.TEACHER)
-                      .isActive(true)
-                      .build());
-          var teacher = teacherRepository.save(JTeacher.builder().user(user).build());
-          var managedOffering = courseOfferingRepository.findById(offering.getId()).orElseThrow();
-          teacherAssignmentRepository.save(
-              JTeacherAssignment.builder().offering(managedOffering).teacher(teacher).build());
-          return null;
-        });
+    seeder.teacherAssignment(seeder.teacher("teacher@cu.te", "Mathieu", "Tafita"), offering);
   }
 }
