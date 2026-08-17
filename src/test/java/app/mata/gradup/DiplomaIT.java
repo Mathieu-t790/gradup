@@ -2,6 +2,7 @@ package app.mata.gradup;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -148,7 +149,7 @@ class DiplomaIT extends SecuredFacadeIT {
     assertEquals(2, elPage.getSize());
     assertEquals(2, elPage.getTotalPages());
     assertTrue(elPage.getFirst());
-    assertEquals(false, elPage.getLast());
+    assertFalse(elPage.getLast());
 
     ResponseEntity<DiplomaPageResponse> tn =
         restTemplate.getForEntity(

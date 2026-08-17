@@ -26,6 +26,7 @@ import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JSemester;
 import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JTrack;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -305,7 +306,7 @@ class StudentBusinessIT extends SecuredFacadeIT {
   @Test
   void get_graduation_eligibility_returns_failing_courses_for_student_below_threshold() {
     Fixture fixture = seed();
-    seeder.changeScore("STD21002", "PROG1", new java.math.BigDecimal("8.00"));
+    seeder.changeScore("STD21002", "PROG1", new BigDecimal("8.00"));
 
     var response =
         restTemplate.getForEntity(

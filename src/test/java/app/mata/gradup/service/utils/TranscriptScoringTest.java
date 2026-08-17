@@ -60,7 +60,6 @@ class TranscriptScoringTest {
     assertTrue(TranscriptScoring.hasPassed(BigDecimal.TEN));
     assertTrue(TranscriptScoring.hasPassed(new BigDecimal("12.50")));
     assertFalse(TranscriptScoring.hasPassed(new BigDecimal("9.99")));
-    assertFalse(false);
   }
 
   @Test

@@ -24,7 +24,6 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -148,7 +147,7 @@ class TranscriptIT extends SecuredFacadeIT {
     ResponseEntity<String> response = rawPost(fixture.studentId, body);
 
     assertEquals(400, response.getStatusCode().value());
-    Assertions.assertNotNull(response.getBody());
+    assertNotNull(response.getBody());
     assertTrue(response.getBody().contains("BAD_REQUEST"));
   }
 
@@ -163,7 +162,7 @@ class TranscriptIT extends SecuredFacadeIT {
     ResponseEntity<String> response = rawPost(UUID.randomUUID(), body);
 
     assertEquals(404, response.getStatusCode().value());
-    Assertions.assertNotNull(response.getBody());
+    assertNotNull(response.getBody());
     assertTrue(response.getBody().contains("NOT_FOUND"));
   }
 

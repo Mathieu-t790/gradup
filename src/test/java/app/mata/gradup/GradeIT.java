@@ -16,6 +16,7 @@ import app.mata.gradup.repository.model.JExam;
 import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JTrack;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -240,13 +241,9 @@ class GradeIT extends SecuredFacadeIT {
     return seeder.inTransaction(
         () -> {
           var year =
-              seeder.academicYear(
-                  "2024-2025",
-                  java.time.LocalDate.of(2024, 9, 1),
-                  java.time.LocalDate.of(2025, 8, 31));
+              seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
           var semester =
-              seeder.semester(
-                  1, year, java.time.LocalDate.of(2024, 9, 1), java.time.LocalDate.of(2025, 1, 31));
+              seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
           var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
           var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
           var group = seeder.group("K1", cohort, track);
