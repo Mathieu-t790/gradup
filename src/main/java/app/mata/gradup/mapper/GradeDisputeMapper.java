@@ -25,7 +25,8 @@ public class GradeDisputeMapper {
         .courseReference(exam.getOffering().getCourse().getReference())
         .examLabel(exam.getLabel())
         .reason(dispute.getReason())
-        .status(app.mata.gradup.endpoint.rest.model.DisputeStatus.valueOf(dispute.getStatus().name()))
+        .status(
+            app.mata.gradup.endpoint.rest.model.DisputeStatus.valueOf(dispute.getStatus().name()))
         .createdAt(dispute.getCreatedAt())
         .resolvedAt(dispute.getResolvedAt())
         .resolvedByName(resolvedByName(dispute.getResolvedBy()))

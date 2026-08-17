@@ -1,8 +1,8 @@
 package app.mata.gradup.service;
 
 import app.mata.gradup.endpoint.rest.model.GradeDisputeCreateRequest;
-import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResolveRequest;
+import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
 import app.mata.gradup.exception.BusinessRuleException;
 import app.mata.gradup.exception.ConflictException;
 import app.mata.gradup.exception.NotFoundException;
@@ -38,7 +38,9 @@ public class GradeDisputeService {
   public GradeDisputeResponse createGradeDispute(
       UUID gradeId, GradeDisputeCreateRequest request, UUID currentUserId) {
     var grade =
-        gradeRepository.findById(gradeId).orElseThrow(() -> new NotFoundException("Grade not found"));
+        gradeRepository
+            .findById(gradeId)
+            .orElseThrow(() -> new NotFoundException("Grade not found"));
     if (gradeDisputeRepository.findByGradeIdAndStatus(gradeId, DisputeStatus.PENDING).isPresent()) {
       throw new ConflictException("A pending dispute already exists for this grade");
     }

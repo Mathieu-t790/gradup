@@ -329,8 +329,7 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
           JTrack track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
           JGroup group = seeder.group("K1", cohort, track);
           var year =
-              seeder.academicYear(
-                  "2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
+              seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
           var semester =
               seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
           var course = seeder.course("Pro1", 5, 1, track);

@@ -1,8 +1,8 @@
 package app.mata.gradup.endpoint.rest.controller;
 
 import app.mata.gradup.endpoint.rest.model.GradeDisputeCreateRequest;
-import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResolveRequest;
+import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
 import app.mata.gradup.security.userDetails.JUserDetails;
 import app.mata.gradup.service.GradeDisputeService;
 import java.util.List;
