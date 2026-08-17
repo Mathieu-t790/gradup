@@ -6,13 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.conf.TestDataSeeder;
+import app.mata.gradup.conf.TestDataSeeder.DisputeScenario;
 import app.mata.gradup.endpoint.rest.model.DisputeStatus;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeCreateRequest;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResolveRequest;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
-import app.mata.gradup.model.TrackCode;
-import app.mata.gradup.repository.GradeDisputeRepository;
 import app.mata.gradup.repository.GradeHistoryRepository;
 import app.mata.gradup.repository.GradeRepository;
 import app.mata.gradup.repository.model.JCourseOffering;
@@ -22,7 +21,6 @@ import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JTeacher;
 import app.mata.gradup.repository.model.JTrack;
-import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +38,6 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
   @Autowired private GradeRepository gradeRepository;
-  @Autowired private GradeDisputeRepository gradeDisputeRepository;
   @Autowired private GradeHistoryRepository gradeHistoryRepository;
 
   @BeforeEach
@@ -69,7 +66,7 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
     assertEquals(grade.getId(), body.getGradeId());
     assertEquals(fixture.student.getId(), body.getStudentId());
     assertEquals("Hery Rakoto", body.getStudentName());
-    assertEquals("Pro1", body.getCourseReference());
+    assertEquals("PROG1", body.getCourseReference());
     assertEquals("Final", body.getExamLabel());
     assertEquals("Wrong score", body.getReason());
     assertEquals("PENDING", body.getStatus().toString());
@@ -189,7 +186,17 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
     Fixture fixture = seedFixture();
     JGrade grade = gradeOf(fixture, fixture.student);
     UUID disputeId = seeder.dispute(grade, fixture.student, "Wrong score").getId();
-    resolveDisputeInDatabase(disputeId);
+
+    ResponseEntity<GradeDisputeResponse> first =
+        restTemplate.exchange(
+            "/disputes/" + disputeId,
+            HttpMethod.PATCH,
+            new HttpEntity<>(
+                new GradeDisputeResolveRequest()
+                    .status(DisputeStatus.RESOLVED)
+                    .resolutionNote("First resolution")),
+            GradeDisputeResponse.class);
+    assertEquals(HttpStatus.OK, first.getStatusCode());
 
     ResponseEntity<Error> response =
         restTemplate.exchange(
@@ -250,7 +257,7 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
     JGrade grade = gradeOf(fixture, fixture.student);
     UUID disputeId = seeder.dispute(grade, fixture.student, "Wrong score").getId();
     JTeacher teacher = seedTeacher();
-    seeder.teacherAssignment(teacher, fixture.offering);
+    seeder.teacherAssignment(teacher, fixture.offering());
     loginAsTeacher();
 
     ResponseEntity<GradeDisputeResponse> response =
@@ -325,20 +332,18 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
   private Fixture seedFixture() {
     return seeder.inTransaction(
         () -> {
-          var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
-          JTrack track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
-          JGroup group = seeder.group("K1", cohort, track);
-          var year =
-              seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
-          var semester =
-              seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
-          var course = seeder.course("Pro1", 5, 1, track);
-          var offering = seeder.offering(course, group, semester);
-          JExam exam = seeder.exam(offering);
+          DisputeScenario scenario = seeder.disputeScenario();
           JStudent student =
-              seeder.student("STD21001", "Rakoto", "Hery", "std21001@cu.te", cohort, track, group);
-          seeder.grade(student, exam, "12.00");
-          return new Fixture(student, exam, offering, track, group);
+              seeder.student(
+                  "STD21001",
+                  "Rakoto",
+                  "Hery",
+                  "std21001@cu.te",
+                  scenario.cohort(),
+                  scenario.track(),
+                  scenario.group());
+          seeder.grade(student, scenario.exam(), "12.00");
+          return new Fixture(student, scenario);
         });
   }
 
@@ -352,11 +357,11 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
                     "Mialy",
                     "std21002@cu.te",
                     fixture.student.getCohort(),
-                    fixture.track,
-                    fixture.group));
+                    fixture.track(),
+                    fixture.group()));
     seeder.inTransaction(
         () -> {
-          seeder.grade(other, fixture.exam, "14.00");
+          seeder.grade(other, fixture.exam(), "14.00");
           return null;
         });
     return other;
@@ -364,7 +369,7 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
 
   private JGrade gradeOf(Fixture fixture, JStudent student) {
     return gradeRepository
-        .findByStudentIdAndExamId(student.getId(), fixture.exam.getId())
+        .findByStudentIdAndExamId(student.getId(), fixture.exam().getId())
         .orElseThrow();
   }
 
@@ -372,30 +377,30 @@ class GradeDisputeWriteIT extends SecuredFacadeIT {
     return seeder.inTransaction(() -> seeder.teacher(TEACHER_EMAIL, "Rakotomalala", "Njato"));
   }
 
-  private void resolveDisputeInDatabase(UUID disputeId) {
-    seeder.inTransaction(
-        () -> {
-          var dispute = gradeDisputeRepository.findById(disputeId).orElseThrow();
-          dispute.setStatus(app.mata.gradup.model.DisputeStatus.RESOLVED);
-          gradeDisputeRepository.save(dispute);
-          return null;
-        });
-  }
-
   private void loginAsTeacher() {
-    var user = userRepository.findByEmail(TEACHER_EMAIL).orElseThrow();
-    user.setPasswordHash(passwordEncoder.encode(TEST_PASSWORD));
-    userRepository.save(user);
-    loginAs(restTemplate, TEACHER_EMAIL);
+    loginAsUser(restTemplate, TEACHER_EMAIL);
   }
 
   private void loginAsStudent(JStudent student) {
-    var user = userRepository.findById(student.getId()).orElseThrow();
-    user.setPasswordHash(passwordEncoder.encode(TEST_PASSWORD));
-    userRepository.save(user);
-    loginAs(restTemplate, user.getEmail());
+    loginAsUser(restTemplate, student.getUser().getEmail());
   }
 
-  private record Fixture(
-      JStudent student, JExam exam, JCourseOffering offering, JTrack track, JGroup group) {}
+  private record Fixture(JStudent student, DisputeScenario scenario) {
+
+    JExam exam() {
+      return scenario.exam();
+    }
+
+    JCourseOffering offering() {
+      return scenario.offering();
+    }
+
+    JTrack track() {
+      return scenario.track();
+    }
+
+    JGroup group() {
+      return scenario.group();
+    }
+  }
 }

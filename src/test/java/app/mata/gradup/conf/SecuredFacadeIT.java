@@ -47,6 +47,17 @@ public abstract class SecuredFacadeIT extends FacadeIT {
     loginAs(restTemplate, ADMIN_EMAIL);
   }
 
+  /**
+   * Resets the user password to {@link #TEST_PASSWORD} (seed users are stored with a hash) then
+   * logs in.
+   */
+  protected void loginAsUser(TestRestTemplate restTemplate, String email) {
+    var user = userRepository.findByEmail(email).orElseThrow();
+    user.setPasswordHash(passwordEncoder.encode(TEST_PASSWORD));
+    userRepository.save(user);
+    loginAs(restTemplate, email);
+  }
+
   protected void loginAs(TestRestTemplate restTemplate, String email) {
     var headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);

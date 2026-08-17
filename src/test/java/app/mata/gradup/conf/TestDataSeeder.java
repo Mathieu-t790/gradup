@@ -226,11 +226,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     return teacherRepository.save(JTeacher.builder().user(user).specialty(null).build());
   }
 
-  public JTeacherAssignment teacherAssignment(JTeacher teacher, JCourseOffering offering) {
+  public void teacherAssignment(JTeacher teacher, JCourseOffering offering) {
     JTeacher managedTeacher = teacherRepository.findById(teacher.getId()).orElseThrow();
     JCourseOffering managedOffering =
         courseOfferingRepository.findById(offering.getId()).orElseThrow();
-    return teacherAssignmentRepository.save(
+    teacherAssignmentRepository.save(
         JTeacherAssignment.builder().offering(managedOffering).teacher(managedTeacher).build());
   }
 
@@ -238,6 +238,29 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     return gradeDisputeRepository.save(
         JGradeDispute.builder().grade(grade).student(student).reason(reason).build());
   }
+
+  public DisputeScenario disputeScenario() {
+    return inTransaction(
+        () -> {
+          var year = academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
+          var semester = semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
+          var cohort = cohort("Mpamakilay", 2021, 2024);
+          var track = track(TrackCode.EL, "Ecosysteme Logiciel");
+          var group = group("K1", cohort, track);
+          var course = course("PROG1", 6, 1, track);
+          var offering = offering(course, group, semester);
+          var exam = exam(offering);
+          return new DisputeScenario(cohort, track, group, semester, offering, exam);
+        });
+  }
+
+  public record DisputeScenario(
+      JCohort cohort,
+      JTrack track,
+      JGroup group,
+      JSemester semester,
+      JCourseOffering offering,
+      JExam exam) {}
 
   public void grade(JStudent student, JExam exam, String score) {
     gradeRepository.save(
