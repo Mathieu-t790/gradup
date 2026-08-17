@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -47,7 +46,14 @@ public interface CourseOfferingRepository extends JpaRepository<JCourseOffering,
       @Param("semesterIds") Collection<UUID> semesterIds,
       Pageable pageable);
 
-  @EntityGraph(attributePaths = {"course", "semester", "semester.academicYear"})
+  @Query(
+      """
+      select o from JCourseOffering o
+      join fetch o.course
+      join fetch o.semester s
+      join fetch s.academicYear
+      where o.id in :ids
+      """)
   List<JCourseOffering> findAllWithCourseAndSemesterByIds(@Param("ids") Collection<UUID> ids);
 
   @Query(
