@@ -1,10 +1,11 @@
 package app.mata.gradup.endpoint.rest.controller;
 
+import app.mata.gradup.endpoint.rest.model.DisputeStatus;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeCreateRequest;
 import app.mata.gradup.endpoint.rest.model.GradeDisputePageResponse;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResolveRequest;
 import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
-import app.mata.gradup.model.DisputeStatus;
+import app.mata.gradup.mapper.GradeDisputeMapper;
 import app.mata.gradup.security.userDetails.JUserDetails;
 import app.mata.gradup.service.GradeDisputeService;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GradeDisputeController {
 
   private final GradeDisputeService gradeDisputeService;
+  private final GradeDisputeMapper gradeDisputeMapper;
 
   @PostMapping("/grades/{gradeId}/disputes")
   @ResponseStatus(HttpStatus.CREATED)
@@ -52,11 +54,10 @@ public class GradeDisputeController {
 
   @GetMapping("/disputes")
   public GradeDisputePageResponse listDisputes(
-      @RequestParam(required = false) app.mata.gradup.endpoint.rest.model.DisputeStatus status,
+      @RequestParam(required = false) DisputeStatus status,
       Pageable pageable,
       @AuthenticationPrincipal JUserDetails userDetails) {
-    DisputeStatus domainStatus = status == null ? null : DisputeStatus.valueOf(status.name());
     return gradeDisputeService.listDisputes(
-        domainStatus, pageable, userDetails.userId(), userDetails.getRole());
+        gradeDisputeMapper.toDomain(status), pageable, userDetails.userId(), userDetails.getRole());
   }
 }
