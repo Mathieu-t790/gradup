@@ -79,7 +79,7 @@ public class GradeDisputeService {
     if (dispute.getStatus() != DisputeStatus.PENDING) {
       throw new ConflictException("Dispute is not in PENDING status");
     }
-    DisputeStatus requestedStatus = DisputeStatus.valueOf(request.getStatus().name());
+    DisputeStatus requestedStatus = gradeDisputeMapper.toDomain(request.getStatus());
     if (requestedStatus == DisputeStatus.PENDING) {
       throw new BusinessRuleException("A dispute cannot be resolved to PENDING");
     }

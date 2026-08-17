@@ -12,6 +12,7 @@ import app.mata.gradup.repository.model.JAcademicYear;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JSemester;
 import app.mata.gradup.repository.model.JTrack;
+import app.mata.gradup.service.utils.TrackCodes;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -35,10 +36,10 @@ public interface ReferenceMapper {
   SemesterSummary toSemesterSummary(Semester semester);
 
   default app.mata.gradup.endpoint.rest.model.TrackCode toRestTrackCode(TrackCode code) {
-    return code == null ? null : app.mata.gradup.endpoint.rest.model.TrackCode.valueOf(code.name());
+    return TrackCodes.toRest(code);
   }
 
   default TrackCode toDomainTrackCode(app.mata.gradup.endpoint.rest.model.TrackCode code) {
-    return code == null ? null : TrackCode.valueOf(code.name());
+    return TrackCodes.toDomain(code);
   }
 }

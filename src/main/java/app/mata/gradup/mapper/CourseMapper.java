@@ -7,6 +7,7 @@ import app.mata.gradup.model.Course;
 import app.mata.gradup.model.Track;
 import app.mata.gradup.repository.model.JCourse;
 import app.mata.gradup.repository.model.JTrack;
+import app.mata.gradup.service.utils.TrackCodes;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -33,9 +34,6 @@ public interface CourseMapper {
     }
     return new TrackSummary()
         .id(track.id())
-        .code(
-            track.code() == null
-                ? null
-                : app.mata.gradup.endpoint.rest.model.TrackCode.valueOf(track.code().name()));
+        .code(track.code() == null ? null : TrackCodes.toRest(track.code()));
   }
 }
