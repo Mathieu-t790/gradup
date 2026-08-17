@@ -180,10 +180,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   }
 
   public JCourse course(String reference, int credits, int semesterNumber, JTrack track) {
+    return course(reference, reference, credits, semesterNumber, track);
+  }
+
+  public JCourse course(
+      String reference, String title, int credits, int semesterNumber, JTrack track) {
     return courseRepository.save(
         JCourse.builder()
             .reference(reference)
-            .title(reference)
+            .title(title)
             .credits(credits)
             .semesterNumber(semesterNumber)
             .track(track)
