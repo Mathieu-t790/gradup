@@ -80,17 +80,27 @@ public interface CourseOfferingRepository extends JpaRepository<JCourseOffering,
       Pageable pageable);
 
   @Query(
-      "select coalesce(sum(c.credits), 0) from JCourseOffering o join o.course c "
-          + "where o.semester.id = :semesterId and o.group.track.id = :trackId")
+      "select coalesce(sum(c.credits), 0) from JCourse c "
+          + "where c.id in ("
+          + "  select o.course.id from JCourseOffering o left join o.group.track t "
+          + "  where o.semester.id = :semesterId and (t.id = :trackId or t is null)) "
+          + "or c.id = :prospectiveCourseId")
   int sumCreditsBySemesterIdAndTrackId(
-      @Param("semesterId") UUID semesterId, @Param("trackId") UUID trackId);
+      @Param("semesterId") UUID semesterId,
+      @Param("trackId") UUID trackId,
+      @Param("prospectiveCourseId") UUID prospectiveCourseId);
 
   @Query(
-      "select coalesce(sum(c.credits), 0) from JCourseOffering o join o.course c "
-          + "join o.semester s where s.academicYear.id = :academicYearId "
-          + "and o.group.track.id = :trackId")
+      "select coalesce(sum(c.credits), 0) from JCourse c "
+          + "where c.id in ("
+          + "  select o.course.id from JCourseOffering o left join o.group.track t "
+          + "  join o.semester s "
+          + "  where s.academicYear.id = :academicYearId and (t.id = :trackId or t is null)) "
+          + "or c.id = :prospectiveCourseId")
   int sumCreditsByAcademicYearIdAndTrackId(
-      @Param("academicYearId") UUID academicYearId, @Param("trackId") UUID trackId);
+      @Param("academicYearId") UUID academicYearId,
+      @Param("trackId") UUID trackId,
+      @Param("prospectiveCourseId") UUID prospectiveCourseId);
 
   boolean existsByCourseIdAndGroupIdAndSemesterId(UUID courseId, UUID groupId, UUID semesterId);
 }
