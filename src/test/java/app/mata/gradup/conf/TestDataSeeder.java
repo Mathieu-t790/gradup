@@ -161,22 +161,25 @@ public class TestDataSeeder {
 
   public JStudent studentWithoutHistories(
       String reference, String lastName, String firstName, String email, JCohort cohort) {
-    UUID userId = UUID.randomUUID();
-    jdbcTemplate.update(
-        """
+    return inTransaction(
+        () -> {
+          UUID userId = UUID.randomUUID();
+          jdbcTemplate.update(
+              """
 INSERT INTO users (user_id, reference, last_name, first_name, email, password_hash, role, is_active)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 """,
-        userId,
-        reference,
-        lastName,
-        firstName,
-        email,
-        "hashed",
-        Role.STUDENT.name(),
-        true);
-    JUser user = userRepository.findById(userId).orElseThrow();
-    return studentRepository.save(JStudent.builder().user(user).cohort(cohort).build());
+              userId,
+              isValidReference(reference) ? reference : null,
+              lastName,
+              firstName,
+              email,
+              "hashed",
+              Role.STUDENT.name(),
+              true);
+          JUser user = userRepository.findById(userId).orElseThrow();
+          return studentRepository.save(JStudent.builder().user(user).cohort(cohort).build());
+        });
   }
 
   public JCourse course(String reference, int credits, int semesterNumber, JTrack track) {
@@ -237,18 +240,20 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   }
 
   public JTeacher teacher(String email, String lastName, String firstName) {
-    JUser user =
-        userRepository.save(
-            JUser.builder()
-                .reference("TEA-" + email)
-                .lastName(lastName)
-                .firstName(firstName)
-                .email(email)
-                .passwordHash("hashed")
-                .role(Role.TEACHER)
-                .isActive(true)
-                .build());
-    return teacherRepository.save(JTeacher.builder().user(user).specialty(null).build());
+    return inTransaction(
+        () -> {
+          var user =
+              userRepository.save(
+                  JUser.builder()
+                      .lastName(lastName)
+                      .firstName(firstName)
+                      .email(email)
+                      .passwordHash("hashed")
+                      .role(Role.TEACHER)
+                      .isActive(true)
+                      .build());
+          return teacherRepository.save(JTeacher.builder().user(user).specialty(null).build());
+        });
   }
 
   public void teacherAssignment(JTeacher teacher, JCourseOffering offering) {
@@ -400,6 +405,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 
   public <T> T inTransaction(Supplier<T> action) {
     return transactionTemplate.execute(status -> action.get());
+  }
+
+  private static boolean isValidReference(String reference) {
+    return reference != null && reference.matches("^(STD|TCH|ADM)\\d{5}$");
   }
 
   public UUID adminUserId() {
