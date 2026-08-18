@@ -215,7 +215,7 @@ class TeacherIT extends SecuredFacadeIT {
     assertEquals(1, courseOffering.getSemester().getNumber());
     assertEquals("2024-2025", courseOffering.getSemester().getAcademicYearLabel());
     assertEquals(1, courseOffering.getTeachers().size());
-    assertEquals("Tafita", courseOffering.getTeachers().get(0).getFirstName());
+    assertEquals("Tafita", courseOffering.getTeachers().getFirst().getFirstName());
     assertFalse(courseOffering.getGradingFinalized());
   }
 
@@ -235,9 +235,11 @@ class TeacherIT extends SecuredFacadeIT {
     seedUser("teacher@cu.te", Role.TEACHER);
     loginAs(restTemplate, "teacher@cu.te");
 
-    var response = restTemplate.getForEntity("/teachers", TeacherResponse[].class);
+    var response = restTemplate.getForEntity("/teachers", Error.class);
 
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("FORBIDDEN", response.getBody().getCode());
   }
 
   @Test
@@ -250,6 +252,8 @@ class TeacherIT extends SecuredFacadeIT {
             "/teachers/" + UUID.randomUUID() + "/course-offerings", Error.class);
 
     assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("FORBIDDEN", response.getBody().getCode());
   }
 
   @Test
