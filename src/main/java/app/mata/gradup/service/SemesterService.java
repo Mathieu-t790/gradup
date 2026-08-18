@@ -97,7 +97,7 @@ public class SemesterService {
     }
 
     var totalCredits =
-        courseOfferingRepository.sumCreditsBySemesterIdAndTrackId(semesterId, trackId);
+        courseOfferingRepository.sumCreditsBySemesterIdAndTrackId(semesterId, trackId, null);
     if (totalCredits != REQUIRED_CREDITS) {
       throw new BusinessRuleException(
           "Semester credits must be exactly 30 but was " + totalCredits);
