@@ -1,8 +1,8 @@
 package app.mata.gradup.controller.web;
 
-import app.mata.gradup.repository.AcademicYearRepository;
-import app.mata.gradup.repository.SemesterRepository;
-import app.mata.gradup.repository.model.JSemester;
+import app.mata.gradup.endpoint.rest.model.SemesterCreateRequest;
+import app.mata.gradup.service.AcademicYearService;
+import app.mata.gradup.service.SemesterService;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -16,13 +16,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @AllArgsConstructor
 public class WebSemesterController {
 
-  private final SemesterRepository semesterRepository;
-  private final AcademicYearRepository academicYearRepository;
+  private final SemesterService semesterService;
+  private final AcademicYearService academicYearService;
 
   @GetMapping("/web/semesters")
   public String listSemesters(Model model) {
-    model.addAttribute("semesters", semesterRepository.findAll());
-    model.addAttribute("academicYears", academicYearRepository.findAll());
+    model.addAttribute("semesters", semesterService.listForWeb());
+    model.addAttribute("academicYears", academicYearService.listAcademicYears());
     return "semesters/list";
   }
 
@@ -32,15 +32,12 @@ public class WebSemesterController {
       @RequestParam UUID academicYearId,
       @RequestParam LocalDate startDate,
       @RequestParam LocalDate endDate) {
-    var academicYear = academicYearRepository.findById(academicYearId).orElseThrow();
-    var semester =
-        JSemester.builder()
+    semesterService.createSemester(
+        new SemesterCreateRequest()
             .number(number)
-            .academicYear(academicYear)
+            .academicYearId(academicYearId)
             .startDate(startDate)
-            .endDate(endDate)
-            .build();
-    semesterRepository.save(semester);
+            .endDate(endDate));
     return "redirect:/web/semesters";
   }
 }

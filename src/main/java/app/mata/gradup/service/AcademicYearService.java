@@ -48,4 +48,9 @@ public class AcademicYearService {
                 .build());
     return academicYearMapper.toRest(academicYearMapper.toDomain(saved));
   }
+
+  @Transactional(readOnly = true)
+  public List<JAcademicYear> listForWeb() {
+    return academicYearRepository.findAll();
+  }
 }

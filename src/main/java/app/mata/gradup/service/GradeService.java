@@ -138,6 +138,16 @@ public class GradeService {
   }
 
   @Transactional(readOnly = true)
+  public List<JGrade> listForWeb(Pageable pageable) {
+    return gradeRepository.findAll(pageable).getContent();
+  }
+
+  @Transactional(readOnly = true)
+  public List<JGrade> listForWebByStudent(UUID studentId, Pageable pageable) {
+    return gradeRepository.findByStudentId(studentId, pageable).getContent();
+  }
+
+  @Transactional(readOnly = true)
   public List<GradeHistoryEntryResponse> listGradeHistory(UUID gradeId) {
     gradeRepository.findById(gradeId).orElseThrow(() -> new NotFoundException("Grade not found"));
     var entries = gradeHistoryRepository.findByGradeId(gradeId);

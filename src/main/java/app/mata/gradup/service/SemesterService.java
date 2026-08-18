@@ -46,6 +46,11 @@ public class SemesterService {
     return semesters.stream().map(semesterMapper::toDomain).map(semesterMapper::toRest).toList();
   }
 
+  @Transactional(readOnly = true)
+  public List<JSemester> listForWeb() {
+    return semesterRepository.findAll();
+  }
+
   @Transactional
   public SemesterResponse createSemester(SemesterCreateRequest request) {
     var number = request.getNumber();

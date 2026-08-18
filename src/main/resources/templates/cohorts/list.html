@@ -38,6 +38,7 @@
               <th>Label</th>
               <th>Année d'entrée</th>
               <th>Année de diplomation</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -45,6 +46,9 @@
               <td><span class="badge badge-blue" th:text="${cohort.label}"></span></td>
               <td th:text="${cohort.entryYear}"></td>
               <td th:text="${cohort.expectedGraduationYear}"></td>
+              <td>
+                <a class="btn btn-sm btn-primary" th:href="@{/web/cohorts/{id}/diplomas/export(id=${cohort.id})}">Télécharger les diplômés</a>
+              </td>
             </tr>
           </tbody>
         </table>

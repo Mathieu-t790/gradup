@@ -11,6 +11,7 @@ import app.mata.gradup.repository.ExamRepository;
 import app.mata.gradup.repository.model.JCourseOffering;
 import app.mata.gradup.repository.model.JExam;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,11 @@ public class ExamService {
     var exam =
         examRepository.findById(examId).orElseThrow(() -> new NotFoundException("Exam not found"));
     return examMapper.toRest(exam);
+  }
+
+  @Transactional(readOnly = true)
+  public List<JExam> listForWeb() {
+    return examRepository.findAll();
   }
 
   @Transactional

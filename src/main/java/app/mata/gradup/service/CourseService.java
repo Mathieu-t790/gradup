@@ -36,6 +36,11 @@ public class CourseService {
         .toList();
   }
 
+  @Transactional(readOnly = true)
+  public List<JCourse> listForWeb() {
+    return courseRepository.findAll();
+  }
+
   @Transactional
   public CourseResponse createCourse(CourseCreateRequest request) {
     validateCreate(request);

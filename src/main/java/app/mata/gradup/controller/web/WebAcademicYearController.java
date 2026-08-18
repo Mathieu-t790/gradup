@@ -1,7 +1,7 @@
 package app.mata.gradup.controller.web;
 
-import app.mata.gradup.repository.AcademicYearRepository;
-import app.mata.gradup.repository.model.JAcademicYear;
+import app.mata.gradup.endpoint.rest.model.AcademicYearCreateRequest;
+import app.mata.gradup.service.AcademicYearService;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 @AllArgsConstructor
 public class WebAcademicYearController {
 
-  private final AcademicYearRepository academicYearRepository;
+  private final AcademicYearService academicYearService;
 
   @GetMapping("/web/academic-years")
   public String listAcademicYears(Model model) {
-    model.addAttribute("academicYears", academicYearRepository.findAll());
+    model.addAttribute("academicYears", academicYearService.listForWeb());
     return "academic-years/list";
   }
 
@@ -27,8 +27,8 @@ public class WebAcademicYearController {
       @RequestParam String label,
       @RequestParam LocalDate startDate,
       @RequestParam LocalDate endDate) {
-    var year = JAcademicYear.builder().label(label).startDate(startDate).endDate(endDate).build();
-    academicYearRepository.save(year);
+    academicYearService.createAcademicYear(
+        new AcademicYearCreateRequest().label(label).startDate(startDate).endDate(endDate));
     return "redirect:/web/academic-years";
   }
 }

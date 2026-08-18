@@ -119,6 +119,21 @@ public class StudentService {
   }
 
   @Transactional(readOnly = true)
+  public Page<JStudent> listForWeb(Pageable pageable) {
+    return studentRepository.findAll(pageable);
+  }
+
+  @Transactional(readOnly = true)
+  public JStudent getForWeb(UUID studentId) {
+    return findStudent(studentId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<JStudentGroupHistory> groupHistoryForWeb(UUID studentId) {
+    return studentGroupHistoryRepository.findByStudentIdOrderByStartDateDesc(studentId);
+  }
+
+  @Transactional(readOnly = true)
   public StudentPageResponse listStudents(UUID cohortId, UUID groupId, Pageable pageable) {
     var page = findStudents(cohortId, groupId, pageable);
     var students = page.getContent();

@@ -165,4 +165,9 @@ public class GradeDisputeService {
         .map(JGradeHistory::getId)
         .orElse(null);
   }
+
+  @Transactional(readOnly = true)
+  public List<JGradeDispute> listForWeb() {
+    return gradeDisputeRepository.findAll();
+  }
 }

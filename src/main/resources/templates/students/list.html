@@ -34,8 +34,8 @@
               <td th:text="${student.user.email}"></td>
               <td th:text="${student.cohort.label}"></td>
               <td>
-                <span class="badge" th:classappend="${student.user.active} ? 'badge-green' : 'badge-red'"
-                      th:text="${student.user.active} ? 'Actif' : 'Inactif'"></span>
+                <span class="badge" th:classappend="${student.user.isActive} ? 'badge-green' : 'badge-red'"
+                      th:text="${student.user.isActive} ? 'Actif' : 'Inactif'"></span>
               </td>
               <td>
                 <a th:href="@{/web/students/{id}(id=${student.id})}" class="btn btn-outline btn-sm">Détail</a>

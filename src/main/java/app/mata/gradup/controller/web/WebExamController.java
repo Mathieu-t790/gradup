@@ -1,6 +1,6 @@
 package app.mata.gradup.controller.web;
 
-import app.mata.gradup.repository.ExamRepository;
+import app.mata.gradup.service.ExamService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @AllArgsConstructor
 public class WebExamController {
 
-  private final ExamRepository examRepository;
+  private final ExamService examService;
 
   @GetMapping("/web/exams")
   public String listExams(Model model) {
-    model.addAttribute("exams", examRepository.findAll());
+    model.addAttribute("exams", examService.listForWeb());
     return "exams/list";
   }
 }

@@ -34,8 +34,8 @@
           </div>
           <div style="display:flex;justify-content:space-between;padding:8px 0;">
             <span style="color:var(--hei-gray);font-size:13px;">Statut</span>
-            <span class="badge" th:classappend="${student.user.active} ? 'badge-green' : 'badge-red'"
-                  th:text="${student.user.active} ? 'Actif' : 'Inactif'"></span>
+            <span class="badge" th:classappend="${student.user.isActive} ? 'badge-green' : 'badge-red'"
+                  th:text="${student.user.isActive} ? 'Actif' : 'Inactif'"></span>
           </div>
         </div>
       </div>
@@ -53,6 +53,21 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="card animate-fade-in-up">
+      <h3 style="font-size:16px;font-weight:700;color:var(--hei-blue);margin-bottom:16px;">Générer un relevé de notes</h3>
+      <form th:action="@{/web/students/{id}/transcripts(id=${student.id})}" method="post"
+            style="display:flex;gap:12px;align-items:end;">
+        <div class="form-group" style="margin:0;flex:1;">
+          <label for="semesterId">Semestre</label>
+          <select id="semesterId" name="semesterId" class="form-control" required>
+            <option th:each="semester : ${semesters}" th:value="${semester.id}"
+                    th:text="${semester.number} — ${semester.academicYear.label}"></option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-success">Générer le relevé (PDF)</button>
+      </form>
     </div>
 
     <div class="card animate-fade-in-up stagger-2" th:if="${not #lists.isEmpty(groupHistory)}">

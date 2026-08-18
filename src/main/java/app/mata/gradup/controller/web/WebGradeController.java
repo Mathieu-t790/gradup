@@ -1,6 +1,6 @@
 package app.mata.gradup.controller.web;
 
-import app.mata.gradup.repository.GradeRepository;
+import app.mata.gradup.service.GradeService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -11,12 +11,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @AllArgsConstructor
 public class WebGradeController {
 
-  private final GradeRepository gradeRepository;
+  private final GradeService gradeService;
 
   @GetMapping("/web/grades")
   public String listGrades(Model model) {
-    var grades = gradeRepository.findAll(PageRequest.of(0, 50));
-    model.addAttribute("grades", grades.getContent());
+    model.addAttribute("grades", gradeService.listForWeb(PageRequest.of(0, 50)));
     return "grades/list";
   }
 }
