@@ -5,6 +5,7 @@ import app.mata.gradup.endpoint.rest.model.CourseOfferingPageResponse;
 import app.mata.gradup.endpoint.rest.model.CourseOfferingResponse;
 import app.mata.gradup.endpoint.rest.model.ExamResponse;
 import app.mata.gradup.service.CourseOfferingService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -37,7 +38,7 @@ public class CourseOfferingController {
   @PostMapping("/course-offerings")
   @ResponseStatus(HttpStatus.CREATED)
   public CourseOfferingResponse createCourseOffering(
-      @RequestBody CourseOfferingCreateRequest request) {
+      @RequestBody @Valid CourseOfferingCreateRequest request) {
     return courseOfferingService.createCourseOffering(request);
   }
 

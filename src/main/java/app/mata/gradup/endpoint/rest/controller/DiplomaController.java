@@ -3,8 +3,8 @@ package app.mata.gradup.endpoint.rest.controller;
 import app.mata.gradup.endpoint.rest.model.DiplomaExportResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaPageResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaResponse;
-import app.mata.gradup.endpoint.rest.model.TrackCode;
 import app.mata.gradup.service.DiplomaService;
+import app.mata.gradup.service.utils.TrackCodes;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -26,25 +26,18 @@ public class DiplomaController {
       @PathVariable UUID cohortId,
       @RequestParam(required = false) String track,
       Pageable pageable) {
-    return diplomaService.listCohortDiplomas(cohortId, nullableTrack(track), pageable);
+    return diplomaService.listCohortDiplomas(cohortId, TrackCodes.toRest(track), pageable);
   }
 
   @PostMapping("/cohorts/{cohortId}/diplomas/generate")
   public List<DiplomaResponse> generateCohortDiplomas(
       @PathVariable UUID cohortId, @RequestParam(required = false) String track) {
-    return diplomaService.generateCohortDiplomas(cohortId, nullableTrack(track));
+    return diplomaService.generateCohortDiplomas(cohortId, TrackCodes.toRest(track));
   }
 
   @GetMapping("/cohorts/{cohortId}/diplomas/export")
   public DiplomaExportResponse exportCohortDiplomas(
       @PathVariable UUID cohortId, @RequestParam(required = false) String track) {
-    return diplomaService.exportCohortDiplomas(cohortId, nullableTrack(track));
-  }
-
-  private static TrackCode nullableTrack(String track) {
-    if (track == null || track.isBlank()) {
-      return null;
-    }
-    return TrackCode.fromValue(track);
+    return diplomaService.exportCohortDiplomas(cohortId, TrackCodes.toRest(track));
   }
 }

@@ -6,6 +6,7 @@ import app.mata.gradup.endpoint.rest.model.GradeResponse;
 import app.mata.gradup.endpoint.rest.model.GradeUpdateRequest;
 import app.mata.gradup.security.userDetails.JUserDetails;
 import app.mata.gradup.service.GradeService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -39,7 +40,7 @@ public class GradeController {
   @ResponseStatus(HttpStatus.CREATED)
   public GradeResponse recordGrade(
       @PathVariable UUID examId,
-      @RequestBody GradeCreateRequest request,
+      @RequestBody @Valid GradeCreateRequest request,
       @AuthenticationPrincipal JUserDetails userDetails) {
     return gradeService.recordGrade(examId, request, userDetails.userId());
   }
@@ -47,7 +48,7 @@ public class GradeController {
   @PutMapping("/grades/{gradeId}")
   public GradeResponse updateGrade(
       @PathVariable UUID gradeId,
-      @RequestBody GradeUpdateRequest request,
+      @RequestBody @Valid GradeUpdateRequest request,
       @AuthenticationPrincipal JUserDetails userDetails) {
     return gradeService.updateGrade(gradeId, request, userDetails.userId());
   }
