@@ -8,6 +8,7 @@ import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.mapper.ExamMapper;
 import app.mata.gradup.repository.CourseOfferingRepository;
 import app.mata.gradup.repository.ExamRepository;
+import app.mata.gradup.repository.model.JCourseOffering;
 import app.mata.gradup.repository.model.JExam;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -87,8 +88,7 @@ public class ExamService {
     return examMapper.toRest(examRepository.save(exam));
   }
 
-  private void updateGradingFinalized(
-      app.mata.gradup.repository.model.JCourseOffering offering, double total) {
+  private void updateGradingFinalized(JCourseOffering offering, double total) {
     if (Math.abs(total - MAX_WEIGHT) <= WEIGHT_EPSILON) {
       offering.setGradingFinalized(true);
       courseOfferingRepository.save(offering);

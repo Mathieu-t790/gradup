@@ -14,38 +14,16 @@ import app.mata.gradup.endpoint.rest.model.TranscriptResponse;
 import app.mata.gradup.endpoint.rest.model.TranscriptType;
 import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mail.Mailer;
-import app.mata.gradup.model.Role;
 import app.mata.gradup.model.TrackCode;
-import app.mata.gradup.repository.CourseOfferingRepository;
-import app.mata.gradup.repository.CourseRepository;
-import app.mata.gradup.repository.ExamRepository;
-import app.mata.gradup.repository.GradeRepository;
-import app.mata.gradup.repository.StudentGroupHistoryRepository;
-import app.mata.gradup.repository.StudentRepository;
 import app.mata.gradup.repository.TranscriptDetailRepository;
 import app.mata.gradup.repository.TranscriptRepository;
-import app.mata.gradup.repository.UserRepository;
-import app.mata.gradup.repository.model.JAcademicYear;
-import app.mata.gradup.repository.model.JCohort;
-import app.mata.gradup.repository.model.JCourse;
-import app.mata.gradup.repository.model.JCourseOffering;
-import app.mata.gradup.repository.model.JExam;
-import app.mata.gradup.repository.model.JGrade;
-import app.mata.gradup.repository.model.JGroup;
-import app.mata.gradup.repository.model.JSemester;
-import app.mata.gradup.repository.model.JStudent;
-import app.mata.gradup.repository.model.JStudentGroupHistory;
-import app.mata.gradup.repository.model.JTrack;
 import app.mata.gradup.repository.model.JTranscriptDetail;
-import app.mata.gradup.repository.model.JUser;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -68,13 +46,6 @@ class TranscriptIT extends SecuredFacadeIT {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
 
-  @Autowired private UserRepository userRepository;
-  @Autowired private StudentRepository studentRepository;
-  @Autowired private StudentGroupHistoryRepository studentGroupHistoryRepository;
-  @Autowired private CourseRepository courseRepository;
-  @Autowired private CourseOfferingRepository courseOfferingRepository;
-  @Autowired private ExamRepository examRepository;
-  @Autowired private GradeRepository gradeRepository;
   @Autowired private TranscriptRepository transcriptRepository;
   @Autowired private TranscriptDetailRepository transcriptDetailRepository;
 
@@ -176,7 +147,7 @@ class TranscriptIT extends SecuredFacadeIT {
     ResponseEntity<String> response = rawPost(fixture.studentId, body);
 
     assertEquals(400, response.getStatusCode().value());
-    Assertions.assertNotNull(response.getBody());
+    assertNotNull(response.getBody());
     assertTrue(response.getBody().contains("BAD_REQUEST"));
   }
 
@@ -191,7 +162,7 @@ class TranscriptIT extends SecuredFacadeIT {
     ResponseEntity<String> response = rawPost(UUID.randomUUID(), body);
 
     assertEquals(404, response.getStatusCode().value());
-    Assertions.assertNotNull(response.getBody());
+    assertNotNull(response.getBody());
     assertTrue(response.getBody().contains("NOT_FOUND"));
   }
 
@@ -232,71 +203,23 @@ class TranscriptIT extends SecuredFacadeIT {
   private Fixture seed(boolean withGrade) {
     return seeder.inTransaction(
         () -> {
-          JUser user =
-              userRepository.save(
-                  JUser.builder()
-                      .lastName("Mathieu")
-                      .firstName("Tafita")
-                      .email("tafita@cu.te")
-                      .passwordHash("hashed")
-                      .role(Role.STUDENT)
-                      .build());
-          JCohort cohort = seeder.cohort("Mpamakilay", 2021, 2024);
-          JStudent student =
-              studentRepository.save(JStudent.builder().user(user).cohort(cohort).build());
-
-          JTrack track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
-          JGroup group = seeder.group("k1", cohort, null);
-          JAcademicYear year =
+          var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+          var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+          var group = seeder.group("k1", cohort, null);
+          var year =
               seeder.academicYear("2025-2026", LocalDate.of(2025, 9, 1), LocalDate.of(2026, 7, 31));
-          JSemester semester =
+          var semester =
               seeder.semester(1, year, LocalDate.of(2025, 9, 1), LocalDate.of(2026, 1, 31));
-          studentGroupHistoryRepository.save(
-              JStudentGroupHistory.builder()
-                  .student(student)
-                  .group(group)
-                  .startDate(LocalDate.of(2025, 9, 1))
-                  .endDate(null)
-                  .build());
-
-          JCourse course =
-              courseRepository.save(
-                  JCourse.builder()
-                      .reference("PROG1")
-                      .title("Programming")
-                      .credits(6)
-                      .semesterNumber(1)
-                      .track(track)
-                      .build());
-          JCourseOffering offering =
-              courseOfferingRepository.save(
-                  JCourseOffering.builder()
-                      .course(course)
-                      .group(group)
-                      .semester(semester)
-                      .gradingFinalized(true)
-                      .build());
-
+          var student =
+              seeder.studentWithoutHistories(
+                  "STD21001", "Mathieu", "Tafita", "tafita@cu.te", cohort);
+          seeder.addGroupHistory(student, group, LocalDate.of(2025, 9, 1), null);
+          var course = seeder.course("PROG1", "Algorithmique", 6, 1, track);
+          var offering = seeder.offering(course, group, semester);
           if (withGrade) {
-            JExam exam =
-                examRepository.save(
-                    JExam.builder()
-                        .offering(offering)
-                        .label("Final")
-                        .examDate(LocalDate.of(2025, 12, 10))
-                        .weightNumerator(1)
-                        .weightDenominator(1)
-                        .build());
-            gradeRepository.save(
-                JGrade.builder()
-                    .student(student)
-                    .exam(exam)
-                    .score(new BigDecimal("12.50"))
-                    .recordedAt(Instant.now())
-                    .recordedBy(user.getId())
-                    .build());
+            var exam = seeder.exam(offering);
+            seeder.grade(student, exam, "12.50");
           }
-
           return new Fixture(student.getId(), semester.getId(), year.getId());
         });
   }

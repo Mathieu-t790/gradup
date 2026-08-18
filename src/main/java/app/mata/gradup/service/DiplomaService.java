@@ -3,6 +3,7 @@ package app.mata.gradup.service;
 import app.mata.gradup.endpoint.rest.model.DiplomaExportResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaPageResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaResponse;
+import app.mata.gradup.endpoint.rest.model.TrackCode;
 import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mapper.DiplomaMapper;
@@ -19,6 +20,7 @@ import app.mata.gradup.repository.model.JVGraduationEligibility;
 import app.mata.gradup.service.utils.BucketExporter;
 import app.mata.gradup.service.utils.Pages;
 import app.mata.gradup.service.utils.Ranking;
+import app.mata.gradup.service.utils.TrackCodes;
 import app.mata.gradup.service.utils.Wording;
 import app.mata.gradup.service.utils.XlsxRenderer;
 import java.math.BigDecimal;
@@ -58,7 +60,7 @@ public class DiplomaService {
 
   @Transactional(readOnly = true)
   public DiplomaPageResponse listCohortDiplomas(
-      UUID cohortId, app.mata.gradup.endpoint.rest.model.TrackCode trackCode, Pageable pageable) {
+      UUID cohortId, TrackCode trackCode, Pageable pageable) {
     cohort(cohortId);
     if (trackCode == null) {
       return promotionList(cohortId, pageable);
@@ -70,8 +72,7 @@ public class DiplomaService {
   }
 
   @Transactional
-  public List<DiplomaResponse> generateCohortDiplomas(
-      UUID cohortId, app.mata.gradup.endpoint.rest.model.TrackCode trackCode) {
+  public List<DiplomaResponse> generateCohortDiplomas(UUID cohortId, TrackCode trackCode) {
     JCohort cohort = cohort(cohortId);
     if (trackCode == null) {
       return generateForPromotion(cohort);
@@ -216,8 +217,7 @@ public class DiplomaService {
   }
 
   @Transactional(readOnly = true)
-  public DiplomaExportResponse exportCohortDiplomas(
-      UUID cohortId, app.mata.gradup.endpoint.rest.model.TrackCode trackCode) {
+  public DiplomaExportResponse exportCohortDiplomas(UUID cohortId, TrackCode trackCode) {
     JCohort cohort = cohort(cohortId);
     List<JDiploma> diplomas =
         trackCode == null
@@ -274,11 +274,9 @@ public class DiplomaService {
         .orElseThrow(() -> new NotFoundException("Cohort not found: " + cohortId));
   }
 
-  private JTrack track(app.mata.gradup.endpoint.rest.model.TrackCode trackCode) {
-    app.mata.gradup.model.TrackCode code =
-        app.mata.gradup.model.TrackCode.valueOf(trackCode.name());
+  private JTrack track(TrackCode trackCode) {
     return trackRepository
-        .findByCode(code)
+        .findByCode(TrackCodes.toDomain(trackCode))
         .orElseThrow(() -> new NotFoundException("Track not found: " + trackCode));
   }
 

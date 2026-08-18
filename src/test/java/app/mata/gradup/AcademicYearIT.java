@@ -40,6 +40,7 @@ public class AcademicYearIT extends SecuredFacadeIT {
     var response = restTemplate.getForEntity("/academic-years", AcademicYearResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var years = List.of(response.getBody());
     assertEquals(2, years.size());
     assertEquals(
@@ -121,7 +122,7 @@ public class AcademicYearIT extends SecuredFacadeIT {
   @Test
   void listAcademicYears_shouldAllowAnyAuthenticatedUser() {
     seedUser("student@cu.te", Role.STUDENT);
-    loginAs(restTemplate, "student@cu.te");
+    loginAsUser(restTemplate, "student@cu.te");
 
     var response = restTemplate.getForEntity("/academic-years", AcademicYearResponse[].class);
 
@@ -131,7 +132,7 @@ public class AcademicYearIT extends SecuredFacadeIT {
   @Test
   void createAcademicYear_shouldReturn403_forStudent() {
     seedUser("student@cu.te", Role.STUDENT);
-    loginAs(restTemplate, "student@cu.te");
+    loginAsUser(restTemplate, "student@cu.te");
 
     var response =
         restTemplate.postForEntity(

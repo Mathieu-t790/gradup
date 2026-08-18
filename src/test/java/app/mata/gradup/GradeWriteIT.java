@@ -9,13 +9,9 @@ import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.GradeCreateRequest;
 import app.mata.gradup.endpoint.rest.model.GradeResponse;
 import app.mata.gradup.endpoint.rest.model.GradeUpdateRequest;
-import app.mata.gradup.model.Role;
 import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.GradeHistoryRepository;
 import app.mata.gradup.repository.GradeRepository;
-import app.mata.gradup.repository.TeacherAssignmentRepository;
-import app.mata.gradup.repository.TeacherRepository;
-import app.mata.gradup.repository.UserRepository;
 import app.mata.gradup.repository.model.JAcademicYear;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JCourse;
@@ -25,9 +21,7 @@ import app.mata.gradup.repository.model.JGrade;
 import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JSemester;
 import app.mata.gradup.repository.model.JStudent;
-import app.mata.gradup.repository.model.JTeacher;
 import app.mata.gradup.repository.model.JTrack;
-import app.mata.gradup.repository.model.JUser;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,9 +39,6 @@ class GradeWriteIT extends SecuredFacadeIT {
   @Autowired private TestDataSeeder seeder;
   @Autowired private GradeRepository gradeRepository;
   @Autowired private GradeHistoryRepository gradeHistoryRepository;
-  @Autowired private TeacherRepository teacherRepository;
-  @Autowired private TeacherAssignmentRepository teacherAssignmentRepository;
-  @Autowired private UserRepository userRepository;
 
   @BeforeEach
   void setUp() {
@@ -73,7 +64,7 @@ class GradeWriteIT extends SecuredFacadeIT {
     assertNotNull(body.getId());
     assertEquals(student.getId(), body.getStudentId());
     assertEquals(fixture.exam.getId(), body.getExamId());
-    assertEquals("Pro1", body.getCourseReference());
+    assertEquals("PROG1", body.getCourseReference());
     assertEquals(14.5, body.getScore());
     assertEquals("Tafita Mathieu", body.getRecordedByName());
   }
@@ -114,8 +105,8 @@ class GradeWriteIT extends SecuredFacadeIT {
   @Test
   void recordGrade_unassignedTeacher_returnsForbidden() {
     Fixture fixture = seedFixture();
-    seedTeacher();
-    loginAsTeacher();
+    seeder.teacher("teacher@cu.te", "Mathieu", "Tafita");
+    loginAsUser(restTemplate, "teacher@cu.te");
 
     ResponseEntity<Error> response =
         restTemplate.postForEntity(
@@ -182,8 +173,8 @@ class GradeWriteIT extends SecuredFacadeIT {
                   .findByStudentIdAndExamId(fixture.student.getId(), fixture.exam.getId())
                   .orElseThrow();
             });
-    seedTeacher();
-    loginAsTeacher();
+    seeder.teacher("teacher@cu.te", "Mathieu", "Tafita");
+    loginAsUser(restTemplate, "teacher@cu.te");
 
     ResponseEntity<Error> response =
         restTemplate.exchange(
@@ -205,38 +196,13 @@ class GradeWriteIT extends SecuredFacadeIT {
               seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
           JSemester semester =
               seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
-          JCourse course = seeder.course("Pro1", 5, 1, track);
+          JCourse course = seeder.course("PROG1", 6, 1, track);
           JCourseOffering offering = seeder.offering(course, group, semester);
           JExam exam = seeder.exam(offering);
           JStudent student =
               seeder.student("STD21001", "Rakoto", "Hery", "rakoto@cu.te", cohort, track, group);
           return new Fixture(student, exam, group, semester);
         });
-  }
-
-  private void seedTeacher() {
-    seeder.inTransaction(
-        () -> {
-          var user =
-              userRepository.save(
-                  JUser.builder()
-                      .lastName("Mathieu")
-                      .firstName("Tafita")
-                      .email("teacher@cu.te")
-                      .passwordHash("hashed")
-                      .role(Role.TEACHER)
-                      .isActive(true)
-                      .build());
-          teacherRepository.save(JTeacher.builder().user(user).build());
-          return null;
-        });
-  }
-
-  private void loginAsTeacher() {
-    var user = userRepository.findByEmail("teacher@cu.te").orElseThrow();
-    user.setPasswordHash(passwordEncoder.encode(TEST_PASSWORD));
-    userRepository.save(user);
-    loginAs(restTemplate, "teacher@cu.te");
   }
 
   private record Fixture(JStudent student, JExam exam, JGroup group, JSemester semester) {}

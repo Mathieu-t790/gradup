@@ -202,7 +202,7 @@ class GradeDisputeIT extends SecuredFacadeIT {
     var fixture = seedFixture();
     seedDispute(fixture, "STD21001", "wrong score", 12);
     seedUser("student@cu.te", Role.STUDENT);
-    loginAs(restTemplate, "student@cu.te");
+    loginAsUser(restTemplate, "student@cu.te");
 
     ResponseEntity<Error> response = restTemplate.getForEntity("/disputes", Error.class);
 

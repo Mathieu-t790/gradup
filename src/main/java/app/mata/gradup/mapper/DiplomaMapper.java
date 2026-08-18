@@ -7,6 +7,7 @@ import app.mata.gradup.endpoint.rest.model.TrackSummary;
 import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.model.JDiploma;
 import app.mata.gradup.repository.model.JUser;
+import app.mata.gradup.service.utils.TrackCodes;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.mapstruct.Mapper;
@@ -57,6 +58,6 @@ public interface DiplomaMapper {
   }
 
   default app.mata.gradup.endpoint.rest.model.TrackCode toRestTrackCode(TrackCode code) {
-    return code == null ? null : app.mata.gradup.endpoint.rest.model.TrackCode.valueOf(code.name());
+    return TrackCodes.toRest(code);
   }
 }

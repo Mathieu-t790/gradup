@@ -24,6 +24,7 @@ import app.mata.gradup.repository.model.JStudentGroupHistory;
 import app.mata.gradup.repository.model.JStudentTrackHistory;
 import app.mata.gradup.repository.model.JTrack;
 import app.mata.gradup.repository.model.JUser;
+import app.mata.gradup.service.utils.TrackCodes;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -56,7 +57,7 @@ public interface StudentMapper {
   StudentSummaryResponse toRestSummary(JStudent entity, Group currentGroup, Track currentTrack);
 
   default app.mata.gradup.endpoint.rest.model.TrackCode toRestTrackCode(TrackCode code) {
-    return code == null ? null : app.mata.gradup.endpoint.rest.model.TrackCode.valueOf(code.name());
+    return TrackCodes.toRest(code);
   }
 
   default JsonNullable<String> toCurrentGroupReference(Group group) {

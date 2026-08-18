@@ -29,7 +29,9 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -146,37 +148,38 @@ public class TestDataSeeder {
       JTrack track,
       JGroup group,
       LocalDate startDate) {
-    UUID userId = UUID.randomUUID();
-    jdbcTemplate.update(
-        """
+    return inTransaction(
+        () -> {
+          var managedCohort = cohortRepository.findById(cohort.getId()).orElseThrow();
+          var student =
+              studentWithoutHistories(reference, lastName, firstName, email, managedCohort);
+          addTrackHistory(student, track, startDate, null);
+          addGroupHistory(student, group, startDate, null);
+          return student;
+        });
+  }
+
+  public JStudent studentWithoutHistories(
+      String reference, String lastName, String firstName, String email, JCohort cohort) {
+    return inTransaction(
+        () -> {
+          UUID userId = UUID.randomUUID();
+          jdbcTemplate.update(
+              """
 INSERT INTO users (user_id, reference, last_name, first_name, email, password_hash, role, is_active)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 """,
-        userId,
-        reference,
-        lastName,
-        firstName,
-        email,
-        "hashed",
-        Role.STUDENT.name(),
-        true);
-    JUser user = userRepository.findById(userId).orElseThrow();
-    JStudent student = studentRepository.save(JStudent.builder().user(user).cohort(cohort).build());
-    studentTrackHistoryRepository.save(
-        JStudentTrackHistory.builder()
-            .student(student)
-            .track(track)
-            .startDate(startDate)
-            .endDate(null)
-            .build());
-    studentGroupHistoryRepository.save(
-        JStudentGroupHistory.builder()
-            .student(student)
-            .group(group)
-            .startDate(startDate)
-            .endDate(null)
-            .build());
-    return student;
+              userId,
+              isValidReference(reference) ? reference : null,
+              lastName,
+              firstName,
+              email,
+              "hashed",
+              Role.STUDENT.name(),
+              true);
+          JUser user = userRepository.findById(userId).orElseThrow();
+          return studentRepository.save(JStudent.builder().user(user).cohort(cohort).build());
+        });
   }
 
   public JCourse course(String reference, int credits, int semesterNumber, JTrack track) {
@@ -196,39 +199,61 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   }
 
   public JCourseOffering offering(JCourse course, JGroup group, JSemester semester) {
+    return offering(course, group, semester, true);
+  }
+
+  public JCourseOffering offering(
+      JCourse course, JGroup group, JSemester semester, boolean gradingFinalized) {
     return courseOfferingRepository.save(
         JCourseOffering.builder()
             .course(course)
             .group(group)
             .semester(semester)
-            .gradingFinalized(true)
+            .gradingFinalized(gradingFinalized)
             .build());
   }
 
   public JExam exam(JCourseOffering offering) {
-    return examRepository.save(
-        JExam.builder()
-            .offering(offering)
-            .label("Final")
-            .examDate(LocalDate.of(2022, 5, 30))
-            .weightNumerator(1)
-            .weightDenominator(1)
-            .build());
+    return exam(offering, "Final", LocalDate.of(2022, 5, 30), null, 1, 1);
+  }
+
+  public JExam exam(
+      JCourseOffering offering,
+      String label,
+      LocalDate examDate,
+      LocalTime examTime,
+      int weightNumerator,
+      int weightDenominator) {
+    return inTransaction(
+        () -> {
+          var managedOffering = courseOfferingRepository.findById(offering.getId()).orElseThrow();
+          return examRepository.save(
+              JExam.builder()
+                  .offering(managedOffering)
+                  .label(label)
+                  .examDate(examDate)
+                  .examTime(examTime)
+                  .weightNumerator(weightNumerator)
+                  .weightDenominator(weightDenominator)
+                  .build());
+        });
   }
 
   public JTeacher teacher(String email, String lastName, String firstName) {
-    JUser user =
-        userRepository.save(
-            JUser.builder()
-                .reference("TEA-" + email)
-                .lastName(lastName)
-                .firstName(firstName)
-                .email(email)
-                .passwordHash("hashed")
-                .role(Role.TEACHER)
-                .isActive(true)
-                .build());
-    return teacherRepository.save(JTeacher.builder().user(user).specialty(null).build());
+    return inTransaction(
+        () -> {
+          var user =
+              userRepository.save(
+                  JUser.builder()
+                      .lastName(lastName)
+                      .firstName(firstName)
+                      .email(email)
+                      .passwordHash("hashed")
+                      .role(Role.TEACHER)
+                      .isActive(true)
+                      .build());
+          return teacherRepository.save(JTeacher.builder().user(user).specialty(null).build());
+        });
   }
 
   public void teacherAssignment(JTeacher teacher, JCourseOffering offering) {
@@ -239,12 +264,46 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         JTeacherAssignment.builder().offering(managedOffering).teacher(managedTeacher).build());
   }
 
+  public void addGroupHistory(
+      JStudent student, JGroup group, LocalDate startDate, LocalDate endDate) {
+    inTransaction(
+        () -> {
+          var managedStudent = studentRepository.findById(student.getId()).orElseThrow();
+          var managedGroup = groupRepository.findById(group.getId()).orElseThrow();
+          studentGroupHistoryRepository.save(
+              JStudentGroupHistory.builder()
+                  .student(managedStudent)
+                  .group(managedGroup)
+                  .startDate(startDate)
+                  .endDate(endDate)
+                  .build());
+          return null;
+        });
+  }
+
+  public void addTrackHistory(
+      JStudent student, JTrack track, LocalDate startDate, LocalDate endDate) {
+    inTransaction(
+        () -> {
+          var managedStudent = studentRepository.findById(student.getId()).orElseThrow();
+          var managedTrack = trackRepository.findById(track.getId()).orElseThrow();
+          studentTrackHistoryRepository.save(
+              JStudentTrackHistory.builder()
+                  .student(managedStudent)
+                  .track(managedTrack)
+                  .startDate(startDate)
+                  .endDate(endDate)
+                  .build());
+          return null;
+        });
+  }
+
   public JGradeDispute dispute(JGrade grade, JStudent student, String reason) {
     return gradeDisputeRepository.save(
         JGradeDispute.builder().grade(grade).student(student).reason(reason).build());
   }
 
-  public DisputeScenario disputeScenario() {
+  public SemesterScenario semesterScenario() {
     return inTransaction(
         () -> {
           var year = academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
@@ -252,11 +311,46 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           var cohort = cohort("Mpamakilay", 2021, 2024);
           var track = track(TrackCode.EL, "Ecosysteme Logiciel");
           var group = group("K1", cohort, track);
-          var course = course("PROG1", 6, 1, track);
-          var offering = offering(course, group, semester);
-          var exam = exam(offering);
-          return new DisputeScenario(cohort, track, group, semester, offering, exam);
+          return new SemesterScenario(cohort, track, group, year, semester);
         });
+  }
+
+  public record SemesterScenario(
+      JCohort cohort, JTrack track, JGroup group, JAcademicYear year, JSemester semester) {}
+
+  public OfferingScenario offeringScenario() {
+    return inTransaction(
+        () -> {
+          var base = semesterScenario();
+          var course = course("PROG1", "Algorithmique", 6, 1, base.track());
+          var offering = offering(course, base.group(), base.semester());
+          var exam = exam(offering);
+          return new OfferingScenario(
+              base.cohort(),
+              base.track(),
+              base.group(),
+              base.year(),
+              base.semester(),
+              course,
+              offering,
+              exam);
+        });
+  }
+
+  public record OfferingScenario(
+      JCohort cohort,
+      JTrack track,
+      JGroup group,
+      JAcademicYear year,
+      JSemester semester,
+      JCourse course,
+      JCourseOffering offering,
+      JExam exam) {}
+
+  public DisputeScenario disputeScenario() {
+    var base = offeringScenario();
+    return new DisputeScenario(
+        base.cohort(), base.track(), base.group(), base.semester(), base.offering(), base.exam());
   }
 
   public record DisputeScenario(
@@ -309,8 +403,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     }
   }
 
-  public <T> T inTransaction(java.util.function.Supplier<T> action) {
+  public <T> T inTransaction(Supplier<T> action) {
     return transactionTemplate.execute(status -> action.get());
+  }
+
+  private static boolean isValidReference(String reference) {
+    return reference != null && reference.matches("^(STD|TCH|ADM)\\d{5}$");
   }
 
   public UUID adminUserId() {

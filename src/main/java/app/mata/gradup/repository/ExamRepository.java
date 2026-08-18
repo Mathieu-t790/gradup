@@ -3,6 +3,7 @@ package app.mata.gradup.repository;
 import app.mata.gradup.repository.model.JExam;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ExamRepository extends JpaRepository<JExam, UUID> {
 
+  @EntityGraph(attributePaths = {"offering"})
   List<JExam> findByOfferingId(UUID offeringId);
 
   @Query(

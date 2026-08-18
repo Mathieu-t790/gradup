@@ -47,5 +47,14 @@ public interface GradeDisputeRepository extends JpaRepository<JGradeDispute, UUI
 
   Optional<JGradeDispute> findByGradeIdAndStatus(UUID gradeId, DisputeStatus status);
 
+  @EntityGraph(
+      attributePaths = {
+        "grade",
+        "grade.exam",
+        "grade.exam.offering",
+        "grade.exam.offering.course",
+        "student",
+        "student.user"
+      })
   List<JGradeDispute> findByStudentId(UUID studentId);
 }

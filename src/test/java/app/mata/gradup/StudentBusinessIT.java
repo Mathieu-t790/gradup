@@ -18,8 +18,6 @@ import app.mata.gradup.endpoint.rest.model.StudentSummaryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentTrackHistoryCreateRequest;
 import app.mata.gradup.endpoint.rest.model.StudentTrackHistoryResponse;
 import app.mata.gradup.model.TrackCode;
-import app.mata.gradup.repository.CohortRepository;
-import app.mata.gradup.repository.GroupRepository;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentTrackHistoryRepository;
 import app.mata.gradup.repository.model.JAcademicYear;
@@ -28,6 +26,7 @@ import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JSemester;
 import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JTrack;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,8 +40,6 @@ class StudentBusinessIT extends SecuredFacadeIT {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
 
-  @Autowired private CohortRepository cohortRepository;
-  @Autowired private GroupRepository groupRepository;
   @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
   @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
 
@@ -102,9 +99,7 @@ class StudentBusinessIT extends SecuredFacadeIT {
   void post_group_history_closes_previous_history_and_creates_new_one() {
     Fixture fixture = seed();
     var student = fixture.std01;
-    var group2 =
-        groupRepository.save(
-            JGroup.builder().reference("k3").cohort(fixture.cohort).track(fixture.trackEl).build());
+    var group2 = seeder.group("k3", fixture.cohort, fixture.trackEl);
 
     var response =
         restTemplate.postForEntity(
@@ -128,16 +123,8 @@ class StudentBusinessIT extends SecuredFacadeIT {
   @Test
   void post_group_history_group_outside_cohort_returns_unprocessable() {
     Fixture fixture = seed();
-    var otherCohort =
-        cohortRepository.save(
-            JCohort.builder()
-                .label("Tohindia")
-                .entryYear(2022)
-                .expectedGraduationYear(2025)
-                .build());
-    var outsideGroup =
-        groupRepository.save(
-            JGroup.builder().reference("z1").cohort(otherCohort).track(fixture.trackEl).build());
+    var otherCohort = seeder.cohort("Tohindia", 2022, 2025);
+    var outsideGroup = seeder.group("z1", otherCohort, fixture.trackEl);
 
     var response =
         restTemplate.postForEntity(
@@ -319,7 +306,7 @@ class StudentBusinessIT extends SecuredFacadeIT {
   @Test
   void get_graduation_eligibility_returns_failing_courses_for_student_below_threshold() {
     Fixture fixture = seed();
-    seeder.changeScore("STD21002", "PROG1", new java.math.BigDecimal("8.00"));
+    seeder.changeScore("STD21002", "PROG1", new BigDecimal("8.00"));
 
     var response =
         restTemplate.getForEntity(
@@ -391,7 +378,7 @@ class StudentBusinessIT extends SecuredFacadeIT {
           seeder.grade(std01, exam, "14.00");
           seeder.grade(std02, exam, "16.00");
 
-          var secondCourse = seeder.course("PROG2", 4, 2, trackEl);
+          var secondCourse = seeder.course("PROG2", 6, 2, trackEl);
           var secondOffering = seeder.offering(secondCourse, groupEl, secondSemester);
           var secondExam = seeder.exam(secondOffering);
           seeder.grade(std01, secondExam, "12.00");

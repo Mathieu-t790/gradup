@@ -12,8 +12,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface StudentTrackHistoryRepository extends JpaRepository<JStudentTrackHistory, UUID> {
 
+  @EntityGraph(attributePaths = {"track"})
   List<JStudentTrackHistory> findByStudentIdOrderByStartDateDesc(UUID studentId);
 
+  @EntityGraph(attributePaths = {"track"})
   List<JStudentTrackHistory> findByStudentIdOrderByStartDateAsc(UUID studentId);
 
   @EntityGraph(attributePaths = {"track"})
