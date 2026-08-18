@@ -324,7 +324,7 @@ public class StudentIT extends SecuredFacadeIT {
   }
 
   private JStudent saveStudent(String email, JCohort cohort) {
-    return seeder.studentWithoutHistories(email, "Mathieu", "Tafita", email, cohort);
+    return seeder.studentWithoutHistories(null, "Mathieu", "Tafita", email, cohort);
   }
 
   private void saveOpenGroupHistory(JStudent student, JGroup group) {

@@ -139,7 +139,7 @@ class SecurityIT extends SecuredFacadeIT {
 
   private JStudent saveStudent(String email) {
     var cohort = saveCohort();
-    return seeder.studentWithoutHistories(email, "Mathieu", "Tafita", email, cohort);
+    return seeder.studentWithoutHistories(null, "Mathieu", "Tafita", email, cohort);
   }
 
   private JCohort saveCohort() {
