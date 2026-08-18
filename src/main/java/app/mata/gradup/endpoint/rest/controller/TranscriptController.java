@@ -21,7 +21,7 @@ public class TranscriptController {
 
   @PostMapping("/students/{studentId}/transcripts")
   public TranscriptResponse generateStudentTranscript(
-      @PathVariable UUID studentId, @Valid @RequestBody TranscriptGenerateRequest request) {
+      @PathVariable UUID studentId, @RequestBody @Valid TranscriptGenerateRequest request) {
     return transcriptService.generateStudentTranscript(studentId, request);
   }
 

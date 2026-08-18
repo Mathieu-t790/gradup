@@ -26,14 +26,13 @@ public class SemesterController {
   private final SemesterService semesterService;
 
   @GetMapping("/semesters")
-  public List<SemesterResponse> listSemesters(
-      @RequestParam(value = "academicYearId", required = false) UUID academicYearId) {
+  public List<SemesterResponse> listSemesters(@RequestParam(required = false) UUID academicYearId) {
     return semesterService.listSemesters(academicYearId);
   }
 
   @PostMapping("/semesters")
   @ResponseStatus(HttpStatus.CREATED)
-  public SemesterResponse createSemester(@Valid @RequestBody SemesterCreateRequest request) {
+  public SemesterResponse createSemester(@RequestBody @Valid SemesterCreateRequest request) {
     return semesterService.createSemester(request);
   }
 

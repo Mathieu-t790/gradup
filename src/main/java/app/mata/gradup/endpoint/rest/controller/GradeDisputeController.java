@@ -8,6 +8,7 @@ import app.mata.gradup.endpoint.rest.model.GradeDisputeResponse;
 import app.mata.gradup.mapper.GradeDisputeMapper;
 import app.mata.gradup.security.userDetails.JUserDetails;
 import app.mata.gradup.service.GradeDisputeService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -34,7 +35,7 @@ public class GradeDisputeController {
   @ResponseStatus(HttpStatus.CREATED)
   public GradeDisputeResponse createGradeDispute(
       @PathVariable UUID gradeId,
-      @RequestBody GradeDisputeCreateRequest request,
+      @RequestBody @Valid GradeDisputeCreateRequest request,
       @AuthenticationPrincipal JUserDetails userDetails) {
     return gradeDisputeService.createGradeDispute(gradeId, request, userDetails.userId());
   }
@@ -42,7 +43,7 @@ public class GradeDisputeController {
   @PatchMapping("/disputes/{disputeId}")
   public GradeDisputeResponse resolveDispute(
       @PathVariable UUID disputeId,
-      @RequestBody GradeDisputeResolveRequest request,
+      @RequestBody @Valid GradeDisputeResolveRequest request,
       @AuthenticationPrincipal JUserDetails userDetails) {
     return gradeDisputeService.resolveDispute(disputeId, request, userDetails.userId());
   }
