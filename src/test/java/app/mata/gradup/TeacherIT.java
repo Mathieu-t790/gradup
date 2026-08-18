@@ -19,6 +19,9 @@ import app.mata.gradup.model.Role;
 import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.TeacherRepository;
 import app.mata.gradup.repository.UserRepository;
+import app.mata.gradup.repository.model.JCourseOffering;
+import app.mata.gradup.repository.model.JTeacher;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,6 +70,16 @@ class TeacherIT extends SecuredFacadeIT {
     assertEquals(2, teachers.size());
     assertTrue(teachers.stream().anyMatch(t -> t.getEmail().equals("tafita@cu.te")));
     assertTrue(teachers.stream().anyMatch(t -> t.getEmail().equals("rindra@cu.te")));
+
+    var tafita =
+        teachers.stream()
+            .filter(t -> t.getEmail().equals("tafita@cu.te"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals("Tafita", tafita.getFirstName());
+    assertEquals("Mathematiques", tafita.getSpecialty());
+    assertNotNull(tafita.getReference());
+    assertTrue(tafita.getReference().startsWith("TCH"));
   }
 
   @Test
@@ -185,44 +198,18 @@ class TeacherIT extends SecuredFacadeIT {
 
   @Test
   void listTeacherCourseOfferings_returnsAssignedOfferings() {
-    var teacher =
-        seeder.inTransaction(
-            () -> seeder.teacher("tafita@cu.te", "Mathieu", "Tafita", "Mathematiques"));
-    var offering =
-        seeder.inTransaction(
-            () -> {
-              var year =
-                  seeder.academicYear(
-                      "2024-2025",
-                      java.time.LocalDate.of(2024, 9, 1),
-                      java.time.LocalDate.of(2025, 8, 31));
-              var semester =
-                  seeder.semester(
-                      1,
-                      year,
-                      java.time.LocalDate.of(2024, 9, 1),
-                      java.time.LocalDate.of(2025, 1, 31));
-              var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
-              var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
-              var group = seeder.group("K1", cohort, track);
-              var course = seeder.course("Pro1", "Programmation", 5, 1, track);
-              return seeder.offering(course, group, semester, false);
-            });
-    seeder.inTransaction(
-        () -> {
-          seeder.teacherAssignment(teacher, offering);
-          return null;
-        });
+    var fixture = seedTeacherWithOffering();
 
     var response =
         restTemplate.getForEntity(
-            "/teachers/" + teacher.getId() + "/course-offerings", CourseOfferingResponse[].class);
+            "/teachers/" + fixture.teacher.getId() + "/course-offerings",
+            CourseOfferingResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
     assertEquals(1, response.getBody().length);
     var courseOffering = response.getBody()[0];
-    assertEquals(offering.getId(), courseOffering.getId());
+    assertEquals(fixture.offering.getId(), courseOffering.getId());
     assertEquals("Pro1", courseOffering.getCourse().getReference());
     assertEquals("K1", courseOffering.getGroup().getReference());
     assertEquals(1, courseOffering.getSemester().getNumber());
@@ -242,4 +229,70 @@ class TeacherIT extends SecuredFacadeIT {
     assertNotNull(response.getBody());
     assertEquals("NOT_FOUND", response.getBody().getCode());
   }
+
+  @Test
+  void listTeachers_teacherRole_returnsForbidden() {
+    seedUser("teacher@cu.te", Role.TEACHER);
+    loginAs(restTemplate, "teacher@cu.te");
+
+    var response = restTemplate.getForEntity("/teachers", TeacherResponse[].class);
+
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+  }
+
+  @Test
+  void listTeacherCourseOfferings_studentRole_returnsForbidden() {
+    seedUser("student.web@cu.te", Role.STUDENT);
+    loginAs(restTemplate, "student.web@cu.te");
+
+    var response =
+        restTemplate.getForEntity(
+            "/teachers/" + UUID.randomUUID() + "/course-offerings", Error.class);
+
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+  }
+
+  @Test
+  void listTeacherCourseOfferings_teacherRole_returnsOwnOfferings() {
+    var fixture = seedTeacherWithOffering();
+    loginAsUser(restTemplate, "tafita@cu.te");
+
+    var response =
+        restTemplate.getForEntity(
+            "/teachers/" + fixture.teacher.getId() + "/course-offerings",
+            CourseOfferingResponse[].class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals(1, response.getBody().length);
+    assertEquals(fixture.offering.getId(), response.getBody()[0].getId());
+  }
+
+  private TeacherWithOffering seedTeacherWithOffering() {
+    var teacher =
+        seeder.inTransaction(
+            () -> seeder.teacher("tafita@cu.te", "Mathieu", "Tafita", "Mathematiques"));
+    var offering =
+        seeder.inTransaction(
+            () -> {
+              var year =
+                  seeder.academicYear(
+                      "2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
+              var semester =
+                  seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
+              var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+              var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+              var group = seeder.group("K1", cohort, track);
+              var course = seeder.course("Pro1", "Programmation", 5, 1, track);
+              return seeder.offering(course, group, semester, false);
+            });
+    seeder.inTransaction(
+        () -> {
+          seeder.teacherAssignment(teacher, offering);
+          return null;
+        });
+    return new TeacherWithOffering(teacher, offering);
+  }
+
+  private record TeacherWithOffering(JTeacher teacher, JCourseOffering offering) {}
 }
