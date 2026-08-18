@@ -29,8 +29,7 @@ public class RoutePolicy {
         "/teachers/**",
         "/exams/**",
         "/grades/**",
-        "/disputes/**",
-        "/web/**"
+        "/disputes/**"
       };
 
   private final StudentAuthorizer studentAuthorizer;
@@ -126,6 +125,12 @@ public class RoutePolicy {
         .access(gradeAuthorizer)
         .requestMatchers(HttpMethod.POST, "/grades/{gradeId}/disputes")
         .access(allOf(hasRole("STUDENT"), gradeAuthorizer))
+        .requestMatchers(HttpMethod.GET, "/web/cohorts/{cohortId}/diplomas/export")
+        .hasRole("ADMIN")
+        .requestMatchers(HttpMethod.GET, "/web/**")
+        .authenticated()
+        .requestMatchers(HttpMethod.POST, "/web/**")
+        .hasRole("ADMIN")
         .anyRequest()
         .authenticated();
   }

@@ -19,6 +19,7 @@ public class SecurityConf {
   private final WebAuthenticationEntryPoint authenticationEntryPoint;
   private final WebAccessDeniedHandler accessDeniedHandler;
   private final RoutePolicy routePolicy;
+  private final LoginPageRegistration loginPageRegistration;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -32,6 +33,7 @@ public class SecurityConf {
                 exceptions
                     .authenticationEntryPoint(authenticationEntryPoint)
                     .accessDeniedHandler(accessDeniedHandler));
+    loginPageRegistration.register(http);
     return http.build();
   }
 }
