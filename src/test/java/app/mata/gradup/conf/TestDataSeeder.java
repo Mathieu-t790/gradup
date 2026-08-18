@@ -240,6 +240,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   }
 
   public JTeacher teacher(String email, String lastName, String firstName) {
+    return teacher(email, lastName, firstName, null);
+  }
+
+  public JTeacher teacher(String email, String lastName, String firstName, String specialty) {
     return inTransaction(
         () -> {
           var user =
@@ -252,7 +256,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                       .role(Role.TEACHER)
                       .isActive(true)
                       .build());
-          return teacherRepository.save(JTeacher.builder().user(user).specialty(null).build());
+          return teacherRepository.save(JTeacher.builder().user(user).specialty(specialty).build());
         });
   }
 

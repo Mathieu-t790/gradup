@@ -8,6 +8,7 @@ import app.mata.gradup.exception.ConflictException;
 import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.mail.Email;
 import app.mata.gradup.mail.Mailer;
+import app.mata.gradup.mapper.CourseOfferingMapper;
 import app.mata.gradup.mapper.TeacherMapper;
 import app.mata.gradup.model.Role;
 import app.mata.gradup.repository.TeacherAssignmentRepository;
@@ -38,6 +39,7 @@ public class TeacherService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final TeacherMapper teacherMapper;
+  private final CourseOfferingMapper courseOfferingMapper;
   private final Mailer mailer;
   private final HtmlTemplater htmlTemplater;
 
@@ -98,13 +100,17 @@ public class TeacherService {
     teacherRepository
         .findById(teacherId)
         .orElseThrow(() -> new NotFoundException("Teacher not found"));
-    return teacherAssignmentRepository.findByTeacherId(teacherId).stream()
+    var teacherAssignments = teacherAssignmentRepository.findByTeacherId(teacherId);
+    var offeringIds =
+        teacherAssignments.stream().map(a -> a.getOffering().getId()).distinct().toList();
+    var allAssignments = teacherAssignmentRepository.findByOfferingIdIn(offeringIds);
+    var grouped =
+        allAssignments.stream()
+            .collect(java.util.stream.Collectors.groupingBy(a -> a.getOffering().getId()));
+    return teacherAssignments.stream()
         .map(JTeacherAssignment::getOffering)
         .distinct()
-        .map(
-            offering ->
-                teacherMapper.toRest(
-                    offering, teacherAssignmentRepository.findByOfferingId(offering.getId())))
+        .map(offering -> courseOfferingMapper.toRest(offering, grouped.get(offering.getId())))
         .toList();
   }
 
