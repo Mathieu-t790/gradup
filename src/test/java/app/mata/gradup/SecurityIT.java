@@ -10,7 +10,6 @@ import app.mata.gradup.endpoint.rest.model.StudentCreateRequest;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
-import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JStudent;
@@ -140,9 +139,7 @@ class SecurityIT extends SecuredFacadeIT {
 
   private JStudent saveStudent(String email) {
     var cohort = saveCohort();
-    var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
-    var group = seeder.group("K1", cohort, track);
-    return seeder.student("STD-" + email, "Mathieu", "Tafita", email, cohort, track, group);
+    return seeder.studentWithoutHistories(email, "Mathieu", "Tafita", email, cohort);
   }
 
   private JCohort saveCohort() {
