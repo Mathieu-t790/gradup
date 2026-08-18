@@ -39,6 +39,7 @@ public class TrackIT extends SecuredFacadeIT {
     var response = restTemplate.getForEntity("/tracks", TrackResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var tracks = List.of(response.getBody());
     assertEquals(2, tracks.size());
     assertEquals(

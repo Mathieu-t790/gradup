@@ -9,13 +9,8 @@ import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.ExamResponse;
 import app.mata.gradup.model.Role;
-import app.mata.gradup.model.TrackCode;
-import app.mata.gradup.repository.ExamRepository;
-import app.mata.gradup.repository.UserRepository;
-import app.mata.gradup.repository.model.JCourse;
 import app.mata.gradup.repository.model.JCourseOffering;
 import app.mata.gradup.repository.model.JExam;
-import app.mata.gradup.repository.model.JGroup;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -30,9 +25,6 @@ class ExamIT extends SecuredFacadeIT {
 
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
-
-  @Autowired private ExamRepository examRepository;
-  @Autowired private UserRepository userRepository;
 
   @BeforeEach
   void setUp() {
@@ -64,7 +56,7 @@ class ExamIT extends SecuredFacadeIT {
   void getExam_teacherRole_returnsExam() {
     var exam = seedExam("Midterm", null);
     seedUser("teacher@cu.te", Role.TEACHER);
-    loginAs(restTemplate, "teacher@cu.te");
+    loginAsUser(restTemplate, "teacher@cu.te");
 
     ResponseEntity<ExamResponse> response =
         restTemplate.getForEntity("/exams/" + exam.getId(), ExamResponse.class);
@@ -79,7 +71,7 @@ class ExamIT extends SecuredFacadeIT {
   void getExam_studentRole_returnsExam() {
     var exam = seedExam("Final", null);
     seedUser("student@cu.te", Role.STUDENT);
-    loginAs(restTemplate, "student@cu.te");
+    loginAsUser(restTemplate, "student@cu.te");
 
     ResponseEntity<ExamResponse> response =
         restTemplate.getForEntity("/exams/" + exam.getId(), ExamResponse.class);
@@ -112,29 +104,12 @@ class ExamIT extends SecuredFacadeIT {
   }
 
   private JExam seedExam(String label, LocalTime examTime) {
-    return seeder.inTransaction(
-        () -> {
-          JCourseOffering offering = seedOffering();
-          return examRepository.save(
-              JExam.builder()
-                  .offering(offering)
-                  .label(label)
-                  .examDate(LocalDate.of(2022, 5, 30))
-                  .examTime(examTime)
-                  .weightNumerator(1)
-                  .weightDenominator(1)
-                  .build());
-        });
+    return seeder.exam(seedOffering(), label, LocalDate.of(2022, 5, 30), examTime, 1, 1);
   }
 
   private JCourseOffering seedOffering() {
-    var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
-    var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
-    JGroup group = seeder.group("K1", cohort, track);
-    JCourse course = seeder.course("Pro1", 5, 1, track);
-    var year =
-        seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
-    var semester = seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
-    return seeder.offering(course, group, semester);
+    var base = seeder.semesterScenario();
+    return seeder.offering(
+        seeder.course("PROG1", 6, 1, base.track()), base.group(), base.semester());
   }
 }

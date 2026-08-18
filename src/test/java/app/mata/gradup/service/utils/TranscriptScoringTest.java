@@ -30,7 +30,7 @@ class TranscriptScoringTest {
   void score_computes_credit_weighted_average_and_acquired_credits() {
     JCourseOffering prog = offering(course("PROG1", 6), 1);
     JCourseOffering lv1 = offering(course("LV1", 4), 1);
-    JCourseOffering lv2 = offering(course("LV2", 2), 1);
+    JCourseOffering lv2 = offering(course("LV2", 4), 1);
     Map<UUID, BigDecimal> averages =
         Map.of(
             prog.getId(), new BigDecimal("12.50"),
@@ -38,7 +38,7 @@ class TranscriptScoringTest {
 
     ResultInfo result = TranscriptScoring.score(List.of(prog, lv1, lv2), averages);
 
-    assertEquals(12, result.totalCredits());
+    assertEquals(14, result.totalCredits());
     assertEquals(6, result.creditsAcquired());
     assertEquals(new BigDecimal("11.30"), result.weightedAverage());
   }
@@ -60,15 +60,14 @@ class TranscriptScoringTest {
     assertTrue(TranscriptScoring.hasPassed(BigDecimal.TEN));
     assertTrue(TranscriptScoring.hasPassed(new BigDecimal("12.50")));
     assertFalse(TranscriptScoring.hasPassed(new BigDecimal("9.99")));
-    assertFalse(false);
   }
 
   @Test
   void courseLines_are_sorted_by_semester_then_course_reference() {
     JCourseOffering lv2 = offering(course("LV2", 4), 2);
-    JCourseOffering prog1 = offering(course("PROG1", 4), 1);
+    JCourseOffering prog1 = offering(course("PROG1", 6), 1);
     JCourseOffering lv1 = offering(course("LV1", 4), 1);
-    JCourseOffering pro1 = offering(course("PRO1", 4), 1);
+    JCourseOffering pro1 = offering(course("PRO1", 6), 1);
 
     List<CourseLine> lines =
         TranscriptScoring.courseLines(

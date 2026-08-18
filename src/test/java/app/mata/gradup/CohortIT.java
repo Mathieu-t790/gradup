@@ -63,6 +63,7 @@ public class CohortIT extends SecuredFacadeIT {
     var response = restTemplate.getForEntity("/cohorts", CohortResponse[].class);
 
     assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
     var cohorts = List.of(response.getBody());
     assertEquals(2, cohorts.size());
     assertEquals(

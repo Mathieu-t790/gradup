@@ -1,5 +1,6 @@
 package app.mata.gradup.security.authorization;
 
+import app.mata.gradup.model.Role;
 import app.mata.gradup.security.userDetails.JUserDetails;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,10 +10,8 @@ public final class AuthorizationUtils {
 
   private AuthorizationUtils() {}
 
-  public static boolean hasRole(Authentication auth, String role) {
-    return auth != null
-        && auth.getAuthorities().stream()
-            .anyMatch(authority -> authority.getAuthority().equals("ROLE_" + role));
+  public static boolean hasRole(Authentication auth, Role role) {
+    return userDetails(auth).map(details -> details.getRole() == role).orElse(false);
   }
 
   public static Optional<JUserDetails> userDetails(Authentication auth) {

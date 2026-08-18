@@ -17,22 +17,14 @@ import app.mata.gradup.endpoint.rest.model.StudentTrackHistoryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentUpdateRequest;
 import app.mata.gradup.mail.Email;
 import app.mata.gradup.mail.Mailer;
-import app.mata.gradup.model.Role;
 import app.mata.gradup.model.TrackCode;
-import app.mata.gradup.repository.CohortRepository;
-import app.mata.gradup.repository.GroupRepository;
 import app.mata.gradup.repository.StudentGroupHistoryRepository;
 import app.mata.gradup.repository.StudentRepository;
-import app.mata.gradup.repository.StudentTrackHistoryRepository;
-import app.mata.gradup.repository.TrackRepository;
 import app.mata.gradup.repository.UserRepository;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JStudent;
-import app.mata.gradup.repository.model.JStudentGroupHistory;
-import app.mata.gradup.repository.model.JStudentTrackHistory;
 import app.mata.gradup.repository.model.JTrack;
-import app.mata.gradup.repository.model.JUser;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -57,13 +49,9 @@ public class StudentIT extends SecuredFacadeIT {
 
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
-  @Autowired private CohortRepository cohortRepository;
-  @Autowired private TrackRepository trackRepository;
-  @Autowired private GroupRepository groupRepository;
   @Autowired private UserRepository userRepository;
   @Autowired private StudentRepository studentRepository;
   @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
-  @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
 
   @BeforeEach
   void setUp() {
@@ -336,64 +324,21 @@ public class StudentIT extends SecuredFacadeIT {
   }
 
   private JStudent saveStudent(String email, JCohort cohort) {
-    return inTransaction(
-        () -> {
-          var managedCohort = cohortRepository.findById(cohort.getId()).orElseThrow();
-          var user =
-              userRepository.save(
-                  JUser.builder()
-                      .lastName("Mathieu")
-                      .firstName("Tafita")
-                      .email(email)
-                      .passwordHash("hashed")
-                      .role(Role.STUDENT)
-                      .isActive(true)
-                      .build());
-          return studentRepository.save(
-              JStudent.builder().user(user).cohort(managedCohort).build());
-        });
+    return seeder.studentWithoutHistories(null, "Mathieu", "Tafita", email, cohort);
   }
 
   private void saveOpenGroupHistory(JStudent student, JGroup group) {
-    saveGroupHistory(student, group, LocalDate.now(), null);
+    seeder.addGroupHistory(student, group, LocalDate.now(), null);
   }
 
   private void saveGroupHistory(
       JStudent student, JGroup group, LocalDate startDate, LocalDate endDate) {
-    inTransaction(
-        () -> {
-          var managedStudent = studentRepository.findById(student.getId()).orElseThrow();
-          var managedGroup = groupRepository.findById(group.getId()).orElseThrow();
-          groupHistoryRepository.save(
-              JStudentGroupHistory.builder()
-                  .student(managedStudent)
-                  .group(managedGroup)
-                  .startDate(startDate)
-                  .endDate(endDate)
-                  .build());
-          return null;
-        });
+    seeder.addGroupHistory(student, group, startDate, endDate);
   }
 
   private void saveTrackHistory(
       JStudent student, JTrack track, LocalDate startDate, LocalDate endDate) {
-    inTransaction(
-        () -> {
-          var managedStudent = studentRepository.findById(student.getId()).orElseThrow();
-          var managedTrack = trackRepository.findById(track.getId()).orElseThrow();
-          trackHistoryRepository.save(
-              JStudentTrackHistory.builder()
-                  .student(managedStudent)
-                  .track(managedTrack)
-                  .startDate(startDate)
-                  .endDate(endDate)
-                  .build());
-          return null;
-        });
-  }
-
-  private <T> T inTransaction(java.util.function.Supplier<T> action) {
-    return seeder.inTransaction(action);
+    seeder.addTrackHistory(student, track, startDate, endDate);
   }
 
   private <T> ResponseEntity<T> patch(String url, Object body, Class<T> responseType) {

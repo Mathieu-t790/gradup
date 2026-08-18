@@ -10,16 +10,9 @@ import app.mata.gradup.endpoint.rest.model.StudentCreateRequest;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
-import app.mata.gradup.repository.CohortRepository;
-import app.mata.gradup.repository.GroupRepository;
-import app.mata.gradup.repository.StudentGroupHistoryRepository;
-import app.mata.gradup.repository.StudentRepository;
-import app.mata.gradup.repository.StudentTrackHistoryRepository;
-import app.mata.gradup.repository.UserRepository;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JStudent;
-import app.mata.gradup.repository.model.JUser;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,12 +30,6 @@ class SecurityIT extends SecuredFacadeIT {
   @MockBean private Mailer mailer;
 
   @Autowired private TestRestTemplate restTemplate;
-  @Autowired private CohortRepository cohortRepository;
-  @Autowired private GroupRepository groupRepository;
-  @Autowired private StudentRepository studentRepository;
-  @Autowired private StudentGroupHistoryRepository groupHistoryRepository;
-  @Autowired private StudentTrackHistoryRepository trackHistoryRepository;
-  @Autowired private UserRepository userRepository;
   @Autowired private TestDataSeeder seeder;
 
   @BeforeEach
@@ -79,7 +66,7 @@ class SecurityIT extends SecuredFacadeIT {
   @Test
   void student_cannot_access_admin_endpoints() {
     seedUser("tafita@cu.te", Role.STUDENT);
-    loginAs(restTemplate, "tafita@cu.te");
+    loginAsUser(restTemplate, "tafita@cu.te");
     var cohort = saveCohort();
     var group = saveGroup(cohort);
 
@@ -102,7 +89,7 @@ class SecurityIT extends SecuredFacadeIT {
   @Test
   void teacher_cannot_access_admin_endpoints() {
     seedUser("teacher@cu.te", Role.TEACHER);
-    loginAs(restTemplate, "teacher@cu.te");
+    loginAsUser(restTemplate, "teacher@cu.te");
 
     var response = restTemplate.postForEntity("/students", new StudentCreateRequest(), Error.class);
 
@@ -137,7 +124,7 @@ class SecurityIT extends SecuredFacadeIT {
   void student_accesses_own_profile_only() {
     var own = saveStudent("tafita@cu.te");
     var other = saveStudent("other@cu.te");
-    loginAs(restTemplate, "tafita@cu.te");
+    loginAsUser(restTemplate, "tafita@cu.te");
 
     var ownResponse = restTemplate.getForEntity("/students/" + own.getId(), StudentResponse.class);
     var otherResponse = restTemplate.getForEntity("/students/" + other.getId(), Error.class);
@@ -151,34 +138,15 @@ class SecurityIT extends SecuredFacadeIT {
   }
 
   private JStudent saveStudent(String email) {
-    return inTransaction(
-        () -> {
-          var managedCohort = cohortRepository.findById(saveCohort().getId()).orElseThrow();
-          var user =
-              userRepository.save(
-                  JUser.builder()
-                      .lastName("Mathieu")
-                      .firstName("Tafita")
-                      .email(email)
-                      .passwordHash(passwordEncoder.encode(TEST_PASSWORD))
-                      .role(Role.STUDENT)
-                      .isActive(true)
-                      .build());
-          return studentRepository.save(
-              JStudent.builder().user(user).cohort(managedCohort).build());
-        });
-  }
-
-  private <T> T inTransaction(java.util.function.Supplier<T> action) {
-    return seeder.inTransaction(action);
+    var cohort = saveCohort();
+    return seeder.studentWithoutHistories(null, "Mathieu", "Tafita", email, cohort);
   }
 
   private JCohort saveCohort() {
-    return cohortRepository.save(
-        JCohort.builder().label("Mpamakilay").entryYear(2021).expectedGraduationYear(2024).build());
+    return seeder.cohort("Mpamakilay", 2021, 2024);
   }
 
   private JGroup saveGroup(JCohort cohort) {
-    return groupRepository.save(JGroup.builder().reference("K1").cohort(cohort).build());
+    return seeder.group("K1", cohort, null);
   }
 }

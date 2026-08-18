@@ -16,6 +16,7 @@ import app.mata.gradup.repository.model.JExam;
 import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JTrack;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,7 +80,7 @@ class GradeIT extends SecuredFacadeIT {
     assertEquals(andriaId, first.getStudentId());
     assertEquals(exam.getId(), first.getExamId());
     assertEquals("Final", first.getExamLabel());
-    assertEquals("Pro1", first.getCourseReference());
+    assertEquals("PROG1", first.getCourseReference());
     assertEquals(15.0, first.getScore());
     assertNotNull(first.getRecordedAt());
     assertEquals("Tafita Mathieu", first.getRecordedByName());
@@ -117,8 +118,8 @@ class GradeIT extends SecuredFacadeIT {
                   .orElseThrow()
                   .getId();
             });
-    seeder.changeScore("STD21001", "Pro1", new BigDecimal("14.00"));
-    seeder.changeScore("STD21001", "Pro1", new BigDecimal("16.00"));
+    seeder.changeScore("STD21001", "PROG1", new BigDecimal("14.00"));
+    seeder.changeScore("STD21001", "PROG1", new BigDecimal("16.00"));
 
     ResponseEntity<GradeHistoryEntryResponse[]> response =
         restTemplate.getForEntity(
@@ -153,7 +154,7 @@ class GradeIT extends SecuredFacadeIT {
     var fixture = seedOffering();
     var exam = fixture.exam();
     seedUser("teacher@cu.te", Role.TEACHER);
-    loginAs(restTemplate, "teacher@cu.te");
+    loginAsUser(restTemplate, "teacher@cu.te");
 
     ResponseEntity<Error> response =
         restTemplate.getForEntity("/exams/" + exam.getId() + "/grades", Error.class);
@@ -185,8 +186,7 @@ class GradeIT extends SecuredFacadeIT {
                   .orElseThrow()
                   .getId();
             });
-    enableStudentLogin("hery@cu.te");
-    loginAs(restTemplate, "hery@cu.te");
+    loginAsUser(restTemplate, "hery@cu.te");
 
     ResponseEntity<GradeHistoryEntryResponse[]> response =
         restTemplate.getForEntity(
@@ -227,8 +227,7 @@ class GradeIT extends SecuredFacadeIT {
                   .orElseThrow()
                   .getId();
             });
-    enableStudentLogin("mialy@cu.te");
-    loginAs(restTemplate, "mialy@cu.te");
+    loginAsUser(restTemplate, "mialy@cu.te");
 
     ResponseEntity<Error> response =
         restTemplate.getForEntity("/grades/" + gradeId + "/history", Error.class);
@@ -238,27 +237,17 @@ class GradeIT extends SecuredFacadeIT {
     assertEquals("FORBIDDEN", response.getBody().getCode());
   }
 
-  private void enableStudentLogin(String email) {
-    var user = userRepository.findByEmail(email).orElseThrow();
-    user.setPasswordHash(passwordEncoder.encode(TEST_PASSWORD));
-    userRepository.save(user);
-  }
-
   private Fixture seedOffering() {
     return seeder.inTransaction(
         () -> {
           var year =
-              seeder.academicYear(
-                  "2024-2025",
-                  java.time.LocalDate.of(2024, 9, 1),
-                  java.time.LocalDate.of(2025, 8, 31));
+              seeder.academicYear("2024-2025", LocalDate.of(2024, 9, 1), LocalDate.of(2025, 8, 31));
           var semester =
-              seeder.semester(
-                  1, year, java.time.LocalDate.of(2024, 9, 1), java.time.LocalDate.of(2025, 1, 31));
+              seeder.semester(1, year, LocalDate.of(2024, 9, 1), LocalDate.of(2025, 1, 31));
           var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
           var track = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
           var group = seeder.group("K1", cohort, track);
-          var course = seeder.course("Pro1", 5, 1, track);
+          var course = seeder.course("PROG1", 6, 1, track);
           var offering = seeder.offering(course, group, semester);
           var exam = seeder.exam(offering);
           return new Fixture(cohort, track, group, exam);
