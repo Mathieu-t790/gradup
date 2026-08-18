@@ -48,8 +48,12 @@ public class SemesterFinalizeIT extends SecuredFacadeIT {
         });
   }
 
+  private String finalizeUrl(UUID semesterId, UUID trackId) {
+    return "/semesters/" + semesterId + "/finalize?trackId=" + trackId;
+  }
+
   private String finalizeUrl(Fixture fixture) {
-    return "/semesters/" + fixture.semesterId() + "/finalize?trackId=" + fixture.trackId();
+    return finalizeUrl(fixture.semesterId(), fixture.trackId());
   }
 
   @Test
@@ -157,5 +161,118 @@ public class SemesterFinalizeIT extends SecuredFacadeIT {
     assertEquals(30, response.getBody().getTotalCredits());
   }
 
+  @Test
+  void finalize_commonCoreGroup_countsForBothTracks() {
+    var fixture =
+        seeder.inTransaction(
+            () -> {
+              var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+              var el = seeder.track("EL", "Ecosysteme Logiciel");
+              var tn = seeder.track("TN", "Transformation Numerique");
+              var commonGroup = seeder.group("K1", cohort, null);
+              var year =
+                  seeder.academicYear(
+                      "2021-2024", LocalDate.of(2021, 9, 1), LocalDate.of(2024, 7, 31));
+              var semester =
+                  seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+              var commonCourse = seeder.course("COMMON", 30, 1, null);
+              seeder.offering(commonCourse, commonGroup, semester);
+              return new TracksFixture(semester.getId(), el.getId(), tn.getId());
+            });
+
+    var elResponse =
+        restTemplate.postForEntity(
+            finalizeUrl(fixture.semesterId(), fixture.elTrackId()),
+            HttpEntity.EMPTY,
+            SemesterCreditValidationResponse.class);
+    assertEquals(HttpStatus.CREATED, elResponse.getStatusCode());
+    assertNotNull(elResponse.getBody());
+    assertEquals(30, elResponse.getBody().getTotalCredits());
+
+    var tnResponse =
+        restTemplate.postForEntity(
+            finalizeUrl(fixture.semesterId(), fixture.tnTrackId()),
+            HttpEntity.EMPTY,
+            SemesterCreditValidationResponse.class);
+    assertEquals(HttpStatus.CREATED, tnResponse.getStatusCode());
+    assertNotNull(tnResponse.getBody());
+    assertEquals(30, tnResponse.getBody().getTotalCredits());
+  }
+
+  @Test
+  void finalize_commonCoursesInTrackSemester_countedForEachTrack() {
+    var fixture =
+        seeder.inTransaction(
+            () -> {
+              var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+              var el = seeder.track("EL", "Ecosysteme Logiciel");
+              var tn = seeder.track("TN", "Transformation Numerique");
+              var groupEl = seeder.group("K1", cohort, el);
+              var groupTn = seeder.group("K2", cohort, tn);
+              var year =
+                  seeder.academicYear(
+                      "2021-2024", LocalDate.of(2021, 9, 1), LocalDate.of(2024, 7, 31));
+              var semester =
+                  seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+              var commonCourse = seeder.course("COMMON", 20, 1, null);
+              var elCourse = seeder.course("ELONLY", 10, 1, el);
+              var tnCourse = seeder.course("TNONLY", 10, 1, tn);
+              seeder.offering(commonCourse, groupEl, semester);
+              seeder.offering(commonCourse, groupTn, semester);
+              seeder.offering(elCourse, groupEl, semester);
+              seeder.offering(tnCourse, groupTn, semester);
+              return new TracksFixture(semester.getId(), el.getId(), tn.getId());
+            });
+
+    var elResponse =
+        restTemplate.postForEntity(
+            finalizeUrl(fixture.semesterId(), fixture.elTrackId()),
+            HttpEntity.EMPTY,
+            SemesterCreditValidationResponse.class);
+    assertEquals(HttpStatus.CREATED, elResponse.getStatusCode());
+    assertNotNull(elResponse.getBody());
+    assertEquals(30, elResponse.getBody().getTotalCredits());
+
+    var tnResponse =
+        restTemplate.postForEntity(
+            finalizeUrl(fixture.semesterId(), fixture.tnTrackId()),
+            HttpEntity.EMPTY,
+            SemesterCreditValidationResponse.class);
+    assertEquals(HttpStatus.CREATED, tnResponse.getStatusCode());
+    assertNotNull(tnResponse.getBody());
+    assertEquals(30, tnResponse.getBody().getTotalCredits());
+  }
+
+  @Test
+  void finalize_duplicateOfferingsAcrossGroups_doesNotDoubleCount() {
+    var fixture =
+        seeder.inTransaction(
+            () -> {
+              var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+              var el = seeder.track("EL", "Ecosysteme Logiciel");
+              var groupEl1 = seeder.group("K1", cohort, el);
+              var groupEl2 = seeder.group("K2", cohort, el);
+              var year =
+                  seeder.academicYear(
+                      "2021-2024", LocalDate.of(2021, 9, 1), LocalDate.of(2024, 7, 31));
+              var semester =
+                  seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+              var course = seeder.course("PROG", 30, 1, null);
+              seeder.offering(course, groupEl1, semester);
+              seeder.offering(course, groupEl2, semester);
+              return new Fixture(semester.getId(), el.getId());
+            });
+
+    var response =
+        restTemplate.postForEntity(
+            finalizeUrl(fixture), HttpEntity.EMPTY, SemesterCreditValidationResponse.class);
+
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals(30, response.getBody().getTotalCredits());
+  }
+
   private record Fixture(UUID semesterId, UUID trackId) {}
+
+  private record TracksFixture(UUID semesterId, UUID elTrackId, UUID tnTrackId) {}
 }
