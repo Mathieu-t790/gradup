@@ -311,15 +311,18 @@ paths:
       tags: [academic-structure]
       operationId: finalizeSemesterCredits
       description: >
-        Recomputes SUM(course.credits) across all course_offerings for this
-        semester and the given track, then locks it into
-        semester_credit_validation. This is a one-shot admin action, not a
-        synchronous constraint on course_offering (which would block
-        building the offering list incrementally, one course at a time).
-        Returns 422 - with the actual computed total in the error message -
-        if it isn't exactly 30. Returns 409 if this (semester, track) pair
-        was already finalized (matches the UNIQUE(semester_id, track_id)
-        constraint).
+        Recomputes SUM(course.credits) over distinct courses offered for this
+        semester and track, then locks it into semester_credit_validation.
+        Offerings of track-less groups (tronc commun, groups.track_id IS
+        NULL) count for every track; distinct courses avoid double counting
+        when several groups of the same track offer the same UE. This is a
+        one-shot admin action, not a synchronous constraint on
+        course_offering (which would block building the offering list
+        incrementally, one course at a time). Returns 422 - with the actual
+        total in the error message - if it isn't exactly 30 (a semester
+        whose curriculum does not total 30 cannot be finalized). Returns
+        409 if this (semester, track) pair was already finalized (UNIQUE
+        (semester_id, track_id)).
       x-required-roles: [ADMIN]
       parameters:
         - name: trackId
