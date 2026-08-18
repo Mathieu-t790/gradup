@@ -23,14 +23,13 @@ public class GroupController {
 
   @GetMapping("/groups")
   public List<GroupResponse> listGroups(
-      @RequestParam(value = "cohortId", required = false) UUID cohortId,
-      @RequestParam(value = "trackId", required = false) UUID trackId) {
+      @RequestParam(required = false) UUID cohortId, @RequestParam(required = false) UUID trackId) {
     return groupService.listGroups(cohortId, trackId);
   }
 
   @PostMapping("/groups")
   @ResponseStatus(HttpStatus.CREATED)
-  public GroupResponse createGroup(@Valid @RequestBody GroupCreateRequest request) {
+  public GroupResponse createGroup(@RequestBody @Valid GroupCreateRequest request) {
     return groupService.createGroup(request);
   }
 }

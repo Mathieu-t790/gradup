@@ -4,6 +4,7 @@ import app.mata.gradup.endpoint.rest.model.ExamCreateRequest;
 import app.mata.gradup.endpoint.rest.model.ExamResponse;
 import app.mata.gradup.endpoint.rest.model.ExamUpdateRequest;
 import app.mata.gradup.service.ExamService;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,13 +30,13 @@ public class ExamController {
   @PostMapping("/course-offerings/{offeringId}/exams")
   @ResponseStatus(HttpStatus.CREATED)
   public ExamResponse createExam(
-      @PathVariable UUID offeringId, @RequestBody ExamCreateRequest request) {
+      @PathVariable UUID offeringId, @RequestBody @Valid ExamCreateRequest request) {
     return examService.createExam(offeringId, request);
   }
 
   @PatchMapping("/exams/{examId}")
   public ExamResponse updateExam(
-      @PathVariable UUID examId, @RequestBody ExamUpdateRequest request) {
+      @PathVariable UUID examId, @RequestBody @Valid ExamUpdateRequest request) {
     return examService.updateExam(examId, request);
   }
 }

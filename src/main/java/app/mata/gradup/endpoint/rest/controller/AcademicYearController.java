@@ -27,7 +27,7 @@ public class AcademicYearController {
   @PostMapping("/academic-years")
   @ResponseStatus(HttpStatus.CREATED)
   public AcademicYearResponse createAcademicYear(
-      @Valid @RequestBody AcademicYearCreateRequest request) {
+      @RequestBody @Valid AcademicYearCreateRequest request) {
     return academicYearService.createAcademicYear(request);
   }
 }
