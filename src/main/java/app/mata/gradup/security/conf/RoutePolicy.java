@@ -29,7 +29,8 @@ public class RoutePolicy {
         "/teachers/**",
         "/exams/**",
         "/grades/**",
-        "/disputes/**"
+        "/disputes/**",
+        "/health/**"
       };
 
   private final StudentAuthorizer studentAuthorizer;

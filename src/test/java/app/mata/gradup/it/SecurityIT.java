@@ -10,9 +10,12 @@ import app.mata.gradup.endpoint.rest.model.StudentCreateRequest;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
+import app.mata.gradup.repository.DummyUuidRepository;
+import app.mata.gradup.repository.model.DummyUuid;
 import app.mata.gradup.repository.model.JCohort;
 import app.mata.gradup.repository.model.JGroup;
 import app.mata.gradup.repository.model.JStudent;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +34,7 @@ class SecurityIT extends SecuredFacadeIT {
 
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private TestDataSeeder seeder;
+  @Autowired private DummyUuidRepository dummyUuidRepository;
 
   @BeforeEach
   void setUp() {
@@ -118,6 +122,21 @@ class SecurityIT extends SecuredFacadeIT {
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     assertNotNull(response.getBody());
     assertNotNull(response.getBody().getId());
+  }
+
+  @Test
+  void health_event_uuids_does_not_require_csrf_token() {
+    var uuid = UUID.randomUUID().toString();
+    dummyUuidRepository.deleteAll();
+    var dummy = new DummyUuid();
+    dummy.setId(uuid);
+    dummyUuidRepository.save(dummy);
+
+    var response = restTemplate.postForEntity("/health/event/uuids", List.of(uuid), String.class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("OK", response.getBody());
   }
 
   @Test

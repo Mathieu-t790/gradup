@@ -5,6 +5,7 @@ import app.mata.gradup.endpoint.rest.model.StudentPageResponse;
 import app.mata.gradup.endpoint.rest.model.StudentResponse;
 import app.mata.gradup.endpoint.rest.model.StudentSummaryResponse;
 import app.mata.gradup.endpoint.rest.model.StudentUpdateRequest;
+import app.mata.gradup.exception.BadRequestException;
 import app.mata.gradup.exception.BusinessRuleException;
 import app.mata.gradup.exception.ConflictException;
 import app.mata.gradup.exception.NotFoundException;
@@ -49,6 +50,12 @@ public class StudentService {
 
   @Transactional
   public StudentResponse createStudent(StudentCreateRequest request) {
+    if (request.getCohortId() == null) {
+      throw new BadRequestException("Cohort id must be specified");
+    }
+    if (request.getInitialGroupId() == null) {
+      throw new BadRequestException("Initial group id must be specified");
+    }
     var cohort =
         cohortRepository
             .findById(request.getCohortId())
