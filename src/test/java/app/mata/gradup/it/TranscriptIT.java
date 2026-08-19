@@ -1,4 +1,4 @@
-package app.mata.gradup;
+package app.mata.gradup.it;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
