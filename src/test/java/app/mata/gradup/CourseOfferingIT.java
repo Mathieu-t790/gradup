@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.conf.TestDataSeeder;
+import app.mata.gradup.endpoint.rest.model.CourseOfferingCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CourseOfferingResponse;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.endpoint.rest.model.ExamResponse;
@@ -261,6 +262,109 @@ class CourseOfferingIT extends SecuredFacadeIT {
     assertNull(response.getBody()[0].getExamTime());
   }
 
+  @Test
+  void createCourseOffering_commonGroup_appliesSemesterCap() {
+    var fixture =
+        seeder.inTransaction(
+            () -> {
+              var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+              var commonGroup = seeder.group("K1", cohort, null);
+              var year =
+                  seeder.academicYear(
+                      "2021-2024", LocalDate.of(2021, 9, 1), LocalDate.of(2024, 7, 31));
+              var semester =
+                  seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+              var fullCourse = seeder.course("COMMON1", 30, 1, null);
+              seeder.offering(fullCourse, commonGroup, semester);
+              return new CapFixture(commonGroup.getId(), semester.getId(), null);
+            });
+    var extra = seeder.course("EXTRA", 3, 1, null);
+    var request =
+        new CourseOfferingCreateRequest()
+            .courseId(extra.getId())
+            .groupId(fixture.groupId())
+            .semesterId(fixture.semesterId());
+
+    ResponseEntity<Error> response =
+        restTemplate.postForEntity("/course-offerings", request, Error.class);
+
+    assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().getMessage().contains("would exceed"));
+  }
+
+  @Test
+  void createCourseOffering_sameCourseAlreadyOffered_otherGroup_allowed() {
+    var fixture =
+        seeder.inTransaction(
+            () -> {
+              var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+              var el = seeder.track("EL", "Ecosysteme Logiciel");
+              var tn = seeder.track("TN", "Transformation Numerique");
+              var groupEl = seeder.group("K1", cohort, el);
+              var groupTn = seeder.group("K2", cohort, tn);
+              var year =
+                  seeder.academicYear(
+                      "2021-2024", LocalDate.of(2021, 9, 1), LocalDate.of(2024, 7, 31));
+              var semester =
+                  seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+              var commonCourse = seeder.course("COMMON", 30, 1, null);
+              seeder.offering(commonCourse, groupEl, semester);
+              return new CapFixture(groupTn.getId(), semester.getId(), commonCourse.getId());
+            });
+    var request =
+        new CourseOfferingCreateRequest()
+            .courseId(fixture.courseId())
+            .groupId(fixture.groupId())
+            .semesterId(fixture.semesterId());
+
+    ResponseEntity<CourseOfferingResponse> response =
+        restTemplate.postForEntity("/course-offerings", request, CourseOfferingResponse.class);
+
+    assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    assertNotNull(response.getBody());
+  }
+
+  @Test
+  void createCourseOffering_newCourseExceedsYearCap() {
+    var fixture =
+        seeder.inTransaction(
+            () -> {
+              var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+              var el = seeder.track("EL", "Ecosysteme Logiciel");
+              var group = seeder.group("K1", cohort, el);
+              var year =
+                  seeder.academicYear(
+                      "2021-2022", LocalDate.of(2021, 9, 1), LocalDate.of(2022, 8, 31));
+              var s1 =
+                  seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+              var s2 =
+                  seeder.semester(2, year, LocalDate.of(2022, 2, 1), LocalDate.of(2022, 6, 30));
+              var s3 =
+                  seeder.semester(3, year, LocalDate.of(2022, 7, 1), LocalDate.of(2022, 8, 31));
+              var c1 = seeder.course("C1", 30, 1, el);
+              var c2 = seeder.course("C2", 30, 2, el);
+              var c3 = seeder.course("C3", 24, 3, el);
+              seeder.offering(c1, group, s1);
+              seeder.offering(c2, group, s2);
+              seeder.offering(c3, group, s3);
+              var extra = seeder.course("EXTRA", 6, 3, el);
+              return new CapFixture(group.getId(), s3.getId(), extra.getId());
+            });
+    var request =
+        new CourseOfferingCreateRequest()
+            .courseId(fixture.courseId())
+            .groupId(fixture.groupId())
+            .semesterId(fixture.semesterId());
+
+    ResponseEntity<Error> response =
+        restTemplate.postForEntity("/course-offerings", request, Error.class);
+
+    assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().getMessage().contains("would exceed"));
+  }
+
   private JCourseOffering seedOffering() {
     var base = seeder.semesterScenario();
     return seeder.offering(
@@ -279,4 +383,6 @@ class CourseOfferingIT extends SecuredFacadeIT {
       JCourseOffering offering, LocalDate examDate, LocalTime examTime, int weightDenominator) {
     seeder.exam(offering, "Final exam", examDate, examTime, 1, weightDenominator);
   }
+
+  private record CapFixture(UUID groupId, UUID semesterId, UUID courseId) {}
 }

@@ -141,23 +141,20 @@ public class CourseOfferingService {
       throw new ConflictException(
           "Course offering already exists for this course, group and semester");
     }
-    var track = group.getTrack();
-    if (track != null) {
-      int semesterCredits =
-          courseOfferingRepository.sumCreditsBySemesterIdAndTrackId(semester.getId(), track.getId())
-              + course.getCredits();
-      if (semesterCredits > MAX_SEMESTER_CREDITS) {
-        throw new BusinessRuleException(
-            "Total credits for this semester and track would exceed " + MAX_SEMESTER_CREDITS);
-      }
-      int yearCredits =
-          courseOfferingRepository.sumCreditsByAcademicYearIdAndTrackId(
-                  semester.getAcademicYear().getId(), track.getId())
-              + course.getCredits();
-      if (yearCredits > MAX_YEAR_CREDITS) {
-        throw new BusinessRuleException(
-            "Total credits for this academic year and track would exceed " + MAX_YEAR_CREDITS);
-      }
+    var trackId = group.getTrack() == null ? null : group.getTrack().getId();
+    int semesterCredits =
+        courseOfferingRepository.sumCreditsBySemesterIdAndTrackId(
+            semester.getId(), trackId, course.getId());
+    if (semesterCredits > MAX_SEMESTER_CREDITS) {
+      throw new BusinessRuleException(
+          "Total credits for this semester and track would exceed " + MAX_SEMESTER_CREDITS);
+    }
+    int yearCredits =
+        courseOfferingRepository.sumCreditsByAcademicYearIdAndTrackId(
+            semester.getAcademicYear().getId(), trackId, course.getId());
+    if (yearCredits > MAX_YEAR_CREDITS) {
+      throw new BusinessRuleException(
+          "Total credits for this academic year and track would exceed " + MAX_YEAR_CREDITS);
     }
     var offering =
         courseOfferingRepository.save(
