@@ -65,6 +65,7 @@ public class RoutePolicy {
             "/students/{studentId}/group-history",
             "/students/{studentId}/track-history",
             "/students/{studentId}/transcripts",
+            "/students/{studentId}/transcripts/{transcriptId}/send",
             "/teachers",
             "/courses",
             "/course-offerings",

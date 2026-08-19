@@ -12,7 +12,7 @@ import app.mata.gradup.service.utils.HtmlTemplater;
 import app.mata.gradup.service.utils.Users;
 import app.mata.gradup.service.utils.Wording;
 import jakarta.mail.internet.InternetAddress;
-import java.io.File;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
@@ -27,6 +27,8 @@ import org.thymeleaf.context.Context;
 @Slf4j
 public class TranscriptGeneratedService implements Consumer<TranscriptGenerated> {
 
+  private static final Duration DOWNLOAD_URL_EXPIRATION = Duration.ofDays(3);
+
   private final TranscriptRepository transcriptRepository;
   private final BucketComponent bucketComponent;
   private final Mailer mailer;
@@ -40,18 +42,22 @@ public class TranscriptGeneratedService implements Consumer<TranscriptGenerated>
             .findById(event.getTranscriptId())
             .orElseThrow(
                 () -> new NotFoundException("Transcript not found: " + event.getTranscriptId()));
-    File pdf = bucketComponent.download(transcript.getStorageKey());
-    mailer.accept(emailOf(transcript, pdf));
+    mailer.accept(emailOf(transcript));
     transcript.setSentAt(Instant.now());
     transcriptRepository.save(transcript);
   }
 
-  private Email emailOf(JTranscript transcript, File pdf) {
+  private Email emailOf(JTranscript transcript) {
     try {
       String reference = transcript.getStudent().getUser().getReference();
       String studentName = Users.fullName(transcript.getStudent().getUser());
+      String downloadUrl =
+          bucketComponent
+              .presign(transcript.getStorageKey(), DOWNLOAD_URL_EXPIRATION)
+              .toString();
       Context context = new Context();
       context.setVariable("studentName", studentName);
+      context.setVariable("downloadUrl", downloadUrl);
       context.setVariable("signatureDataUri", EmailAssets.SIGNATURE_DATA_URI);
       String htmlBody = htmlTemplater.render("email/transcript", context);
       return new Email(
@@ -60,7 +66,7 @@ public class TranscriptGeneratedService implements Consumer<TranscriptGenerated>
           List.of(),
           Wording.get("transcript.subject", reference),
           htmlBody,
-          List.of(pdf));
+          List.of());
     } catch (Exception e) {
       throw new RuntimeException("Could not build email for transcript " + transcript.getId(), e);
     }

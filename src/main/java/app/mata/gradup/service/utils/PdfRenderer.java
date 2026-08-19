@@ -37,7 +37,10 @@ public class PdfRenderer {
 
       String html = htmlTemplater.render("pdf/transcript", context);
 
-      File pdf = File.createTempFile("relevé-" + data.student().reference() + "-", ".pdf");
+      File pdf =
+          File.createTempFile(
+              Wording.get("transcript.pdf.temp.prefix") + data.student().reference() + "-",
+              ".pdf");
       try (OutputStream os = new FileOutputStream(pdf)) {
         ITextRenderer renderer = new ITextRenderer();
         renderer.setDocumentFromString(html);
@@ -55,7 +58,8 @@ public class PdfRenderer {
       StudentInfo student,
       List<CourseLine> courses,
       AbsencesInfo absences,
-      ResultInfo result) {
+      ResultInfo result,
+      boolean provisional) {
 
     public record StudentInfo(
         String lastName, String firstName, String reference, String inscriptionLine) {}

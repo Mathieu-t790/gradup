@@ -24,6 +24,8 @@ import app.mata.gradup.service.utils.TrackCodes;
 import app.mata.gradup.service.utils.Wording;
 import app.mata.gradup.service.utils.XlsxRenderer;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -225,17 +227,24 @@ public class DiplomaService {
             : diplomaRepository.findByCohortIdAndTrackId(cohortId, track(trackCode).getId());
     List<List<String>> rows = exportRows(trackCode == null, diplomas);
     byte[] content = XlsxRenderer.render(Wording.get("diploma.export.sheet"), EXPORT_HEADERS, rows);
-    String filename =
-        trackCode == null
-            ? Wording.get("diploma.export.filename.prefix") + cohort.getLabel() + ".xlsx"
-            : Wording.get("diploma.export.filename.prefix")
-                + cohort.getLabel()
-                + "_"
-                + trackCode
-                + ".xlsx";
+    String filename = buildExportFilename(trackCode, cohort.getLabel(), LocalDate.now());
     String bucketKey = EXPORT_BUCKET_PREFIX + "/" + cohortId + "/" + filename;
     String downloadUrl = BucketExporter.uploadAndPresign(bucketComponent, content, bucketKey);
     return new DiplomaExportResponse().fileName(bucketKey).downloadUrl(downloadUrl);
+  }
+
+  static String buildExportFilename(TrackCode trackCode, String cohortLabel, LocalDate date) {
+    String scope = trackCode == null ? "TroncCommun" : trackLabel(trackCode);
+    String label = cohortLabel == null ? "" : cohortLabel;
+    String day = date == null ? "" : date.format(DateTimeFormatter.BASIC_ISO_DATE);
+    return Wording.get("diploma.export.filename.prefix") + scope + "_" + label + "_" + day + ".xlsx";
+  }
+
+  private static String trackLabel(TrackCode trackCode) {
+    return switch (trackCode) {
+      case EL -> "El";
+      case TN -> "Tn";
+    };
   }
 
   private List<List<String>> exportRows(boolean promotion, List<JDiploma> diplomas) {

@@ -2,6 +2,7 @@ package app.mata.gradup.endpoint.rest.controller;
 
 import app.mata.gradup.endpoint.rest.model.TranscriptGenerateRequest;
 import app.mata.gradup.endpoint.rest.model.TranscriptResponse;
+import app.mata.gradup.endpoint.rest.model.TranscriptType;
 import app.mata.gradup.service.TranscriptService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -26,7 +28,17 @@ public class TranscriptController {
   }
 
   @GetMapping("/students/{studentId}/transcripts")
-  public List<TranscriptResponse> listStudentTranscripts(@PathVariable UUID studentId) {
-    return transcriptService.listStudentTranscripts(studentId);
+  public List<TranscriptResponse> listStudentTranscripts(
+      @PathVariable UUID studentId,
+      @RequestParam(required = false) TranscriptType type,
+      @RequestParam(required = false) UUID semesterId,
+      @RequestParam(required = false) UUID academicYearId) {
+    return transcriptService.listStudentTranscripts(studentId, type, semesterId, academicYearId);
+  }
+
+  @PostMapping("/students/{studentId}/transcripts/{transcriptId}/send")
+  public TranscriptResponse sendStudentTranscript(
+      @PathVariable UUID studentId, @PathVariable UUID transcriptId) {
+    return transcriptService.sendStudentTranscript(studentId, transcriptId);
   }
 }

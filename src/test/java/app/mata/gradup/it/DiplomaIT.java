@@ -226,9 +226,7 @@ class DiplomaIT extends SecuredFacadeIT {
     assertNotNull(response);
     assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
     assertTrue(response.getFileName().startsWith("diplomas/" + fixture.cohortId + "/"));
-    assertTrue(
-        response.getFileName().endsWith("dipl%C3%B4m%C3%A9s_Mpamakilay_EL.xlsx")
-            || response.getFileName().endsWith("diplômés_Mpamakilay_EL.xlsx"));
+    assertFileNameEndsWith(response.getFileName(), "dipl%C3%B4m%C3%A9s_El_Mpamakilay_", "diplômés_El_Mpamakilay_");
     assertArrayEquals(seeder.goldenFile("xlsx/diplomas_el.xlsx"), uploadedContent());
   }
 
@@ -242,6 +240,7 @@ class DiplomaIT extends SecuredFacadeIT {
 
     assertNotNull(response);
     assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
+    assertFileNameEndsWith(response.getFileName(), "dipl%C3%B4m%C3%A9s_Tn_Mpamakilay_", "diplômés_Tn_Mpamakilay_");
     assertArrayEquals(seeder.goldenFile("xlsx/diplomas_tn.xlsx"), uploadedContent());
   }
 
@@ -256,6 +255,10 @@ class DiplomaIT extends SecuredFacadeIT {
     assertNotNull(response);
     assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
     assertTrue(response.getFileName().startsWith("diplomas/" + fixture.cohortId + "/"));
+    assertFileNameEndsWith(
+        response.getFileName(),
+        "dipl%C3%B4m%C3%A9s_TroncCommun_Mpamakilay_",
+        "diplômés_TroncCommun_Mpamakilay_");
     assertArrayEquals(seeder.goldenFile("xlsx/diplomas_all.xlsx"), uploadedContent());
   }
 
@@ -269,7 +272,18 @@ class DiplomaIT extends SecuredFacadeIT {
 
     assertNotNull(response);
     assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
+    assertFileNameEndsWith(
+        response.getFileName(),
+        "dipl%C3%B4m%C3%A9s_TroncCommun_Mpamakilay_",
+        "diplômés_TroncCommun_Mpamakilay_");
     assertArrayEquals(seeder.goldenFile("xlsx/diplomas_all.xlsx"), uploadedContent());
+  }
+
+  private static void assertFileNameEndsWith(String fileName, String encoded, String plain) {
+    String day = LocalDate.now().format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
+    assertTrue(
+        fileName.endsWith(encoded + day + ".xlsx") || fileName.endsWith(plain + day + ".xlsx"),
+        "unexpected file name: " + fileName);
   }
 
   @Test
