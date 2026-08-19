@@ -1,5 +1,6 @@
 package app.mata.gradup.service;
 
+import app.mata.gradup.exception.BadRequestException;
 import app.mata.gradup.exception.ConflictException;
 import app.mata.gradup.mail.Email;
 import app.mata.gradup.mail.Mailer;
@@ -29,6 +30,15 @@ public class UserService {
 
   public UserCreation createUserWithRole(
       String lastName, String firstName, String email, Role role) {
+    if (lastName == null || lastName.isBlank()) {
+      throw new BadRequestException("Last name must not be blank");
+    }
+    if (firstName == null || firstName.isBlank()) {
+      throw new BadRequestException("First name must not be blank");
+    }
+    if (email == null || email.isBlank()) {
+      throw new BadRequestException("Email must not be blank");
+    }
     if (userRepository.findByEmail(email).isPresent()) {
       throw new ConflictException("A user with email " + email + " already exists");
     }

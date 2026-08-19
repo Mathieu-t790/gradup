@@ -192,6 +192,85 @@ public class StudentIT extends SecuredFacadeIT {
   }
 
   @Test
+  void createStudent_missingLastName_returnsBadRequest() {
+    var cohort = saveCohort();
+    var group = saveGroup(cohort, "K1");
+
+    var response =
+        restTemplate.postForEntity(
+            "/students",
+            new StudentCreateRequest()
+                .firstName("Tafita")
+                .email("tafita@cu.te")
+                .cohortId(cohort.getId())
+                .initialGroupId(group.getId()),
+            Error.class);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("BAD_REQUEST", response.getBody().getCode());
+  }
+
+  @Test
+  void createStudent_blankEmail_returnsBadRequest() {
+    var cohort = saveCohort();
+    var group = saveGroup(cohort, "K1");
+
+    var response =
+        restTemplate.postForEntity(
+            "/students",
+            new StudentCreateRequest()
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email(" ")
+                .cohortId(cohort.getId())
+                .initialGroupId(group.getId()),
+            Error.class);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("BAD_REQUEST", response.getBody().getCode());
+  }
+
+  @Test
+  void createStudent_missingCohortId_returnsBadRequest() {
+    var group = saveGroup(saveCohort(), "K1");
+
+    var response =
+        restTemplate.postForEntity(
+            "/students",
+            new StudentCreateRequest()
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email("tafita@cu.te")
+                .initialGroupId(group.getId()),
+            Error.class);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("BAD_REQUEST", response.getBody().getCode());
+  }
+
+  @Test
+  void createStudent_missingInitialGroupId_returnsBadRequest() {
+    var cohort = saveCohort();
+
+    var response =
+        restTemplate.postForEntity(
+            "/students",
+            new StudentCreateRequest()
+                .lastName("Mathieu")
+                .firstName("Tafita")
+                .email("tafita@cu.te")
+                .cohortId(cohort.getId()),
+            Error.class);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("BAD_REQUEST", response.getBody().getCode());
+  }
+
+  @Test
   void updateStudent_updatesProvidedFields() {
     var cohort = saveCohort();
     var group = saveGroup(cohort, "K1");
