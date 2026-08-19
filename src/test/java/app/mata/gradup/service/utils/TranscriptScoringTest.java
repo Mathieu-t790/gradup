@@ -56,6 +56,51 @@ class TranscriptScoringTest {
   }
 
   @Test
+  void score_rounds_the_weighted_average_half_up_to_two_decimals() {
+    JCourseOffering a = offering(course("A", 3), 1);
+    JCourseOffering b = offering(course("B", 3), 1);
+
+    ResultInfo result =
+        TranscriptScoring.score(
+            List.of(a, b),
+            Map.of(
+                a.getId(), new BigDecimal("10.00"),
+                b.getId(), new BigDecimal("13.33")));
+
+    assertEquals(new BigDecimal("11.67"), result.weightedAverage());
+    assertEquals(6, result.creditsAcquired());
+  }
+
+  @Test
+  void score_counts_credits_acquired_at_exactly_ten_and_not_below() {
+    JCourseOffering passed = offering(course("OK", 4), 1);
+    JCourseOffering failed = offering(course("KO", 4), 1);
+
+    ResultInfo result =
+        TranscriptScoring.score(
+            List.of(passed, failed),
+            Map.of(passed.getId(), BigDecimal.TEN, failed.getId(), new BigDecimal("9.99")));
+
+    assertEquals(4, result.creditsAcquired());
+    assertEquals(8, result.totalCredits());
+  }
+
+  @Test
+  void score_weighs_averages_by_credits_not_by_offerings() {
+    JCourseOffering heavy = offering(course("H", 6), 1);
+    JCourseOffering light = offering(course("L", 2), 1);
+
+    ResultInfo result =
+        TranscriptScoring.score(
+            List.of(heavy, light),
+            Map.of(
+                heavy.getId(), new BigDecimal("10.00"),
+                light.getId(), new BigDecimal("20.00")));
+
+    assertEquals(new BigDecimal("12.50"), result.weightedAverage());
+  }
+
+  @Test
   void hasPassed_threshold_is_10() {
     assertTrue(TranscriptScoring.hasPassed(BigDecimal.TEN));
     assertTrue(TranscriptScoring.hasPassed(new BigDecimal("12.50")));

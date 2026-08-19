@@ -136,6 +136,103 @@ class TranscriptIT extends SecuredFacadeIT {
   }
 
   @Test
+  void get_lists_generated_transcripts_filtered_by_type() {
+    Fixture fixture = seed(true);
+    post(
+        fixture.studentId,
+        """
+        {"type":"PROVISIONAL","semesterId":"%s"}
+        """
+            .formatted(fixture.semesterId));
+    TranscriptResponse full =
+        post(
+            fixture.studentId,
+            """
+            {"type":"FULL","academicYearId":"%s"}
+            """
+                .formatted(fixture.academicYearId));
+
+    TranscriptResponse[] onlyFull = list(fixture.studentId, "?type=FULL");
+    TranscriptResponse[] onlyProvisional = list(fixture.studentId, "?type=PROVISIONAL");
+    TranscriptResponse[] onlyDiploma = list(fixture.studentId, "?type=DIPLOMA");
+
+    assertEquals(1, onlyFull.length);
+    assertEquals(full.getId(), onlyFull[0].getId());
+    assertEquals(1, onlyProvisional.length);
+    assertEquals(0, onlyDiploma.length);
+  }
+
+  @Test
+  void get_lists_generated_transcripts_filtered_by_semester_and_academic_year() {
+    Fixture fixture = seed(true);
+    TranscriptResponse provisional =
+        post(
+            fixture.studentId,
+            """
+            {"type":"PROVISIONAL","semesterId":"%s"}
+            """
+                .formatted(fixture.semesterId));
+    TranscriptResponse full =
+        post(
+            fixture.studentId,
+            """
+            {"type":"FULL","academicYearId":"%s"}
+            """
+                .formatted(fixture.academicYearId));
+
+    TranscriptResponse[] bySemester = list(fixture.studentId, "?semesterId=" + fixture.semesterId);
+    TranscriptResponse[] byYear =
+        list(fixture.studentId, "?academicYearId=" + fixture.academicYearId);
+    TranscriptResponse[] byUnknownSemester =
+        list(fixture.studentId, "?semesterId=" + UUID.randomUUID());
+
+    assertEquals(1, bySemester.length);
+    assertEquals(provisional.getId(), bySemester[0].getId());
+    assertEquals(1, byYear.length);
+    assertEquals(full.getId(), byYear[0].getId());
+    assertEquals(0, byUnknownSemester.length);
+  }
+
+  @Test
+  void post_send_dispatches_email_event_for_an_existing_transcript() throws Exception {
+    Fixture fixture = seed(false);
+    TranscriptResponse created =
+        post(
+            fixture.studentId,
+            """
+            {"type":"PROVISIONAL","semesterId":"%s"}
+            """
+                .formatted(fixture.semesterId));
+
+    reset(eventProducer, bucketComponent, mailer);
+    when(bucketComponent.presign(any(), any()))
+        .thenReturn(URI.create("http://localhost/download.pdf").toURL());
+
+    ResponseEntity<TranscriptResponse> response =
+        restTemplate.postForEntity(
+            BASE_URL.formatted(fixture.studentId) + "/" + created.getId() + "/send",
+            null,
+            TranscriptResponse.class);
+
+    assertEquals(200, response.getStatusCode().value());
+    assertEquals(created.getId(), response.getBody().getId());
+    Collection<TranscriptGenerated> events = dispatchedEvents();
+    assertEquals(1, events.size());
+    assertEquals(created.getId(), events.iterator().next().getTranscriptId());
+  }
+
+  @Test
+  void post_send_unknown_transcript_returns_404() {
+    ResponseEntity<String> response =
+        restTemplate.postForEntity(
+            BASE_URL.formatted(UUID.randomUUID()) + "/" + UUID.randomUUID() + "/send",
+            null,
+            String.class);
+
+    assertEquals(404, response.getStatusCode().value());
+  }
+
+  @Test
   void post_with_mismatched_ids_returns_400() {
     Fixture fixture = seed(false);
     String body =
@@ -174,6 +271,14 @@ class TranscriptIT extends SecuredFacadeIT {
             BASE_URL.formatted(studentId),
             new HttpEntity<>(body, headers),
             TranscriptResponse.class);
+    assertEquals(200, response.getStatusCode().value());
+    return response.getBody();
+  }
+
+  private TranscriptResponse[] list(UUID studentId, String query) {
+    ResponseEntity<TranscriptResponse[]> response =
+        restTemplate.getForEntity(
+            BASE_URL.formatted(studentId) + query, TranscriptResponse[].class);
     assertEquals(200, response.getStatusCode().value());
     return response.getBody();
   }

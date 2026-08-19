@@ -6,11 +6,11 @@
   <style>
     @page { size: 612pt 792pt; margin: 36pt; }
     body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #000; }
-    .header { text-align: right; }
+    .header { text-align: center; margin-bottom: 6pt; }
     .header img { width: 55pt; height: 55pt; }
-    .school { font-weight: bold; font-size: 12pt; margin: 0; }
+    .school { font-weight: bold; font-size: 12pt; margin: 4pt 0 2pt 0; }
     .contact { font-size: 9pt; margin: 0; }
-    .title { text-align: center; font-weight: bold; font-size: 16pt; margin: 14pt 0 18pt 0; }
+    .title { text-align: center; font-weight: bold; font-size: 16pt; margin: 16pt 0 18pt 0; letter-spacing: 0.5pt; }
     .student { font-size: 11pt; margin: 0; }
     .inscription { font-size: 11pt; margin: 10pt 0 2pt 0; }
     table { width: 100%; border-collapse: collapse; margin: 12pt 0; }
@@ -66,7 +66,7 @@
   <p class="absences">Justification d'absence : <span th:text="${data.absences().justificationText()} ?: 'Non disponible'">—</span></p>
   <p class="absences">Malus des absences : <span th:text="${data.absences().malusText()} ?: 'Non disponible'">—</span></p>
 
-  <p class="nb">NB: Ce résultat affiché est temporaire et ne reflète pas le résultat final.</p>
+  <p class="nb" th:if="${data.provisional()}">NB: Ce résultat affiché est temporaire et ne reflète pas le résultat final.</p>
 
   <div th:if="${data.result() != null}">
     <p class="result-title">Résultat</p>
@@ -77,7 +77,6 @@
   <div class="footer">
     <p class="place">Fait à Antananarivo, le <span th:text="${issueDateText}">—</span></p>
     <p class="place">Le directeur pédagogique</p>
-    <p class="place">Dr Fonenantsoa MAURICA A.</p>
     <img th:src="${signatureDataUri}" alt="Signature" />
   </div>
 </body>

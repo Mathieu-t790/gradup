@@ -524,7 +524,26 @@ paths:
     get:
       tags: [transcripts]
       operationId: listStudentTranscripts
+      description: >
+        Lists the student's generated transcripts, newest first. All
+        parameters are optional filters: type narrows to a single
+        transcript kind, semesterId to transcripts scoped to a semester
+        (PROVISIONAL), academicYearId to transcripts scoped to an academic
+        year (FULL).
       x-required-roles: [ADMIN, STUDENT]
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/TranscriptType' }
+        - name: semesterId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: academicYearId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: List of previously generated transcripts
@@ -564,6 +583,29 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/TranscriptResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /students/{studentId}/transcripts/{transcriptId}/send:
+    parameters:
+      - $ref: '#/components/parameters/StudentId'
+      - name: transcriptId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [transcripts]
+      operationId: sendStudentTranscript
+      description: >
+        Re-dispatches the email (download button) for an already generated
+        transcript. The email goes to the recipient email recorded on the
+        transcript at generation time.
+      x-required-roles: [ADMIN]
+      responses:
+        '200':
+          description: Email dispatched
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TranscriptResponse' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /students/{studentId}/disputes:

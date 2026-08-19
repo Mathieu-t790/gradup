@@ -131,7 +131,8 @@ public class TranscriptService {
                 student, year, scope.trackAt(student, LocalDate.now())),
             offerings,
             averageByOffering,
-            null);
+            null,
+            true);
     JTranscript transcript =
         JTranscript.builder()
             .id(transcriptId)
@@ -162,7 +163,8 @@ public class TranscriptService {
                 student, year, scope.trackAt(student, LocalDate.now())),
             offerings,
             averageByOffering,
-            result);
+            result,
+            false);
     JTranscript transcript =
         JTranscript.builder()
             .id(transcriptId)
@@ -193,11 +195,12 @@ public class TranscriptService {
     TranscriptPdfData pdfData =
         pdfData(
             student,
-            Wording.get("transcript.title"),
+            Wording.get("transcript.title.diploma"),
             TranscriptScoring.diplomaInscriptionLine(diploma),
             offerings,
             averageByOffering,
-            result);
+            result,
+            false);
     JTranscript transcript =
         JTranscript.builder()
             .id(transcriptId)
@@ -213,15 +216,51 @@ public class TranscriptService {
   }
 
   @Transactional
-  public List<TranscriptResponse> listStudentTranscripts(UUID studentId) {
+  public List<TranscriptResponse> listStudentTranscripts(
+      UUID studentId,
+      app.mata.gradup.endpoint.rest.model.TranscriptType type,
+      UUID semesterId,
+      UUID academicYearId) {
     studentRepository
         .findById(studentId)
         .orElseThrow(() -> new NotFoundException("Student not found: " + studentId));
     return transcriptRepository.findByStudentIdOrderByGeneratedAtDesc(studentId).stream()
+        .filter(transcript -> type == null || sameType(transcript.getType(), type))
+        .filter(
+            transcript ->
+                semesterId == null
+                    || (transcript.getSemester() != null
+                        && transcript.getSemester().getId().equals(semesterId)))
+        .filter(
+            transcript ->
+                academicYearId == null
+                    || (transcript.getAcademicYear() != null
+                        && transcript.getAcademicYear().getId().equals(academicYearId)))
         .map(
             transcript ->
                 transcriptMapper.toRest(transcript, presignUrl(transcript.getStorageKey())))
         .toList();
+  }
+
+  @Transactional
+  public TranscriptResponse sendStudentTranscript(UUID studentId, UUID transcriptId) {
+    JTranscript transcript =
+        transcriptRepository
+            .findById(transcriptId)
+            .orElseThrow(() -> new NotFoundException("Transcript not found: " + transcriptId));
+    if (!transcript.getStudent().getId().equals(studentId)) {
+      throw new NotFoundException("Transcript not found: " + transcriptId);
+    }
+    if (transcript.getRecipientEmail() == null || transcript.getRecipientEmail().isBlank()) {
+      throw new BadRequestException("Transcript has no recipient email: " + transcriptId);
+    }
+    dispatchEmailEvent(transcriptId);
+    return transcriptMapper.toRest(transcript, presignUrl(transcript.getStorageKey()));
+  }
+
+  private static boolean sameType(
+      TranscriptType type, app.mata.gradup.endpoint.rest.model.TranscriptType restType) {
+    return type.name().equals(restType.name());
   }
 
   private void dispatchEmailEvent(UUID transcriptId) {
@@ -324,7 +363,8 @@ public class TranscriptService {
       String inscriptionLine,
       List<JCourseOffering> offerings,
       Map<UUID, BigDecimal> averageByOffering,
-      ResultInfo result) {
+      ResultInfo result,
+      boolean provisional) {
     StudentInfo studentInfo =
         new StudentInfo(
             student.getUser().getLastName(),
@@ -336,7 +376,8 @@ public class TranscriptService {
         studentInfo,
         TranscriptScoring.courseLines(offerings, averageByOffering),
         new AbsencesInfo(null, null, null),
-        result);
+        result,
+        provisional);
   }
 
   private record PreparedTranscript(

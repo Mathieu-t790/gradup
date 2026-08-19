@@ -6,7 +6,13 @@
 <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Helvetica, Arial, sans-serif; font-size: 14px; color: #000;">
   <div style="max-width: 600px; margin: 24px auto; background-color: #ffffff; padding: 32px; border: 1px solid #e0e0e0;">
     <p>Bonjour <span th:text="${studentName}">—</span>,</p>
-    <p>Votre relevé de notes est disponible et vous a été adressé en pièce jointe.</p>
+    <p>Votre relevé de notes est disponible au téléchargement via le bouton ci-dessous.</p>
+    <div style="text-align: center; margin: 28px 0;">
+      <a th:href="${downloadUrl}" style="display: inline-block; background-color: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold;">
+        Télécharger le relevé de notes
+      </a>
+    </div>
+    <p>Ce lien est valable 3 jours à compter de la réception de cet email.</p>
     <p>Pour toute question, vous pouvez contacter l'administration de l'école.</p>
     <p>Cordialement,</p>
     <div style="margin-top: 16px;">
