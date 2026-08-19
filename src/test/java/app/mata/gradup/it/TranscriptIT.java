@@ -152,12 +152,9 @@ class TranscriptIT extends SecuredFacadeIT {
             """
                 .formatted(fixture.academicYearId));
 
-    TranscriptResponse[] onlyFull =
-        list(fixture.studentId, "?type=FULL");
-    TranscriptResponse[] onlyProvisional =
-        list(fixture.studentId, "?type=PROVISIONAL");
-    TranscriptResponse[] onlyDiploma =
-        list(fixture.studentId, "?type=DIPLOMA");
+    TranscriptResponse[] onlyFull = list(fixture.studentId, "?type=FULL");
+    TranscriptResponse[] onlyProvisional = list(fixture.studentId, "?type=PROVISIONAL");
+    TranscriptResponse[] onlyDiploma = list(fixture.studentId, "?type=DIPLOMA");
 
     assertEquals(1, onlyFull.length);
     assertEquals(full.getId(), onlyFull[0].getId());
@@ -184,8 +181,10 @@ class TranscriptIT extends SecuredFacadeIT {
                 .formatted(fixture.academicYearId));
 
     TranscriptResponse[] bySemester = list(fixture.studentId, "?semesterId=" + fixture.semesterId);
-    TranscriptResponse[] byYear = list(fixture.studentId, "?academicYearId=" + fixture.academicYearId);
-    TranscriptResponse[] byUnknownSemester = list(fixture.studentId, "?semesterId=" + UUID.randomUUID());
+    TranscriptResponse[] byYear =
+        list(fixture.studentId, "?academicYearId=" + fixture.academicYearId);
+    TranscriptResponse[] byUnknownSemester =
+        list(fixture.studentId, "?semesterId=" + UUID.randomUUID());
 
     assertEquals(1, bySemester.length);
     assertEquals(provisional.getId(), bySemester[0].getId());

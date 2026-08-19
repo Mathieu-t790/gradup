@@ -40,8 +40,7 @@ class RankingTest {
     List<Candidate> sorted =
         Ranking.sortByAverageDesc(
             List.of(tiedB, fourth, first, tiedA), Candidate::average, Candidate::id);
-    Map<UUID, Integer> ranks =
-        Ranking.competitionRanks(sorted, Candidate::average, Candidate::id);
+    Map<UUID, Integer> ranks = Ranking.competitionRanks(sorted, Candidate::average, Candidate::id);
 
     assertEquals(1, ranks.get(first.id()));
     assertEquals(2, ranks.get(tiedA.id()));
@@ -58,8 +57,7 @@ class RankingTest {
     List<Candidate> sorted =
         Ranking.sortByAverageDesc(
             List.of(noAverageB, graded, noAverageA), Candidate::average, Candidate::id);
-    Map<UUID, Integer> ranks =
-        Ranking.competitionRanks(sorted, Candidate::average, Candidate::id);
+    Map<UUID, Integer> ranks = Ranking.competitionRanks(sorted, Candidate::average, Candidate::id);
 
     assertEquals(1, ranks.get(graded.id()));
     assertEquals(2, ranks.get(noAverageA.id()));
@@ -75,8 +73,7 @@ class RankingTest {
         Ranking.sortByAverageDesc(List.of(sameB, sameA), Candidate::average, Candidate::id);
 
     assertEquals(List.of(sameA.id(), sameB.id()), ids(sorted));
-    Map<UUID, Integer> ranks =
-        Ranking.competitionRanks(sorted, Candidate::average, Candidate::id);
+    Map<UUID, Integer> ranks = Ranking.competitionRanks(sorted, Candidate::average, Candidate::id);
     assertEquals(1, ranks.get(sameA.id()));
     assertEquals(1, ranks.get(sameB.id()));
   }

@@ -21,7 +21,8 @@ class TranscriptTemplateTest {
   void pdf_provisional_contains_the_temporary_result_warning() {
     String html = renderPdf(true);
     assertTrue(
-        html.contains("NB: Ce résultat affiché est temporaire et ne reflète pas le résultat final."),
+        html.contains(
+            "NB: Ce résultat affiché est temporaire et ne reflète pas le résultat final."),
         "provisional transcripts must carry the temporary-result warning");
   }
 
@@ -43,7 +44,8 @@ class TranscriptTemplateTest {
   void email_template_contains_the_download_button_with_the_presigned_url() {
     Context context = new Context();
     context.setVariable("studentName", "Tafita Mathieu");
-    context.setVariable("downloadUrl", "https://bucket.example/transcript.pdf?X-Amz-Expires=259200");
+    context.setVariable(
+        "downloadUrl", "https://bucket.example/transcript.pdf?X-Amz-Expires=259200");
     context.setVariable("signatureDataUri", EmailAssets.SIGNATURE_DATA_URI);
 
     String html = templater.render("email/transcript", context);
@@ -64,7 +66,8 @@ class TranscriptTemplateTest {
         "data",
         new TranscriptPdfData(
             title,
-            new StudentInfo("Mathieu", "Tafita", "STD21001", "Inscrit(e) en Première année de Licence EL"),
+            new StudentInfo(
+                "Mathieu", "Tafita", "STD21001", "Inscrit(e) en Première année de Licence EL"),
             List.of(new CourseLine("PROG1", "Algorithmique", 6, new BigDecimal("12.50"))),
             new AbsencesInfo(null, null, null),
             new ResultInfo(6, 6, new BigDecimal("12.50")),

@@ -52,9 +52,7 @@ public class TranscriptGeneratedService implements Consumer<TranscriptGenerated>
       String reference = transcript.getStudent().getUser().getReference();
       String studentName = Users.fullName(transcript.getStudent().getUser());
       String downloadUrl =
-          bucketComponent
-              .presign(transcript.getStorageKey(), DOWNLOAD_URL_EXPIRATION)
-              .toString();
+          bucketComponent.presign(transcript.getStorageKey(), DOWNLOAD_URL_EXPIRATION).toString();
       Context context = new Context();
       context.setVariable("studentName", studentName);
       context.setVariable("downloadUrl", downloadUrl);

@@ -79,9 +79,7 @@ class TranscriptScoringTest {
     ResultInfo result =
         TranscriptScoring.score(
             List.of(passed, failed),
-            Map.of(
-                passed.getId(), BigDecimal.TEN,
-                failed.getId(), new BigDecimal("9.99")));
+            Map.of(passed.getId(), BigDecimal.TEN, failed.getId(), new BigDecimal("9.99")));
 
     assertEquals(4, result.creditsAcquired());
     assertEquals(8, result.totalCredits());

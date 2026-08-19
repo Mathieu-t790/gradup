@@ -259,8 +259,7 @@ public class TranscriptService {
   }
 
   private static boolean sameType(
-      TranscriptType type,
-      app.mata.gradup.endpoint.rest.model.TranscriptType restType) {
+      TranscriptType type, app.mata.gradup.endpoint.rest.model.TranscriptType restType) {
     return type.name().equals(restType.name());
   }
 

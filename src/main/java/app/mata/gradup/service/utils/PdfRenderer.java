@@ -39,8 +39,7 @@ public class PdfRenderer {
 
       File pdf =
           File.createTempFile(
-              Wording.get("transcript.pdf.temp.prefix") + data.student().reference() + "-",
-              ".pdf");
+              Wording.get("transcript.pdf.temp.prefix") + data.student().reference() + "-", ".pdf");
       try (OutputStream os = new FileOutputStream(pdf)) {
         ITextRenderer renderer = new ITextRenderer();
         renderer.setDocumentFromString(html);

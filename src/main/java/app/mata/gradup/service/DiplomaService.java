@@ -237,7 +237,13 @@ public class DiplomaService {
     String scope = trackCode == null ? "TroncCommun" : trackLabel(trackCode);
     String label = cohortLabel == null ? "" : cohortLabel;
     String day = date == null ? "" : date.format(DateTimeFormatter.BASIC_ISO_DATE);
-    return Wording.get("diploma.export.filename.prefix") + scope + "_" + label + "_" + day + ".xlsx";
+    return Wording.get("diploma.export.filename.prefix")
+        + scope
+        + "_"
+        + label
+        + "_"
+        + day
+        + ".xlsx";
   }
 
   private static String trackLabel(TrackCode trackCode) {

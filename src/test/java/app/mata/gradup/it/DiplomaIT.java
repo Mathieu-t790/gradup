@@ -226,7 +226,8 @@ class DiplomaIT extends SecuredFacadeIT {
     assertNotNull(response);
     assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
     assertTrue(response.getFileName().startsWith("diplomas/" + fixture.cohortId + "/"));
-    assertFileNameEndsWith(response.getFileName(), "dipl%C3%B4m%C3%A9s_El_Mpamakilay_", "diplômés_El_Mpamakilay_");
+    assertFileNameEndsWith(
+        response.getFileName(), "dipl%C3%B4m%C3%A9s_El_Mpamakilay_", "diplômés_El_Mpamakilay_");
     assertArrayEquals(seeder.goldenFile("xlsx/diplomas_el.xlsx"), uploadedContent());
   }
 
@@ -240,7 +241,8 @@ class DiplomaIT extends SecuredFacadeIT {
 
     assertNotNull(response);
     assertEquals("http://localhost/diplomas.xlsx", response.getDownloadUrl());
-    assertFileNameEndsWith(response.getFileName(), "dipl%C3%B4m%C3%A9s_Tn_Mpamakilay_", "diplômés_Tn_Mpamakilay_");
+    assertFileNameEndsWith(
+        response.getFileName(), "dipl%C3%B4m%C3%A9s_Tn_Mpamakilay_", "diplômés_Tn_Mpamakilay_");
     assertArrayEquals(seeder.goldenFile("xlsx/diplomas_tn.xlsx"), uploadedContent());
   }
 

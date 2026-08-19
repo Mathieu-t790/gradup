@@ -13,14 +13,16 @@ class DiplomaExportFilenameTest {
   void el_track_uses_el_label_and_download_date() {
     assertEquals(
         "diplômés_El_Mpamakilay_20260819.xlsx",
-        DiplomaService.buildExportFilename(app.mata.gradup.endpoint.rest.model.TrackCode.EL, "Mpamakilay", DAY));
+        DiplomaService.buildExportFilename(
+            app.mata.gradup.endpoint.rest.model.TrackCode.EL, "Mpamakilay", DAY));
   }
 
   @Test
   void tn_track_uses_tn_label_and_download_date() {
     assertEquals(
         "diplômés_Tn_Mpamakilay_20260819.xlsx",
-        DiplomaService.buildExportFilename(app.mata.gradup.endpoint.rest.model.TrackCode.TN, "Mpamakilay", DAY));
+        DiplomaService.buildExportFilename(
+            app.mata.gradup.endpoint.rest.model.TrackCode.TN, "Mpamakilay", DAY));
   }
 
   @Test
@@ -35,6 +37,8 @@ class DiplomaExportFilenameTest {
     assertEquals(
         "diplômés_El_Mpamakilay_20260102.xlsx",
         DiplomaService.buildExportFilename(
-            app.mata.gradup.endpoint.rest.model.TrackCode.EL, "Mpamakilay", LocalDate.of(2026, 1, 2)));
+            app.mata.gradup.endpoint.rest.model.TrackCode.EL,
+            "Mpamakilay",
+            LocalDate.of(2026, 1, 2)));
   }
 }

@@ -130,8 +130,7 @@ class SemesterServiceTest {
             .totalCredits(30)
             .validatedBy(adminUserId)
             .build();
-    when(validationRepository.saveAndFlush(any(JSemesterCreditValidation.class)))
-        .thenReturn(saved);
+    when(validationRepository.saveAndFlush(any(JSemesterCreditValidation.class))).thenReturn(saved);
     SemesterCreditValidation domain =
         new SemesterCreditValidation(
             saved.getId(),
