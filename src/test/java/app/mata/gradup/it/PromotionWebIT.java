@@ -140,8 +140,7 @@ class PromotionWebIT extends SecuredFacadeIT {
     var response = postDiplomas(cohort, "download", "EL");
 
     assertEquals(HttpStatus.FOUND, response.getStatusCode());
-    assertEquals(
-        "http://localhost/diplomas.xlsx", response.getHeaders().getLocation().toString());
+    assertEquals("http://localhost/diplomas.xlsx", response.getHeaders().getLocation().toString());
   }
 
   @Test

@@ -46,7 +46,9 @@ public class PromotionController {
                 Comparator.comparingInt(CohortResponse::getExpectedGraduationYear)
                     .reversed()
                     .thenComparing(CohortResponse::getLabel))
-            .map(cohort -> new PromotionRow(cohort, diplomaService.countCohortDiplomas(cohort.getId())))
+            .map(
+                cohort ->
+                    new PromotionRow(cohort, diplomaService.countCohortDiplomas(cohort.getId())))
             .toList();
     model.addAttribute("rows", rows);
     model.addAttribute("promotionCount", rows.size());
