@@ -2,6 +2,7 @@ package app.mata.gradup.endpoint.rest.controller;
 
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
+import app.mata.gradup.endpoint.rest.model.CohortUpdateRequest;
 import app.mata.gradup.service.CohortService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,5 +37,11 @@ public class CohortController {
   @GetMapping("/cohorts/{cohortId}")
   public CohortResponse getCohort(@PathVariable UUID cohortId) {
     return cohortService.getCohort(cohortId);
+  }
+
+  @PatchMapping("/cohorts/{cohortId}")
+  public CohortResponse updateCohort(
+      @PathVariable UUID cohortId, @RequestBody @Valid CohortUpdateRequest request) {
+    return cohortService.updateCohort(cohortId, request);
   }
 }

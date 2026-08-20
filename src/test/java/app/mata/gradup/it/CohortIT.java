@@ -8,6 +8,7 @@ import app.mata.gradup.conf.SecuredFacadeIT;
 import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
+import app.mata.gradup.endpoint.rest.model.CohortUpdateRequest;
 import app.mata.gradup.endpoint.rest.model.Error;
 import app.mata.gradup.repository.CohortRepository;
 import java.util.List;
@@ -16,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
 public class CohortIT extends SecuredFacadeIT {
@@ -108,5 +111,72 @@ public class CohortIT extends SecuredFacadeIT {
             Error.class);
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void updateCohort_shouldUpdateLabel() {
+    var saved = seeder.cohort("Promo 2026", 2026, 2029);
+
+    var response =
+        restTemplate.exchange(
+            "/cohorts/" + saved.getId(),
+            HttpMethod.PATCH,
+            new HttpEntity<>(new CohortUpdateRequest().label("Promo 2027")),
+            CohortResponse.class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var cohort = response.getBody();
+    assertNotNull(cohort);
+    assertEquals("Promo 2027", cohort.getLabel());
+    assertEquals(2026, cohort.getEntryYear());
+    assertEquals(2029, cohort.getExpectedGraduationYear());
+  }
+
+  @Test
+  void updateCohort_shouldIgnoreNullFields() {
+    var saved = seeder.cohort("Promo 2026", 2026, 2029);
+
+    var response =
+        restTemplate.exchange(
+            "/cohorts/" + saved.getId(),
+            HttpMethod.PATCH,
+            new HttpEntity<>(new CohortUpdateRequest().expectedGraduationYear(2030)),
+            CohortResponse.class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    var cohort = response.getBody();
+    assertNotNull(cohort);
+    assertEquals("Promo 2026", cohort.getLabel());
+    assertEquals(2026, cohort.getEntryYear());
+    assertEquals(2030, cohort.getExpectedGraduationYear());
+  }
+
+  @Test
+  void updateCohort_shouldReturn400_whenBlankLabel() {
+    var saved = seeder.cohort("Promo 2026", 2026, 2029);
+
+    var response =
+        restTemplate.exchange(
+            "/cohorts/" + saved.getId(),
+            HttpMethod.PATCH,
+            new HttpEntity<>(new CohortUpdateRequest().label("  ")),
+            Error.class);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void updateCohort_shouldReturn404_whenNotFound() {
+    var response =
+        restTemplate.exchange(
+            "/cohorts/" + UUID.randomUUID(),
+            HttpMethod.PATCH,
+            new HttpEntity<>(new CohortUpdateRequest().label("Promo 2027")),
+            Error.class);
+
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    var error = response.getBody();
+    assertNotNull(error);
+    assertEquals("NOT_FOUND", error.getCode());
   }
 }

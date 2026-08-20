@@ -85,6 +85,26 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/CohortResponse' }
         '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [cohorts]
+      operationId: updateCohort
+      description: >
+        Partially updates a cohort (label, entry years). Only the fields
+        present in the body are applied; absent fields keep their value.
+      x-required-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CohortUpdateRequest' }
+      responses:
+        '200':
+          description: Cohort updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CohortResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /cohorts/{cohortId}/diplomas:
     parameters:
@@ -1252,6 +1272,16 @@ components:
         entryYear: { type: integer }
         expectedGraduationYear: { type: integer }
       required: [label, entryYear, expectedGraduationYear]
+
+    CohortUpdateRequest:
+      type: object
+      description: >
+        Partial update - only the fields present in the body are applied,
+        so no property is required.
+      properties:
+        label: { type: string }
+        entryYear: { type: integer }
+        expectedGraduationYear: { type: integer }
 
     TrackResponse:
       type: object

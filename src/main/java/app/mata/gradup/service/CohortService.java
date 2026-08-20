@@ -2,6 +2,7 @@ package app.mata.gradup.service;
 
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
+import app.mata.gradup.endpoint.rest.model.CohortUpdateRequest;
 import app.mata.gradup.exception.BadRequestException;
 import app.mata.gradup.exception.NotFoundException;
 import app.mata.gradup.mapper.CohortMapper;
@@ -45,5 +46,27 @@ public class CohortService {
             .findById(cohortId)
             .orElseThrow(() -> new NotFoundException("Cohort not found: " + cohortId));
     return cohortMapper.toRest(cohortMapper.toDomain(jCohort));
+  }
+
+  @Transactional
+  public CohortResponse updateCohort(UUID cohortId, CohortUpdateRequest request) {
+    var jCohort =
+        cohortRepository
+            .findById(cohortId)
+            .orElseThrow(() -> new NotFoundException("Cohort not found: " + cohortId));
+    if (request.getLabel() != null) {
+      if (request.getLabel().isBlank()) {
+        throw new BadRequestException("Cohort label must not be blank");
+      }
+      jCohort.setLabel(request.getLabel());
+    }
+    if (request.getEntryYear() != null) {
+      jCohort.setEntryYear(request.getEntryYear());
+    }
+    if (request.getExpectedGraduationYear() != null) {
+      jCohort.setExpectedGraduationYear(request.getExpectedGraduationYear());
+    }
+    var saved = cohortRepository.save(jCohort);
+    return cohortMapper.toRest(cohortMapper.toDomain(saved));
   }
 }
