@@ -31,10 +31,16 @@ public final class PromotionWeb {
     return "redirect:/promotions?error=" + error;
   }
 
-  public static String redirectDetail(UUID cohortId, String track, String error) {
-    String query = track == null ? "" : "track=" + track;
+  public static String redirectDetail(UUID cohortId, String track, UUID groupId, String error) {
+    StringBuilder query = new StringBuilder();
+    if (track != null) {
+      query.append("track=").append(track);
+    }
+    if (groupId != null) {
+      query.append(query.isEmpty() ? "" : "&").append("group=").append(groupId);
+    }
     if (error != null) {
-      query = query.isEmpty() ? "error=" + error : query + "&error=" + error;
+      query.append(query.isEmpty() ? "" : "&").append("error=").append(error);
     }
     return "redirect:/promotions/" + cohortId + (query.isEmpty() ? "" : "?" + query);
   }

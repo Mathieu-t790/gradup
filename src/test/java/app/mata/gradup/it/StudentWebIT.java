@@ -40,6 +40,7 @@ class StudentWebIT extends SecuredFacadeIT {
     var exam1 = seeder.exam(seeder.offering(prog1, group, s1));
     var exam2 = seeder.exam(seeder.offering(prog2, group, s2));
     var student = seeder.student("STD21001", "Rakoto", "Hery", "hery@cu.te", cohort, el, group);
+    seedUser(ADMIN_EMAIL, Role.ADMIN);
     seeder.grade(student, exam1, "12.00");
     seeder.grade(student, exam2, "9.00");
 

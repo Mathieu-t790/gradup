@@ -42,6 +42,7 @@
           </select>
           <form th:action="@{/promotions/{id}/diplomas(id=${detail.cohort.id})}" method="post" class="inline-form">
             <input type="hidden" name="track" id="trackSubmit">
+            <input type="hidden" name="group" th:value="${detail.groupId}">
             <button type="submit" name="action" value="generate" class="btn btn-outline btn-sm" th:text="${generateLabel}">Générer les diplômes</button>
             <button type="submit" name="action" value="download" class="btn btn-primary btn-sm"
                     th:disabled="${detail.graduateCount == 0}" th:text="${downloadLabel}">Télécharger les diplômés</button>
@@ -104,6 +105,16 @@
       <div class="card-toolbar">
         <h2 class="card-title" th:text="${studentsTitle}">Étudiants de la promotion</h2>
         <span class="badge badge-blue" th:text="${#lists.size(detail.students)}">0</span>
+      </div>
+
+      <div class="filter-bar">
+        <span class="filter-label" th:text="${filterGroup}">Groupe</span>
+        <select id="groupFilter" class="form-control track-select" th:attr="aria-label=${filterGroup}">
+          <option value="" th:text="${filterAll}" th:selected="${detail.groupId == null}">Toute la promotion</option>
+          <option th:each="g : ${groups}" th:value="${g.id}"
+                  th:selected="${detail.groupId != null && detail.groupId == g.id}"
+                  th:text="${g.reference}">G1</option>
+        </select>
       </div>
 
       <div class="table-wrapper">

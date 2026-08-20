@@ -97,8 +97,14 @@ class TeacherWebIT extends SecuredFacadeIT {
 
   @Test
   void teacher_sees_only_assigned_courses() {
-    var offering = seedOffering("PROG1");
-    var other = seedOffering("PROG2");
+    var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+    var el = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+    var group = seeder.group("G1", cohort, el);
+    var year =
+        seeder.academicYear("2021-2024", LocalDate.of(2021, 9, 1), LocalDate.of(2024, 7, 31));
+    var s1 = seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+    var offering = seeder.offering(seeder.course("PROG1", 60, 1, null), group, s1);
+    var other = seeder.offering(seeder.course("PROG2", 60, 1, null), group, s1);
     var teacher = seeder.teacher("teacher.web@cu.te", "Rakoto", "Tia");
     seeder.teacherAssignment(teacher, offering);
     loginAsUser(restTemplate, "teacher.web@cu.te");
@@ -180,7 +186,7 @@ class TeacherWebIT extends SecuredFacadeIT {
     assertTrue(response.getHeaders().getLocation().toString().contains("error=score.invalid"));
 
     var page =
-        restTemplate.getForEntity("/teacher/courses/" + fixture.offering().getId(), String.class);
+        restTemplate.getForEntity(response.getHeaders().getLocation().toString(), String.class);
     assertNotNull(page.getBody());
     assertTrue(page.getBody().contains("Note invalide"));
   }

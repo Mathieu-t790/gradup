@@ -96,6 +96,20 @@
         </div>
       </div>
 
+      <div class="filter-bar">
+        <span class="filter-label" th:text="${filterStatus}">Statut</span>
+        <select id="statusFilter" class="form-control track-select" th:attr="aria-label=${filterStatus}">
+          <option value="" th:text="${filterAll}">Toute la promotion</option>
+          <option value="finished" th:text="${statusFinished}">Terminée</option>
+          <option value="in-progress" th:text="${statusInProgress}">En cours</option>
+        </select>
+        <span class="filter-label" th:text="${filterYear}">Année de diplomation</span>
+        <select id="yearFilter" class="form-control track-select" th:attr="aria-label=${filterYear}">
+          <option value="" th:text="${filterAll}">Toute la promotion</option>
+          <option th:each="y : ${graduationYears}" th:value="${y}" th:text="${y}">2024</option>
+        </select>
+      </div>
+
       <div class="table-wrapper">
         <table>
           <thead>
@@ -110,7 +124,7 @@
           </thead>
           <tbody id="promotionRows">
             <th:block th:each="row : ${rows}">
-              <tr th:attr="data-search=${row.cohort.label.toLowerCase()}">
+              <tr th:attr="data-search=${row.cohort.label.toLowerCase()}, data-status=${row.finished ? 'finished' : 'in-progress'}, data-year=${row.cohort.expectedGraduationYear}">
                 <td><span class="badge badge-blue" th:text="${row.cohort.label}">Label</span></td>
                 <td th:text="${row.cohort.entryYear}">2021</td>
                 <td th:text="${row.cohort.expectedGraduationYear}">2024</td>

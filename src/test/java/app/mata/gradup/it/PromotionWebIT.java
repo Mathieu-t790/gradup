@@ -306,6 +306,46 @@ class PromotionWebIT extends SecuredFacadeIT {
   }
 
   @Test
+  void list_page_exposes_status_and_year_filters() {
+    loginAsAdmin(restTemplate);
+    seeder.cohort("Mpamakilay", 2021, 2024);
+    seeder.cohort("Fahazavana", 2023, 2026);
+
+    var response = restTemplate.getForEntity("/promotions", String.class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().contains("statusFilter"));
+    assertTrue(response.getBody().contains("yearFilter"));
+    assertTrue(response.getBody().contains("data-status=\"finished\""));
+    assertTrue(response.getBody().contains("data-status=\"in-progress\""));
+    assertTrue(response.getBody().contains("data-year=\"2024\""));
+    assertTrue(response.getBody().contains("data-year=\"2026\""));
+  }
+
+  @Test
+  void detail_page_filters_students_by_group() {
+    loginAsAdmin(restTemplate);
+    var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+    var el = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+    var g1 = seeder.group("G1", cohort, el);
+    var g2 = seeder.group("G2", cohort, el);
+    seeder.student("STD21001", "Rakoto", "Hery", "hery@cu.te", cohort, el, g1);
+    seeder.student("STD21002", "Rabe", "Mialy", "mialy@cu.te", cohort, el, g2);
+
+    var response =
+        restTemplate.getForEntity(
+            "/promotions/" + cohort.getId() + "?group=" + g1.getId(), String.class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().contains("STD21001"));
+    assertTrue(!response.getBody().contains("STD21002"));
+    assertTrue(response.getBody().contains("G1"));
+    assertTrue(response.getBody().contains("G2"));
+  }
+
+  @Test
   void post_without_csrf_is_rejected() {
     loginAsAdmin(restTemplate);
     var cohort = seeder.cohort("Mpamakilay", 2021, 2024);

@@ -40,6 +40,9 @@ public final class PromotionLabels {
     model.addAttribute("columnStatus", Wording.get("promotion.web.column.status"));
     model.addAttribute("columnActions", Wording.get("promotion.web.table.actions"));
     model.addAttribute("searchPlaceholder", Wording.get("promotion.web.search.placeholder"));
+    model.addAttribute("filterAll", Wording.get("promotion.web.filter.all"));
+    model.addAttribute("filterStatus", Wording.get("promotion.web.filter.status"));
+    model.addAttribute("filterYear", Wording.get("promotion.web.filter.year"));
     model.addAttribute("createTitle", Wording.get("promotion.web.create.title"));
     model.addAttribute("createLabel", Wording.get("promotion.web.create.label"));
     model.addAttribute("createEntryYear", Wording.get("promotion.web.create.entry.year"));
@@ -80,6 +83,7 @@ public final class PromotionLabels {
     model.addAttribute("statAverage", Wording.get("promotion.web.stat.average"));
     model.addAttribute("filterLabel", Wording.get("promotion.web.filter.label"));
     model.addAttribute("filterAll", Wording.get("promotion.web.filter.all"));
+    model.addAttribute("filterGroup", Wording.get("promotion.web.filter.group"));
     model.addAttribute("generateLabel", Wording.get("promotion.web.generate"));
     model.addAttribute("downloadLabel", Wording.get("promotion.web.download"));
     model.addAttribute("columnRank", Wording.get("promotion.web.column.rank"));
