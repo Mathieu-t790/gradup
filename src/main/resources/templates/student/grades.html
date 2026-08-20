@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${pageTitle}">Mes notes</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('grades')}"></div>
+  <div th:replace="~{fragments/app-header :: header}"></div>
+
+  <main class="app-main">
+    <div class="page-heading animate-fade-up">
+      <h1 th:text="${pageTitle}">Mes notes</h1>
+      <p th:text="${pageSubtitle}">Consultez vos notes de chaque examen.</p>
+    </div>
+
+    <div class="card animate-fade-up">
+      <div class="card-toolbar">
+        <h2 class="card-title" th:text="${pageTitle}">Mes notes</h2>
+        <span class="badge badge-blue" th:text="${#lists.size(grades)}">0</span>
+      </div>
+
+      <div class="filter-bar">
+        <span class="filter-label" th:text="${filterLabel}">Semestre</span>
+        <select id="semesterFilter" class="form-control track-select" th:attr="aria-label=${filterLabel}">
+          <option value="" th:text="${filterAll}" th:selected="${selectedSemesterId == null}">Tous les semestres</option>
+          <option th:each="s : ${semesters}" th:value="${s.id}"
+                  th:selected="${selectedSemesterId != null && selectedSemesterId == s.id}"
+                  th:text="|Semestre ${s.number} - ${s.academicYear.label}|">Semestre 1</option>
+        </select>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th th:text="${columnCourse}">Cours</th>
+              <th th:text="${columnExam}">Examen</th>
+              <th th:text="${columnScore}">Note</th>
+              <th th:text="${columnRecordedBy}">Saisie par</th>
+              <th th:text="${columnRecordedAt}">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="g : ${grades}">
+              <td th:text="${g.courseReference}">PROG1</td>
+              <td th:text="${g.examLabel}">Examen 1</td>
+              <td><span class="badge badge-blue" th:text="${g.score}">12.0</span></td>
+              <td th:text="${g.recordedByName} ?: '—'">—</td>
+              <td th:text="${g.recordedAt}">01/01/2025 10:00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:if="${#lists.isEmpty(grades)}" class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="20" x2="12" y2="10"/>
+            <line x1="18" y1="20" x2="18" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="16"/>
+          </svg>
+        </div>
+        <h3 th:text="${emptyTitle}">Aucune note</h3>
+        <p th:text="${emptyText}">Aucune note pour le moment.</p>
+      </div>
+    </div>
+  </main>
+
+  <script th:src="@{/js/grades.js}"></script>
+</body>
+</html>

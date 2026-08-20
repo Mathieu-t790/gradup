@@ -123,6 +123,12 @@ public class RoutePolicy {
         .access(gradeAuthorizer)
         .requestMatchers(HttpMethod.POST, "/grades/{gradeId}/disputes")
         .access(allOf(hasRole("STUDENT"), gradeAuthorizer))
+        .requestMatchers(HttpMethod.GET, "/student/grades")
+        .hasRole("STUDENT")
+        .requestMatchers(HttpMethod.GET, "/teacher/courses", "/teacher/courses/{offeringId}")
+        .hasRole("TEACHER")
+        .requestMatchers(HttpMethod.POST, "/teacher/courses/**")
+        .hasRole("TEACHER")
         .anyRequest()
         .authenticated();
   }

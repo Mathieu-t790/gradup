@@ -45,7 +45,7 @@ public class PromotionViewService {
   }
 
   @Transactional(readOnly = true)
-  public PromotionDetail promotionDetail(UUID cohortId, String track) {
+  public PromotionDetail promotionDetail(UUID cohortId, String track, UUID groupId) {
     CohortResponse cohort = cohortService.getCohort(cohortId);
     boolean finished = finished(cohort);
     List<DiplomaResponse> promotionDiplomas = finished ? allDiplomas(cohortId, null) : List.of();
@@ -56,11 +56,18 @@ public class PromotionViewService {
             .map(diploma -> diploma.getStudent().getId())
             .collect(Collectors.toSet());
     List<StudentRow> students =
-        allStudents(cohortId).stream()
+        allStudents(cohortId, groupId).stream()
             .map(student -> new StudentRow(student, graduatedStudentIds.contains(student.getId())))
             .toList();
     return new PromotionDetail(
-        cohort, finished, track, graduates, graduates.size(), averageOf(graduates), students);
+        cohort,
+        finished,
+        track,
+        groupId,
+        graduates,
+        graduates.size(),
+        averageOf(graduates),
+        students);
   }
 
   public boolean finished(CohortResponse cohort) {
@@ -100,12 +107,12 @@ public class PromotionViewService {
     return all;
   }
 
-  private List<StudentSummaryResponse> allStudents(UUID cohortId) {
+  private List<StudentSummaryResponse> allStudents(UUID cohortId, UUID groupId) {
     List<StudentSummaryResponse> all = new ArrayList<>();
     int pageNumber = 0;
     StudentPageResponse page;
     do {
-      page = studentService.listStudents(cohortId, null, PageRequest.of(pageNumber, PAGE_SIZE));
+      page = studentService.listStudents(cohortId, groupId, PageRequest.of(pageNumber, PAGE_SIZE));
       all.addAll(page.getContent());
       pageNumber++;
     } while (!page.getLast());
@@ -132,6 +139,7 @@ public class PromotionViewService {
       CohortResponse cohort,
       boolean finished,
       String track,
+      UUID groupId,
       List<DiplomaResponse> graduates,
       int graduateCount,
       String average,

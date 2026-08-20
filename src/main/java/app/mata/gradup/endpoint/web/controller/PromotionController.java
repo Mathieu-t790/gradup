@@ -3,14 +3,17 @@ package app.mata.gradup.endpoint.web.controller;
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaExportResponse;
+import app.mata.gradup.security.userDetails.JUserDetails;
 import app.mata.gradup.service.CohortService;
 import app.mata.gradup.service.DiplomaService;
+import app.mata.gradup.service.GroupService;
 import app.mata.gradup.service.PromotionViewService;
 import app.mata.gradup.service.PromotionViewService.PromotionRow;
 import app.mata.gradup.service.utils.PromotionLabels;
 import app.mata.gradup.service.utils.PromotionWeb;
 import app.mata.gradup.service.utils.PromotionWeb.PromotionForm;
 import app.mata.gradup.service.utils.TrackCodes;
+import java.util.Comparator;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -28,6 +31,7 @@ public class PromotionController {
 
   private final CohortService cohortService;
   private final DiplomaService diplomaService;
+  private final GroupService groupService;
   private final PromotionViewService viewService;
 
   @GetMapping("/")
@@ -36,7 +40,12 @@ public class PromotionController {
       PromotionLabels.addLanding(model);
       return "landing";
     }
-    return "redirect:/promotions";
+    JUserDetails userDetails = (JUserDetails) authentication.getPrincipal();
+    return switch (userDetails.getRole()) {
+      case STUDENT -> "redirect:/student/grades";
+      case TEACHER -> "redirect:/teacher/courses";
+      default -> "redirect:/promotions";
+    };
   }
 
   @GetMapping("/promotions")
@@ -46,6 +55,13 @@ public class PromotionController {
     model.addAttribute("promotionCount", rows.size());
     model.addAttribute("graduateCount", rows.stream().mapToLong(PromotionRow::graduates).sum());
     model.addAttribute("trackCounts", viewService.trackCounts());
+    model.addAttribute(
+        "graduationYears",
+        rows.stream()
+            .map(row -> row.cohort().getExpectedGraduationYear())
+            .distinct()
+            .sorted(Comparator.reverseOrder())
+            .toList());
     model.addAttribute("errorMessage", PromotionWeb.errorMessage(error));
     PromotionLabels.addList(model);
     return "promotions/list";
@@ -87,10 +103,12 @@ public class PromotionController {
   public String promotionDetail(
       @PathVariable UUID cohortId,
       @RequestParam(required = false) String track,
+      @RequestParam(required = false) UUID group,
       @RequestParam(required = false) String error,
       Model model) {
-    var detail = viewService.promotionDetail(cohortId, track);
+    var detail = viewService.promotionDetail(cohortId, track, group);
     model.addAttribute("detail", detail);
+    model.addAttribute("groups", groupService.listGroups(cohortId, null));
     model.addAttribute("errorMessage", PromotionWeb.errorMessage(error));
     PromotionLabels.addDetail(model, detail.cohort().getExpectedGraduationYear() + 1);
     return "promotions/detail";
@@ -100,14 +118,15 @@ public class PromotionController {
   public String diplomas(
       @PathVariable UUID cohortId,
       @RequestParam String action,
-      @RequestParam(required = false) String track) {
+      @RequestParam(required = false) String track,
+      @RequestParam(required = false) UUID group) {
     CohortResponse cohort = cohortService.getCohort(cohortId);
     if (!viewService.finished(cohort)) {
-      return PromotionWeb.redirectDetail(cohortId, track, "not.finished");
+      return PromotionWeb.redirectDetail(cohortId, track, group, "not.finished");
     }
     if ("generate".equals(action)) {
       diplomaService.generateCohortDiplomas(cohortId, TrackCodes.toRest(track));
-      return PromotionWeb.redirectDetail(cohortId, track, null);
+      return PromotionWeb.redirectDetail(cohortId, track, group, null);
     }
     DiplomaExportResponse export =
         diplomaService.exportCohortDiplomas(cohortId, TrackCodes.toRest(track));

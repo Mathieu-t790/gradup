@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${pageTitle}">Mes cours</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('courses')}"></div>
+  <div th:replace="~{fragments/app-header :: header}"></div>
+
+  <main class="app-main">
+    <div class="page-heading animate-fade-up">
+      <h1 th:text="${pageTitle}">Mes cours</h1>
+      <p th:text="${pageSubtitle}">Gérez la saisie des notes de vos matières assignées.</p>
+    </div>
+
+    <div class="card animate-fade-up">
+      <div class="card-toolbar">
+        <h2 class="card-title" th:text="${pageTitle}">Mes cours</h2>
+        <span class="badge badge-blue" th:text="${#lists.size(offerings)}">0</span>
+      </div>
+
+      <div class="filter-bar">
+        <span class="filter-label" th:text="${filterLabel}">Semestre</span>
+        <select id="semesterFilter" class="form-control track-select" th:attr="aria-label=${filterLabel}">
+          <option value="" th:text="${filterAll}" th:selected="${selectedSemesterId == null}">Tous les semestres</option>
+          <option th:each="s : ${semesters}" th:value="${s.id}"
+                  th:selected="${selectedSemesterId != null && selectedSemesterId == s.id}"
+                  th:text="|Semestre ${s.number} - ${s.academicYearLabel}|">Semestre 1</option>
+        </select>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th th:text="${columnCourse}">Cours</th>
+              <th th:text="${columnGroup}">Groupe</th>
+              <th th:text="${columnSemester}">Semestre</th>
+              <th th:text="${columnActions}">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="o : ${offerings}" th:attr="data-semester=${o.semester.id}">
+              <td>
+                <span class="badge badge-blue" th:text="${o.course.reference}">PROG1</span>
+                <span th:text="${o.course.title}">Programmation 1</span>
+              </td>
+              <td th:text="${o.group.reference}">G1</td>
+              <td th:text="|Semestre ${o.semester.number} - ${o.semester.academicYearLabel}|">Semestre 1 - 2021-2024</td>
+              <td>
+                <a th:href="@{/teacher/courses/{id}(id=${o.id})}" class="btn btn-primary btn-sm" th:text="${entryLabel}">Saisir les notes</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:if="${#lists.isEmpty(offerings)}" class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <h3 th:text="${emptyTitle}">Aucun cours</h3>
+        <p th:text="${emptyText}">Aucun cours assigné pour le moment.</p>
+      </div>
+    </div>
+  </main>
+
+  <script th:src="@{/js/teacher.js}"></script>
+</body>
+</html>

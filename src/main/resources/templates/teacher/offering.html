@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="|${view.courseReference} - ${view.courseTitle}|">Saisie des notes</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('courses')}"></div>
+  <div th:replace="~{fragments/app-header :: header}"></div>
+
+  <main class="app-main">
+    <a th:href="@{/teacher/courses}" class="back-link animate-fade-up" th:text="${backLabel}">Retour à mes cours</a>
+
+    <div class="page-heading animate-fade-up">
+      <h1 th:text="|${view.courseReference} - ${view.courseTitle}|">PROG1 - Programmation 1</h1>
+      <div class="heading-badges">
+        <span class="badge badge-blue" th:text="|${view.groupReference}|">G1</span>
+        <span class="badge badge-gray" th:text="|Semestre ${view.semesterLabel}|">Semestre 1 - 2021-2024</span>
+      </div>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-error animate-fade-up" th:text="${errorMessage}"></div>
+
+    <div class="search-box animate-fade-up">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="studentSearch" class="form-control" th:placeholder="${searchPlaceholder}">
+    </div>
+
+    <th:block th:each="exam : ${view.exams}">
+      <div class="card animate-fade-up">
+        <div class="card-toolbar">
+          <h2 class="card-title" th:text="${exam.label}">Examen 1</h2>
+          <span class="badge badge-blue" th:text="${#lists.size(exam.students)}">0</span>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th th:text="${columnReference}">Référence</th>
+                <th th:text="${columnStudent}">Étudiant</th>
+                <th th:text="${columnScore}">Note</th>
+                <th th:text="${columnAction}">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="s : ${exam.students}"
+                  th:attr="data-search=${s.reference.toLowerCase() + ' ' + s.fullName.toLowerCase()}">
+                <td th:text="${s.reference}">STD21001</td>
+                <td th:text="${s.fullName}">Hery Rakoto</td>
+                <td>
+                  <span class="badge badge-green" th:if="${s.gradeId != null}" th:text="${s.score}">12.0</span>
+                  <span class="badge badge-gray" th:unless="${s.gradeId != null}" th:text="${entryScoreLabel}">Saisir la note</span>
+                </td>
+                <td>
+                  <form th:if="${s.gradeId != null}"
+                        th:action="@{/teacher/courses/grades/{id}(id=${s.gradeId})}"
+                        method="post" class="inline-form">
+                    <input type="number" name="score" class="form-control score-input" step="0.01" min="0" max="20"
+                           th:value="${s.score}" th:attr="aria-label=${columnScore}" required>
+                    <button type="submit" class="btn btn-primary btn-sm" th:text="${saveLabel}">Enregistrer</button>
+                  </form>
+                  <form th:unless="${s.gradeId != null}"
+                        th:action="@{/teacher/courses/{offeringId}/exams/{examId}/grades(offeringId=${view.offeringId}, examId=${exam.examId})}"
+                        method="post" class="inline-form">
+                    <input type="hidden" name="studentId" th:value="${s.studentId}">
+                    <input type="number" name="score" class="form-control score-input" step="0.01" min="0" max="20"
+                           th:attr="aria-label=${columnScore}" required>
+                    <button type="submit" class="btn btn-primary btn-sm" th:text="${saveLabel}">Enregistrer</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div th:if="${#lists.isEmpty(exam.students)}" class="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <h3 th:text="${noStudents}">Aucun étudiant inscrit dans ce groupe.</h3>
+        </div>
+      </div>
+    </th:block>
+  </main>
+
+  <script th:src="@{/js/teacher.js}"></script>
+</body>
+</html>

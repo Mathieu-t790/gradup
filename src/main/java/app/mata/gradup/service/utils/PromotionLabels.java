@@ -13,6 +13,20 @@ public final class PromotionLabels {
     model.addAttribute("loginLabel", Wording.get("landing.login"));
     model.addAttribute("accessNote", Wording.get("landing.access.note"));
     model.addAttribute("footerLabel", Wording.get("landing.footer"));
+    model.addAttribute("rolesTitle", Wording.get("landing.roles.title"));
+    model.addAttribute("roleAdmin", Wording.get("landing.role.admin"));
+    model.addAttribute("roleAdminDesc", Wording.get("landing.role.admin.desc"));
+    model.addAttribute("roleTeacher", Wording.get("landing.role.teacher"));
+    model.addAttribute("roleTeacherDesc", Wording.get("landing.role.teacher.desc"));
+    model.addAttribute("roleStudent", Wording.get("landing.role.student"));
+    model.addAttribute("roleStudentDesc", Wording.get("landing.role.student.desc"));
+  }
+
+  public static void addSidebar(Model model) {
+    model.addAttribute("navMain", Wording.get("sidebar.nav.main"));
+    model.addAttribute("navPromotions", Wording.get("sidebar.nav.promotions"));
+    model.addAttribute("navGrades", Wording.get("sidebar.nav.grades"));
+    model.addAttribute("navCourses", Wording.get("sidebar.nav.courses"));
   }
 
   public static void addList(Model model) {
@@ -26,6 +40,9 @@ public final class PromotionLabels {
     model.addAttribute("columnStatus", Wording.get("promotion.web.column.status"));
     model.addAttribute("columnActions", Wording.get("promotion.web.table.actions"));
     model.addAttribute("searchPlaceholder", Wording.get("promotion.web.search.placeholder"));
+    model.addAttribute("filterAll", Wording.get("promotion.web.filter.all"));
+    model.addAttribute("filterStatus", Wording.get("promotion.web.filter.status"));
+    model.addAttribute("filterYear", Wording.get("promotion.web.filter.year"));
     model.addAttribute("createTitle", Wording.get("promotion.web.create.title"));
     model.addAttribute("createLabel", Wording.get("promotion.web.create.label"));
     model.addAttribute("createEntryYear", Wording.get("promotion.web.create.entry.year"));
@@ -45,6 +62,7 @@ public final class PromotionLabels {
     model.addAttribute("statGraduates", Wording.get("promotion.web.stat.graduates"));
     model.addAttribute("statTrackEl", Wording.get("promotion.web.stat.track", "EL"));
     model.addAttribute("statTrackTn", Wording.get("promotion.web.stat.track", "TN"));
+    addSidebar(model);
   }
 
   public static void addDetail(Model model, int graduationAvailableFromYear) {
@@ -65,6 +83,7 @@ public final class PromotionLabels {
     model.addAttribute("statAverage", Wording.get("promotion.web.stat.average"));
     model.addAttribute("filterLabel", Wording.get("promotion.web.filter.label"));
     model.addAttribute("filterAll", Wording.get("promotion.web.filter.all"));
+    model.addAttribute("filterGroup", Wording.get("promotion.web.filter.group"));
     model.addAttribute("generateLabel", Wording.get("promotion.web.generate"));
     model.addAttribute("downloadLabel", Wording.get("promotion.web.download"));
     model.addAttribute("columnRank", Wording.get("promotion.web.column.rank"));
@@ -75,5 +94,6 @@ public final class PromotionLabels {
     model.addAttribute("columnTrack", Wording.get("promotion.web.column.track"));
     model.addAttribute("columnAverage", Wording.get("promotion.web.column.average"));
     model.addAttribute("logoutLabel", Wording.get("promotion.web.logout"));
+    addSidebar(model);
   }
 }

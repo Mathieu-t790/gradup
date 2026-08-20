@@ -1,19 +1,34 @@
 document.addEventListener('DOMContentLoaded', function () {
   var search = document.getElementById('promotionSearch');
+  var statusFilter = document.getElementById('statusFilter');
+  var yearFilter = document.getElementById('yearFilter');
   var rows = document.querySelectorAll('#promotionRows tr[data-search]');
-  if (search) {
-    search.addEventListener('input', function () {
-      var term = search.value.trim().toLowerCase();
-      rows.forEach(function (row) {
-        var text = (row.dataset.search || '').toLowerCase();
-        var visible = text.indexOf(term) !== -1;
-        row.style.display = visible ? '' : 'none';
-        var editRow = row.nextElementSibling;
-        if (editRow && editRow.classList.contains('edit-row')) {
-          editRow.style.display = visible && editRow.dataset.open === 'true' ? '' : 'none';
-        }
-      });
+
+  function applyFilters() {
+    var term = (search ? search.value.trim().toLowerCase() : '');
+    var status = statusFilter ? statusFilter.value : '';
+    var year = yearFilter ? yearFilter.value : '';
+    rows.forEach(function (row) {
+      var text = (row.dataset.search || '').toLowerCase();
+      var statusOk = !status || row.dataset.status === status;
+      var yearOk = !year || row.dataset.year === year;
+      var visible = text.indexOf(term) !== -1 && statusOk && yearOk;
+      row.style.display = visible ? '' : 'none';
+      var editRow = row.nextElementSibling;
+      if (editRow && editRow.classList.contains('edit-row')) {
+        editRow.style.display = visible && editRow.dataset.open === 'true' ? '' : 'none';
+      }
     });
+  }
+
+  if (search) {
+    search.addEventListener('input', applyFilters);
+  }
+  if (statusFilter) {
+    statusFilter.addEventListener('change', applyFilters);
+  }
+  if (yearFilter) {
+    yearFilter.addEventListener('change', applyFilters);
   }
 
   document.querySelectorAll('[data-edit-target]').forEach(function (btn) {
@@ -60,6 +75,20 @@ document.addEventListener('DOMContentLoaded', function () {
         params.set('track', trackSelect.value);
       } else {
         params.delete('track');
+      }
+      var query = params.toString();
+      window.location.href = window.location.pathname + (query ? '?' + query : '');
+    });
+  }
+
+  var groupFilter = document.getElementById('groupFilter');
+  if (groupFilter) {
+    groupFilter.addEventListener('change', function () {
+      var params = new URLSearchParams(window.location.search);
+      if (groupFilter.value) {
+        params.set('group', groupFilter.value);
+      } else {
+        params.delete('group');
       }
       var query = params.toString();
       window.location.href = window.location.pathname + (query ? '?' + query : '');
