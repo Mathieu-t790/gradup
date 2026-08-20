@@ -273,7 +273,7 @@ class TranscriptIT extends SecuredFacadeIT {
             BASE_URL.formatted(studentId),
             new HttpEntity<>(body, headers),
             TranscriptResponse.class);
-    assertEquals(200, response.getStatusCode().value());
+    assertEquals(201, response.getStatusCode().value());
     return response.getBody();
   }
 
