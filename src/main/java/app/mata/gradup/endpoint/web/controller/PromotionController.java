@@ -3,6 +3,7 @@ package app.mata.gradup.endpoint.web.controller;
 import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaExportResponse;
+import app.mata.gradup.security.userDetails.JUserDetails;
 import app.mata.gradup.service.CohortService;
 import app.mata.gradup.service.DiplomaService;
 import app.mata.gradup.service.PromotionViewService;
@@ -36,7 +37,12 @@ public class PromotionController {
       PromotionLabels.addLanding(model);
       return "landing";
     }
-    return "redirect:/promotions";
+    JUserDetails userDetails = (JUserDetails) authentication.getPrincipal();
+    return switch (userDetails.getRole()) {
+      case STUDENT -> "redirect:/student/grades";
+      case TEACHER -> "redirect:/teacher/courses";
+      default -> "redirect:/promotions";
+    };
   }
 
   @GetMapping("/promotions")

@@ -6,7 +6,8 @@
   <title th:text="|${pageTitle} - ${detail.cohort.label}|">Promotion</title>
   <link rel="stylesheet" th:href="@{/css/custom.css}">
 </head>
-<body>
+<body class="app-shell">
+  <div th:replace="~{fragments/sidebar :: sidebar('promotions')}"></div>
   <div th:replace="~{fragments/app-header :: header}"></div>
 
   <main class="app-main">
