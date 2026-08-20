@@ -12,7 +12,21 @@
   <main class="app-main">
     <div class="page-heading animate-fade-up">
       <h1 th:text="${pageTitle}">Promotions</h1>
-      <p th:text="${pageSubtitle}">Générez puis téléchargez la liste des diplômés de chaque promotion.</p>
+      <p th:text="${pageSubtitle}">Créez et gérez vos promotions, puis générez la liste des diplômés de chaque promotion.</p>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-error animate-fade-up" th:text="${errorMessage}"></div>
+
+    <div class="card animate-fade-up">
+      <div class="card-toolbar">
+        <h2 class="card-title" th:text="${createTitle}">Créer une promotion</h2>
+      </div>
+      <form th:action="@{/promotions}" method="post" class="create-form">
+        <input type="text" name="label" class="form-control" th:placeholder="${createLabel}" required>
+        <input type="number" name="entryYear" id="createEntryYear" class="form-control" th:placeholder="${createEntryYear}" required>
+        <input type="number" name="expectedGraduationYear" id="createGraduationYear" class="form-control" th:placeholder="${createGraduationYear}" required>
+        <button type="submit" class="btn btn-primary btn-sm" th:text="${createSubmit}">Créer la promotion</button>
+      </form>
     </div>
 
     <div class="stat-grid">
@@ -88,28 +102,41 @@
               <th th:text="${columnLabel}">Label</th>
               <th th:text="${columnEntryYear}">Année d'entrée</th>
               <th th:text="${columnGraduationYear}">Année de diplomation</th>
+              <th th:text="${columnStatus}">Statut</th>
               <th th:text="${columnGraduates}">Diplômés</th>
               <th th:text="${columnActions}">Actions</th>
             </tr>
           </thead>
           <tbody id="promotionRows">
-            <tr th:each="row : ${rows}" th:attr="data-search=${row.cohort.label.toLowerCase()}">
-              <td><span class="badge badge-blue" th:text="${row.cohort.label}">Label</span></td>
-              <td th:text="${row.cohort.entryYear}">2021</td>
-              <td th:text="${row.cohort.expectedGraduationYear}">2024</td>
-              <td><span class="badge badge-green" th:text="${row.graduates}">0</span></td>
-              <td>
-                <form th:action="@{/promotions/{cohortId}/diplomas(cohortId=${row.cohort.id})}" method="post" class="row-actions">
-                  <select name="track" class="form-control track-select" th:attr="aria-label=${filterLabel}">
-                    <option value="" th:text="${filterAll}">Toute la promotion</option>
-                    <option value="EL">EL</option>
-                    <option value="TN">TN</option>
-                  </select>
-                  <button type="submit" name="action" value="generate" class="btn btn-outline btn-sm" th:text="${generateLabel}">Générer les diplômes</button>
-                  <button type="submit" name="action" value="download" class="btn btn-primary btn-sm" th:text="${downloadLabel}">Télécharger les diplômés</button>
-                </form>
-              </td>
-            </tr>
+            <th:block th:each="row : ${rows}">
+              <tr th:attr="data-search=${row.cohort.label.toLowerCase()}">
+                <td><span class="badge badge-blue" th:text="${row.cohort.label}">Label</span></td>
+                <td th:text="${row.cohort.entryYear}">2021</td>
+                <td th:text="${row.cohort.expectedGraduationYear}">2024</td>
+                <td>
+                  <span class="badge" th:classappend="${row.finished} ? 'badge-green' : 'badge-gray'"
+                        th:text="${row.finished} ? ${statusFinished} : ${statusInProgress}">Terminée</span>
+                </td>
+                <td><span class="badge badge-green" th:text="${row.graduates}">0</span></td>
+                <td>
+                  <div class="row-actions">
+                    <a th:href="@{/promotions/{id}(id=${row.cohort.id})}" class="btn btn-outline btn-sm" th:text="${viewLabel}">Voir</a>
+                    <button type="button" class="btn btn-outline btn-sm" th:attr="data-edit-target=${row.cohort.id}" th:text="${editLabel}">Modifier</button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="edit-row" th:id="${'edit-' + row.cohort.id}" hidden>
+                <td colspan="6">
+                  <form th:action="@{/promotions/{id}/edit(id=${row.cohort.id})}" method="post" class="inline-edit-form">
+                    <input type="text" name="label" class="form-control" th:value="${row.cohort.label}" th:attr="aria-label=${createLabel}">
+                    <input type="number" name="entryYear" class="form-control" th:value="${row.cohort.entryYear}" th:attr="aria-label=${createEntryYear}">
+                    <input type="number" name="expectedGraduationYear" class="form-control" th:value="${row.cohort.expectedGraduationYear}" th:attr="aria-label=${createGraduationYear}">
+                    <button type="submit" class="btn btn-primary btn-sm" th:text="${editSubmit}">Enregistrer</button>
+                    <button type="button" class="btn btn-outline btn-sm edit-cancel" th:text="${editCancel}">Annuler</button>
+                  </form>
+                </td>
+              </tr>
+            </th:block>
           </tbody>
         </table>
       </div>

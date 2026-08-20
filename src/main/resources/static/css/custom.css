@@ -205,7 +205,108 @@ body {
 .card-toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--hei-blue);
+}
+
+/* ===== ALERTS ===== */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.alert-error {
+  background: #FEE2E2;
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+}
+
+.alert-info {
+  background: rgba(0, 25, 72, 0.06);
+  color: var(--hei-blue);
+  border: 1px solid rgba(0, 25, 72, 0.12);
+}
+
+/* ===== BACK LINK ===== */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--hei-gray);
+  text-decoration: none;
+  margin-bottom: 16px;
+  transition: var(--transition);
+}
+
+.back-link:hover {
+  color: var(--hei-blue);
+}
+
+.heading-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* ===== FORMS (create / edit / filter) ===== */
+.create-form,
+.inline-edit-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.create-form .form-control,
+.inline-edit-form .form-control {
+  width: auto;
+  flex: 1;
+  min-width: 160px;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: var(--hei-light);
+  border-radius: 8px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hei-gray);
+}
+
+.inline-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.edit-row td {
+  background: var(--hei-light);
+}
+
+.edit-row:hover {
+  background: var(--hei-light);
 }
 
 .search-box {
@@ -287,6 +388,11 @@ table tbody tr:hover {
   color: #2E7D32;
 }
 
+.badge-gray {
+  background: #E5E7EB;
+  color: var(--hei-gray);
+}
+
 /* ===== BUTTONS ===== */
 .btn {
   display: inline-flex;
@@ -313,6 +419,15 @@ table tbody tr:hover {
   background: var(--hei-blue-light);
   box-shadow: 0 4px 12px rgba(0, 25, 72, 0.3);
   transform: translateY(-1px);
+}
+
+.btn:disabled {
+  background: #D1D5DB;
+  color: var(--hei-gray);
+  border-color: #D1D5DB;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .btn-outline {
@@ -526,5 +641,18 @@ table tbody tr:hover {
 
   .track-select {
     width: 100%;
+  }
+
+  .create-form .form-control,
+  .inline-edit-form .form-control {
+    min-width: 100%;
+  }
+
+  .filter-bar {
+    align-items: stretch;
+  }
+
+  .inline-form {
+    flex-wrap: wrap;
   }
 }
