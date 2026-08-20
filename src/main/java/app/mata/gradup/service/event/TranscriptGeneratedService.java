@@ -2,11 +2,12 @@ package app.mata.gradup.service.event;
 
 import app.mata.gradup.endpoint.event.model.TranscriptGenerated;
 import app.mata.gradup.exception.NotFoundException;
-import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mail.Email;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.repository.TranscriptRepository;
 import app.mata.gradup.repository.model.JTranscript;
+import app.mata.gradup.service.TranscriptService;
+import app.mata.gradup.service.utils.DownloadPresigner;
 import app.mata.gradup.service.utils.EmailAssets;
 import app.mata.gradup.service.utils.HtmlTemplater;
 import app.mata.gradup.service.utils.Users;
@@ -30,7 +31,7 @@ public class TranscriptGeneratedService implements Consumer<TranscriptGenerated>
   private static final Duration DOWNLOAD_URL_EXPIRATION = Duration.ofDays(3);
 
   private final TranscriptRepository transcriptRepository;
-  private final BucketComponent bucketComponent;
+  private final DownloadPresigner downloadPresigner;
   private final Mailer mailer;
   private final HtmlTemplater htmlTemplater;
 
@@ -52,7 +53,12 @@ public class TranscriptGeneratedService implements Consumer<TranscriptGenerated>
       String reference = transcript.getStudent().getUser().getReference();
       String studentName = Users.fullName(transcript.getStudent().getUser());
       String downloadUrl =
-          bucketComponent.presign(transcript.getStorageKey(), DOWNLOAD_URL_EXPIRATION).toString();
+          downloadPresigner
+              .presign(
+                  transcript.getStorageKey(),
+                  DOWNLOAD_URL_EXPIRATION,
+                  TranscriptService.buildDownloadFilename(transcript))
+              .toString();
       Context context = new Context();
       context.setVariable("studentName", studentName);
       context.setVariable("downloadUrl", downloadUrl);

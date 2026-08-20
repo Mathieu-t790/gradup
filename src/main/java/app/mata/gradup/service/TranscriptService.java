@@ -24,7 +24,7 @@ import app.mata.gradup.repository.model.JStudent;
 import app.mata.gradup.repository.model.JTranscript;
 import app.mata.gradup.repository.model.JTranscriptDetail;
 import app.mata.gradup.repository.model.JVCourseAverage;
-import app.mata.gradup.service.utils.BucketExporter;
+import app.mata.gradup.service.utils.DownloadPresigner;
 import app.mata.gradup.service.utils.Pages;
 import app.mata.gradup.service.utils.PdfRenderer;
 import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData;
@@ -38,6 +38,8 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -53,6 +55,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class TranscriptService {
 
+  private static final Duration API_URL_EXPIRATION = Duration.ofMinutes(30);
+
   private final TranscriptRepository transcriptRepository;
   private final TranscriptDetailRepository transcriptDetailRepository;
   private final StudentRepository studentRepository;
@@ -62,6 +66,7 @@ public class TranscriptService {
   private final DiplomaRepository diplomaRepository;
   private final TranscriptScope scope;
   private final BucketComponent bucketComponent;
+  private final DownloadPresigner downloadPresigner;
   private final PdfRenderer pdfRenderer;
   private final EventProducer eventProducer;
   private final TranscriptMapper transcriptMapper;
@@ -88,7 +93,7 @@ public class TranscriptService {
 
     dispatchEmailEvent(transcriptId);
 
-    String downloadUrl = BucketExporter.presign(bucketComponent, storageKey);
+    String downloadUrl = presignUrl(transcript);
     return transcriptMapper.toRest(transcript, downloadUrl);
   }
 
@@ -238,7 +243,7 @@ public class TranscriptService {
                         && transcript.getAcademicYear().getId().equals(academicYearId)))
         .map(
             transcript ->
-                transcriptMapper.toRest(transcript, presignUrl(transcript.getStorageKey())))
+                transcriptMapper.toRest(transcript, presignUrl(transcript)))
         .toList();
   }
 
@@ -255,7 +260,7 @@ public class TranscriptService {
       throw new BadRequestException("Transcript has no recipient email: " + transcriptId);
     }
     dispatchEmailEvent(transcriptId);
-    return transcriptMapper.toRest(transcript, presignUrl(transcript.getStorageKey()));
+    return transcriptMapper.toRest(transcript, presignUrl(transcript));
   }
 
   private static boolean sameType(
@@ -271,11 +276,27 @@ public class TranscriptService {
     }
   }
 
-  private String presignUrl(String storageKey) {
+  private String presignUrl(JTranscript transcript) {
+    String storageKey = transcript.getStorageKey();
     if (storageKey == null) {
       return null;
     }
-    return bucketComponent.presign(storageKey, Duration.ofMinutes(30)).toString();
+    return downloadPresigner
+        .presign(storageKey, API_URL_EXPIRATION, buildDownloadFilename(transcript))
+        .toString();
+  }
+
+  public static String buildDownloadFilename(JTranscript transcript) {
+    String prefix =
+        transcript.getType() == TranscriptType.DIPLOMA
+            ? Wording.get("transcript.file.name.diploma")
+            : Wording.get("transcript.file.name.transcript");
+    String reference = transcript.getStudent().getUser().getReference();
+    LocalDate date =
+        transcript.getGeneratedAt() == null
+            ? LocalDate.now()
+            : transcript.getGeneratedAt().atZone(ZoneOffset.UTC).toLocalDate();
+    return prefix + reference + "_" + date.format(DateTimeFormatter.BASIC_ISO_DATE) + ".pdf";
   }
 
   private void validateRequest(TranscriptGenerateRequest request) {
