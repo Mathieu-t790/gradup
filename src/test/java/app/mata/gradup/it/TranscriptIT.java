@@ -18,6 +18,7 @@ import app.mata.gradup.model.TrackCode;
 import app.mata.gradup.repository.TranscriptDetailRepository;
 import app.mata.gradup.repository.TranscriptRepository;
 import app.mata.gradup.repository.model.JTranscriptDetail;
+import app.mata.gradup.service.utils.DownloadPresigner;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDate;
@@ -40,6 +41,7 @@ class TranscriptIT extends SecuredFacadeIT {
   private static final String BASE_URL = "/students/%s/transcripts";
 
   @MockBean private BucketComponent bucketComponent;
+  @MockBean private DownloadPresigner downloadPresigner;
   @MockBean private EventProducer eventProducer;
   @MockBean private Mailer mailer;
 
@@ -51,11 +53,11 @@ class TranscriptIT extends SecuredFacadeIT {
 
   @BeforeEach
   void setUp() throws Exception {
-    reset(bucketComponent, eventProducer, mailer);
+    reset(bucketComponent, downloadPresigner, eventProducer, mailer);
     useCookieAwareClient(restTemplate);
     seeder.cleanDatabase();
     loginAsAdmin(restTemplate);
-    when(bucketComponent.presign(any(), any()))
+    when(downloadPresigner.presign(any(), any(), any()))
         .thenReturn(URI.create("http://localhost/download.pdf").toURL());
   }
 
@@ -204,8 +206,8 @@ class TranscriptIT extends SecuredFacadeIT {
             """
                 .formatted(fixture.semesterId));
 
-    reset(eventProducer, bucketComponent, mailer);
-    when(bucketComponent.presign(any(), any()))
+    reset(eventProducer, bucketComponent, downloadPresigner, mailer);
+    when(downloadPresigner.presign(any(), any(), any()))
         .thenReturn(URI.create("http://localhost/download.pdf").toURL());
 
     ResponseEntity<TranscriptResponse> response =
