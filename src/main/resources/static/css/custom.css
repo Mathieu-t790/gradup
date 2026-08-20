@@ -573,6 +573,10 @@ table tbody tr:hover {
   flex-shrink: 0;
 }
 
+.score-input {
+  width: 90px;
+}
+
 /* ===== ROW ACTIONS ===== */
 .row-actions {
   display: flex;

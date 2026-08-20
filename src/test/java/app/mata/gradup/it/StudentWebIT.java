@@ -80,6 +80,20 @@ class StudentWebIT extends SecuredFacadeIT {
   }
 
   @Test
+  void student_home_redirects_to_grades() {
+    var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+    var el = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+    var group = seeder.group("G1", cohort, el);
+    seeder.student("STD21001", "Rakoto", "Hery", "hery@cu.te", cohort, el, group);
+    loginAsUser(restTemplate, "hery@cu.te");
+
+    var response = restTemplate.getForEntity("/", String.class);
+
+    assertEquals(HttpStatus.FOUND, response.getStatusCode());
+    assertTrue(response.getHeaders().getLocation().toString().contains("/student/grades"));
+  }
+
+  @Test
   void student_grades_page_is_forbidden_for_admin() {
     seedUser("admin.web@cu.te", Role.ADMIN);
     loginAsUser(restTemplate, "admin.web@cu.te");
