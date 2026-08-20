@@ -199,6 +199,7 @@ body {
   box-shadow: var(--shadow-sm);
   border: 1px solid #F0F0F0;
   padding: 24px;
+  margin-bottom: 24px;
   transition: var(--transition);
 }
 
