@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${pageTitle}">Promotions</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/app-header :: header}"></div>
+
+  <main class="app-main">
+    <div class="page-heading animate-fade-up">
+      <h1 th:text="${pageTitle}">Promotions</h1>
+      <p th:text="${pageSubtitle}">Générez puis téléchargez la liste des diplômés de chaque promotion.</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card animate-fade-up">
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-value" data-count th:text="${promotionCount}">0</div>
+          <div class="stat-label" th:text="${statPromotions}">Promotions</div>
+        </div>
+      </div>
+      <div class="stat-card animate-fade-up">
+        <div class="stat-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-value" data-count th:text="${graduateCount}">0</div>
+          <div class="stat-label" th:text="${statGraduates}">Diplômés</div>
+        </div>
+      </div>
+      <div class="stat-card animate-fade-up">
+        <div class="stat-icon gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="20" x2="12" y2="10"/>
+            <line x1="18" y1="20" x2="18" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="16"/>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-value" data-count th:text="${trackCounts['EL']}">0</div>
+          <div class="stat-label" th:text="${statTrackEl}">Diplômés EL</div>
+        </div>
+      </div>
+      <div class="stat-card animate-fade-up">
+        <div class="stat-icon orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="20" x2="12" y2="10"/>
+            <line x1="18" y1="20" x2="18" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="16"/>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-value" data-count th:text="${trackCounts['TN']}">0</div>
+          <div class="stat-label" th:text="${statTrackTn}">Diplômés TN</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card animate-fade-up">
+      <div class="card-toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="promotionSearch" class="form-control" th:placeholder="${searchPlaceholder}">
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th th:text="${columnLabel}">Label</th>
+              <th th:text="${columnEntryYear}">Année d'entrée</th>
+              <th th:text="${columnGraduationYear}">Année de diplomation</th>
+              <th th:text="${columnGraduates}">Diplômés</th>
+              <th th:text="${columnActions}">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="promotionRows">
+            <tr th:each="row : ${rows}" th:attr="data-search=${row.cohort.label.toLowerCase()}">
+              <td><span class="badge badge-blue" th:text="${row.cohort.label}">Label</span></td>
+              <td th:text="${row.cohort.entryYear}">2021</td>
+              <td th:text="${row.cohort.expectedGraduationYear}">2024</td>
+              <td><span class="badge badge-green" th:text="${row.graduates}">0</span></td>
+              <td>
+                <form th:action="@{/promotions/{cohortId}/diplomas(cohortId=${row.cohort.id})}" method="post" class="row-actions">
+                  <select name="track" class="form-control track-select" th:attr="aria-label=${filterLabel}">
+                    <option value="" th:text="${filterAll}">Toute la promotion</option>
+                    <option value="EL">EL</option>
+                    <option value="TN">TN</option>
+                  </select>
+                  <button type="submit" name="action" value="generate" class="btn btn-outline btn-sm" th:text="${generateLabel}">Générer les diplômes</button>
+                  <button type="submit" name="action" value="download" class="btn btn-primary btn-sm" th:text="${downloadLabel}">Télécharger les diplômés</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:if="${#lists.isEmpty(rows)}" class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+        </div>
+        <h3 th:text="${emptyTitle}">Aucune promotion</h3>
+        <p th:text="${emptyText}">Aucune promotion pour le moment.</p>
+      </div>
+    </div>
+  </main>
+
+  <script th:src="@{/js/promotions.js}"></script>
+</body>
+</html>
