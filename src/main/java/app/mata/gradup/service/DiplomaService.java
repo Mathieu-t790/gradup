@@ -283,6 +283,17 @@ public class DiplomaService {
         formattedAverage(diploma.getOverallAverage()));
   }
 
+  @Transactional(readOnly = true)
+  public long countCohortDiplomas(UUID cohortId) {
+    return diplomaRepository.countByCohortId(cohortId);
+  }
+
+  @Transactional(readOnly = true)
+  public Map<String, Long> countDiplomasByTrack() {
+    return diplomaRepository.countByTrackCode().stream()
+        .collect(Collectors.toMap(row -> ((Enum<?>) row[0]).name(), row -> (Long) row[1]));
+  }
+
   private JCohort cohort(UUID cohortId) {
     return cohortRepository
         .findById(cohortId)

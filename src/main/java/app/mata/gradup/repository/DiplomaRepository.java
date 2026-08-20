@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -26,4 +27,9 @@ public interface DiplomaRepository extends JpaRepository<JDiploma, UUID> {
 
   @EntityGraph(attributePaths = {"student", "student.user", "cohort", "track"})
   List<JDiploma> findByCohortId(UUID cohortId);
+
+  long countByCohortId(UUID cohortId);
+
+  @Query("select d.track.code, count(d) from JDiploma d group by d.track.code")
+  List<Object[]> countByTrackCode();
 }

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<header class="app-header" th:fragment="header">
+  <div class="app-header-brand">
+    <img th:src="@{/images/HEI_logo.png}" alt="HEI">
+    <span class="app-header-name" th:text="${appName}">Gradup</span>
+  </div>
+  <div class="app-header-actions" sec:authorize="isAuthenticated()">
+    <div class="user-badge">
+      <span class="avatar" sec:authentication="name">U</span>
+      <span class="user-name" sec:authentication="name">Utilisateur</span>
+    </div>
+    <form th:action="@{/logout}" method="post" class="logout-form">
+      <button type="submit" class="btn btn-outline btn-sm" th:text="${logoutLabel}">Déconnexion</button>
+    </form>
+  </div>
+</header>
+
+</body>
+</html>

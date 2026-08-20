@@ -71,13 +71,15 @@ public class RoutePolicy {
             "/courses",
             "/course-offerings",
             "/course-offerings/{offeringId}/teachers/{teacherId}",
-            "/cohorts/{cohortId}/diplomas/generate")
+            "/cohorts/{cohortId}/diplomas/generate",
+            "/promotions/**")
         .hasRole("ADMIN")
         .requestMatchers(
             HttpMethod.GET,
             "/teachers",
             "/cohorts/{cohortId}/diplomas",
-            "/cohorts/{cohortId}/diplomas/export")
+            "/cohorts/{cohortId}/diplomas/export",
+            "/promotions")
         .hasRole("ADMIN")
         .requestMatchers(HttpMethod.PATCH, "/students/{studentId}", "/courses/{courseId}")
         .hasRole("ADMIN")
