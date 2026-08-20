@@ -7,7 +7,7 @@
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)](https://neon.tech)
-[![Coverage](https://img.shields.io/badge/coverage-80%25%20min-brightgreen)](docs/TESTING.md)
+[![Coverage](https://img.shields.io/badge/coverage-80%25%20min-brightgreen)](docs/TESTS.md)
 [![License](https://img.shields.io/badge/license-Proprietary-lightgrey)](#license)
 
 [Quick Start](#quick-start) · [Docs](#documentation) · [API Reference](doc/api.yml)
@@ -72,7 +72,7 @@ API docs live at `http://localhost:8080/swagger-ui/index.html` once running.
 | ✨ [Features](docs/FEATURES.md) | What GradUp does, domain by domain |
 | 🔌 [API Reference](docs/API.md) | Key endpoints, roles, [full OpenAPI spec](doc/api.yml) |
 | 🗄️ [Database](docs/DATABASE.md) | Schema, migrations, design decisions |
-| 🧪 [Testing](docs/TESTING.md) | Test suite, coverage, running tests |
+| 🧪 [Testing](docs/TESTS.md) | Test suite, coverage, running tests |
 | 🚀 [Deployment](docs/DEPLOYMENT.md) | AWS Lambda setup, env vars, infra |
 
 ## Tech Stack
