@@ -3,10 +3,8 @@ package app.mata.gradup.endpoint.rest.controller;
 import app.mata.gradup.endpoint.rest.model.CourseOfferingCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CourseOfferingPageResponse;
 import app.mata.gradup.endpoint.rest.model.CourseOfferingResponse;
-import app.mata.gradup.endpoint.rest.model.ExamResponse;
 import app.mata.gradup.service.CourseOfferingService;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -57,10 +55,5 @@ public class CourseOfferingController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void unassignTeacher(@PathVariable UUID offeringId, @PathVariable UUID teacherId) {
     courseOfferingService.unassignTeacher(offeringId, teacherId);
-  }
-
-  @GetMapping("/course-offerings/{offeringId}/exams")
-  public List<ExamResponse> listOfferingExams(@PathVariable UUID offeringId) {
-    return courseOfferingService.listOfferingExams(offeringId);
   }
 }

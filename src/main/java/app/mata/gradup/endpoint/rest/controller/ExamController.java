@@ -3,8 +3,10 @@ package app.mata.gradup.endpoint.rest.controller;
 import app.mata.gradup.endpoint.rest.model.ExamCreateRequest;
 import app.mata.gradup.endpoint.rest.model.ExamResponse;
 import app.mata.gradup.endpoint.rest.model.ExamUpdateRequest;
+import app.mata.gradup.service.CourseOfferingService;
 import app.mata.gradup.service.ExamService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,11 +22,17 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 public class ExamController {
 
+  private final CourseOfferingService courseOfferingService;
   private final ExamService examService;
 
   @GetMapping("/exams/{examId}")
   public ExamResponse getExam(@PathVariable UUID examId) {
     return examService.getExam(examId);
+  }
+
+  @GetMapping("/course-offerings/{offeringId}/exams")
+  public List<ExamResponse> listOfferingExams(@PathVariable UUID offeringId) {
+    return courseOfferingService.listOfferingExams(offeringId);
   }
 
   @PostMapping("/course-offerings/{offeringId}/exams")
