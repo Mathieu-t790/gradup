@@ -33,7 +33,8 @@ class TranscriptGeneratedServiceTest {
   private final HtmlTemplater htmlTemplater = mock(HtmlTemplater.class);
 
   private final TranscriptGeneratedService service =
-      new TranscriptGeneratedService(transcriptRepository, downloadPresigner, mailer, htmlTemplater);
+      new TranscriptGeneratedService(
+          transcriptRepository, downloadPresigner, mailer, htmlTemplater);
 
   @Test
   void accept_emails_without_attachment_and_marks_sent() throws Exception {
@@ -66,7 +67,8 @@ class TranscriptGeneratedServiceTest {
     ArgumentCaptor<Duration> durationCaptor = ArgumentCaptor.forClass(Duration.class);
     ArgumentCaptor<String> fileNameCaptor = ArgumentCaptor.forClass(String.class);
     verify(downloadPresigner)
-        .presign(eq(transcript.getStorageKey()), durationCaptor.capture(), fileNameCaptor.capture());
+        .presign(
+            eq(transcript.getStorageKey()), durationCaptor.capture(), fileNameCaptor.capture());
     assertEquals(Duration.ofDays(3), durationCaptor.getValue());
     assertTrue(
         fileNameCaptor.getValue().startsWith("relevé_notes_STD21001_"),

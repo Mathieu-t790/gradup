@@ -241,9 +241,7 @@ public class TranscriptService {
                 academicYearId == null
                     || (transcript.getAcademicYear() != null
                         && transcript.getAcademicYear().getId().equals(academicYearId)))
-        .map(
-            transcript ->
-                transcriptMapper.toRest(transcript, presignUrl(transcript)))
+        .map(transcript -> transcriptMapper.toRest(transcript, presignUrl(transcript)))
         .toList();
   }
 
