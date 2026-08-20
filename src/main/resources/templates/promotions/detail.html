@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="|${pageTitle} - ${detail.cohort.label}|">Promotion</title>
+  <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body>
+  <div th:replace="~{fragments/app-header :: header}"></div>
+
+  <main class="app-main">
+    <a th:href="@{/promotions}" class="back-link animate-fade-up" th:text="${backLabel}">Retour aux promotions</a>
+
+    <div class="page-heading animate-fade-up">
+      <h1 th:text="|Promotion ${detail.cohort.label}|">Promotion</h1>
+      <div class="heading-badges">
+        <span class="badge" th:classappend="${detail.finished} ? 'badge-green' : 'badge-gray'"
+              th:text="${detail.finished} ? ${statusFinished} : ${statusInProgress}">Terminée</span>
+        <span class="badge badge-blue" th:text="|${detail.cohort.entryYear} - ${detail.cohort.expectedGraduationYear}|">2021 - 2024</span>
+      </div>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-error animate-fade-up" th:text="${errorMessage}"></div>
+
+    <div th:if="${!detail.finished}" class="alert alert-info animate-fade-up" th:text="${notFinishedMessage}"></div>
+
+    <th:block th:if="${detail.finished}">
+      <div class="card animate-fade-up">
+        <div class="card-toolbar">
+          <h2 class="card-title" th:text="${graduatesTitle}">Diplômés</h2>
+          <span class="badge badge-green" th:text="${detail.graduateCount}">0</span>
+        </div>
+
+        <div class="filter-bar">
+          <span class="filter-label" th:text="${filterLabel}">Filtre</span>
+          <select id="trackFilter" class="form-control track-select" th:attr="aria-label=${filterLabel}">
+            <option value="" th:text="${filterAll}" th:selected="${detail.track == null}">Toute la promotion</option>
+            <option value="EL" th:selected="${detail.track == 'EL'}">EL</option>
+            <option value="TN" th:selected="${detail.track == 'TN'}">TN</option>
+          </select>
+          <form th:action="@{/promotions/{id}/diplomas(id=${detail.cohort.id})}" method="post" class="inline-form">
+            <input type="hidden" name="track" id="trackSubmit">
+            <button type="submit" name="action" value="generate" class="btn btn-outline btn-sm" th:text="${generateLabel}">Générer les diplômes</button>
+            <button type="submit" name="action" value="download" class="btn btn-primary btn-sm"
+                    th:disabled="${detail.graduateCount == 0}" th:text="${downloadLabel}">Télécharger les diplômés</button>
+          </form>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-card animate-fade-up">
+            <div class="stat-icon green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <div>
+              <div class="stat-value" th:text="${detail.average}">0</div>
+              <div class="stat-label" th:text="${statAverage}">Moyenne des diplômés</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th th:text="${columnRank}">Rang</th>
+                <th th:text="${columnReference}">Référence</th>
+                <th th:text="${columnLastName}">Nom</th>
+                <th th:text="${columnFirstName}">Prénom</th>
+                <th th:text="${columnAverage}">Moyenne</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="g : ${detail.graduates}">
+                <td th:text="${g.rank}">1</td>
+                <td th:text="${g.student.reference}">REF</td>
+                <td th:text="${g.student.lastName}">Nom</td>
+                <td th:text="${g.student.firstName}">Prénom</td>
+                <td th:text="${g.overallAverage}">12.5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div th:if="${#lists.isEmpty(detail.graduates)}" class="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <h3 th:text="${graduatesEmpty}">Aucun diplôme généré pour cette promotion.</h3>
+        </div>
+      </div>
+    </th:block>
+
+    <div class="card animate-fade-up">
+      <div class="card-toolbar">
+        <h2 class="card-title" th:text="${studentsTitle}">Étudiants de la promotion</h2>
+        <span class="badge badge-blue" th:text="${#lists.size(detail.students)}">0</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th th:text="${columnReference}">Référence</th>
+              <th th:text="${columnLastName}">Nom</th>
+              <th th:text="${columnFirstName}">Prénom</th>
+              <th th:text="${columnGroup}">Groupe</th>
+              <th th:text="${columnTrack}">Track</th>
+              <th th:text="${columnStatus}">Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="s : ${detail.students}">
+              <td th:text="${s.student.reference}">REF</td>
+              <td th:text="${s.student.lastName}">Nom</td>
+              <td th:text="${s.student.firstName}">Prénom</td>
+              <td th:text="${s.student.currentGroupReference} ?: '—'">—</td>
+              <td th:text="${s.student.currentTrackCode} ?: '—'">—</td>
+              <td>
+                <span class="badge" th:classappend="${s.graduated} ? 'badge-green' : 'badge-gray'"
+                      th:text="${s.graduated} ? ${statusGraduated} : ${statusNotGraduated}">Diplômé</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script th:src="@{/js/promotions.js}"></script>
+</body>
+</html>

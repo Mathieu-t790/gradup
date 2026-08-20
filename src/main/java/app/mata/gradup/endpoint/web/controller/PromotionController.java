@@ -1,16 +1,16 @@
 package app.mata.gradup.endpoint.web.controller;
 
+import app.mata.gradup.endpoint.rest.model.CohortCreateRequest;
 import app.mata.gradup.endpoint.rest.model.CohortResponse;
 import app.mata.gradup.endpoint.rest.model.DiplomaExportResponse;
-import app.mata.gradup.endpoint.rest.model.TrackCode;
 import app.mata.gradup.service.CohortService;
 import app.mata.gradup.service.DiplomaService;
+import app.mata.gradup.service.PromotionViewService;
+import app.mata.gradup.service.PromotionViewService.PromotionRow;
+import app.mata.gradup.service.utils.PromotionLabels;
+import app.mata.gradup.service.utils.PromotionWeb;
+import app.mata.gradup.service.utils.PromotionWeb.PromotionForm;
 import app.mata.gradup.service.utils.TrackCodes;
-import app.mata.gradup.service.utils.Wording;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -28,34 +28,72 @@ public class PromotionController {
 
   private final CohortService cohortService;
   private final DiplomaService diplomaService;
+  private final PromotionViewService viewService;
 
   @GetMapping("/")
   public String home(Authentication authentication, Model model) {
     if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
-      addLandingLabels(model);
+      PromotionLabels.addLanding(model);
       return "landing";
     }
     return "redirect:/promotions";
   }
 
   @GetMapping("/promotions")
-  public String promotions(Model model) {
-    List<PromotionRow> rows =
-        cohortService.listCohorts().stream()
-            .sorted(
-                Comparator.comparingInt(CohortResponse::getExpectedGraduationYear)
-                    .reversed()
-                    .thenComparing(CohortResponse::getLabel))
-            .map(
-                cohort ->
-                    new PromotionRow(cohort, diplomaService.countCohortDiplomas(cohort.getId())))
-            .toList();
+  public String promotions(@RequestParam(required = false) String error, Model model) {
+    var rows = viewService.promotionRows();
     model.addAttribute("rows", rows);
     model.addAttribute("promotionCount", rows.size());
     model.addAttribute("graduateCount", rows.stream().mapToLong(PromotionRow::graduates).sum());
-    model.addAttribute("trackCounts", trackCounts());
-    addPromotionLabels(model);
+    model.addAttribute("trackCounts", viewService.trackCounts());
+    model.addAttribute("errorMessage", PromotionWeb.errorMessage(error));
+    PromotionLabels.addList(model);
     return "promotions/list";
+  }
+
+  @PostMapping("/promotions")
+  public String createPromotion(
+      @RequestParam String label,
+      @RequestParam String entryYear,
+      @RequestParam String expectedGraduationYear) {
+    PromotionForm form = PromotionForm.of(label, entryYear, expectedGraduationYear);
+    if (form.error() != null || form.request().getLabel() == null) {
+      return PromotionWeb.redirectListError(form.error() != null ? form.error() : "label.required");
+    }
+    CohortResponse created =
+        cohortService.createCohort(
+            new CohortCreateRequest()
+                .label(form.request().getLabel())
+                .entryYear(form.request().getEntryYear())
+                .expectedGraduationYear(form.request().getExpectedGraduationYear()));
+    return "redirect:/promotions/" + created.getId();
+  }
+
+  @PostMapping("/promotions/{cohortId}/edit")
+  public String editPromotion(
+      @PathVariable UUID cohortId,
+      @RequestParam(required = false) String label,
+      @RequestParam(required = false) String entryYear,
+      @RequestParam(required = false) String expectedGraduationYear) {
+    PromotionForm form = PromotionForm.of(label, entryYear, expectedGraduationYear);
+    if (form.error() != null) {
+      return PromotionWeb.redirectListError(form.error());
+    }
+    cohortService.updateCohort(cohortId, form.request());
+    return "redirect:/promotions";
+  }
+
+  @GetMapping("/promotions/{cohortId}")
+  public String promotionDetail(
+      @PathVariable UUID cohortId,
+      @RequestParam(required = false) String track,
+      @RequestParam(required = false) String error,
+      Model model) {
+    var detail = viewService.promotionDetail(cohortId, track);
+    model.addAttribute("detail", detail);
+    model.addAttribute("errorMessage", PromotionWeb.errorMessage(error));
+    PromotionLabels.addDetail(model, detail.cohort().getExpectedGraduationYear() + 1);
+    return "promotions/detail";
   }
 
   @PostMapping("/promotions/{cohortId}/diplomas")
@@ -63,53 +101,16 @@ public class PromotionController {
       @PathVariable UUID cohortId,
       @RequestParam String action,
       @RequestParam(required = false) String track) {
-    TrackCode trackCode = TrackCodes.toRest(track);
-    if ("generate".equals(action)) {
-      diplomaService.generateCohortDiplomas(cohortId, trackCode);
-      return "redirect:/promotions";
+    CohortResponse cohort = cohortService.getCohort(cohortId);
+    if (!viewService.finished(cohort)) {
+      return PromotionWeb.redirectDetail(cohortId, track, "not.finished");
     }
-    DiplomaExportResponse export = diplomaService.exportCohortDiplomas(cohortId, trackCode);
+    if ("generate".equals(action)) {
+      diplomaService.generateCohortDiplomas(cohortId, TrackCodes.toRest(track));
+      return PromotionWeb.redirectDetail(cohortId, track, null);
+    }
+    DiplomaExportResponse export =
+        diplomaService.exportCohortDiplomas(cohortId, TrackCodes.toRest(track));
     return "redirect:" + export.getDownloadUrl();
   }
-
-  private Map<String, Long> trackCounts() {
-    Map<String, Long> counts = new HashMap<>(diplomaService.countDiplomasByTrack());
-    counts.putIfAbsent("EL", 0L);
-    counts.putIfAbsent("TN", 0L);
-    return counts;
-  }
-
-  private void addLandingLabels(Model model) {
-    model.addAttribute("appName", Wording.get("promotion.web.app.name"));
-    model.addAttribute("landingTitle", Wording.get("landing.title"));
-    model.addAttribute("landingSubtitle", Wording.get("landing.subtitle"));
-    model.addAttribute("loginLabel", Wording.get("landing.login"));
-    model.addAttribute("accessNote", Wording.get("landing.access.note"));
-    model.addAttribute("footerLabel", Wording.get("landing.footer"));
-  }
-
-  private void addPromotionLabels(Model model) {
-    model.addAttribute("appName", Wording.get("promotion.web.app.name"));
-    model.addAttribute("pageTitle", Wording.get("promotion.web.page.title"));
-    model.addAttribute("pageSubtitle", Wording.get("promotion.web.page.subtitle"));
-    model.addAttribute("columnLabel", Wording.get("promotion.web.table.label"));
-    model.addAttribute("columnEntryYear", Wording.get("promotion.web.table.entry.year"));
-    model.addAttribute("columnGraduationYear", Wording.get("promotion.web.table.graduation.year"));
-    model.addAttribute("columnGraduates", Wording.get("promotion.web.table.graduates"));
-    model.addAttribute("columnActions", Wording.get("promotion.web.table.actions"));
-    model.addAttribute("filterLabel", Wording.get("promotion.web.filter.label"));
-    model.addAttribute("filterAll", Wording.get("promotion.web.filter.all"));
-    model.addAttribute("searchPlaceholder", Wording.get("promotion.web.search.placeholder"));
-    model.addAttribute("generateLabel", Wording.get("promotion.web.generate"));
-    model.addAttribute("downloadLabel", Wording.get("promotion.web.download"));
-    model.addAttribute("logoutLabel", Wording.get("promotion.web.logout"));
-    model.addAttribute("emptyTitle", Wording.get("promotion.web.empty.title"));
-    model.addAttribute("emptyText", Wording.get("promotion.web.empty.text"));
-    model.addAttribute("statPromotions", Wording.get("promotion.web.stat.promotions"));
-    model.addAttribute("statGraduates", Wording.get("promotion.web.stat.graduates"));
-    model.addAttribute("statTrackEl", Wording.get("promotion.web.stat.track", "EL"));
-    model.addAttribute("statTrackTn", Wording.get("promotion.web.stat.track", "TN"));
-  }
-
-  public record PromotionRow(CohortResponse cohort, long graduates) {}
 }

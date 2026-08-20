@@ -79,9 +79,11 @@ public class RoutePolicy {
             "/teachers",
             "/cohorts/{cohortId}/diplomas",
             "/cohorts/{cohortId}/diplomas/export",
-            "/promotions")
+            "/promotions",
+            "/promotions/{cohortId}")
         .hasRole("ADMIN")
-        .requestMatchers(HttpMethod.PATCH, "/students/{studentId}", "/courses/{courseId}")
+        .requestMatchers(
+            HttpMethod.PATCH, "/students/{studentId}", "/courses/{courseId}", "/cohorts/{cohortId}")
         .hasRole("ADMIN")
         .requestMatchers(HttpMethod.DELETE, "/course-offerings/{offeringId}/teachers/{teacherId}")
         .hasRole("ADMIN")

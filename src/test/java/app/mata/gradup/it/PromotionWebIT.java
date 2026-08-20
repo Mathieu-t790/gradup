@@ -12,8 +12,17 @@ import app.mata.gradup.conf.TestDataSeeder;
 import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.model.Role;
 import app.mata.gradup.model.TrackCode;
+import app.mata.gradup.repository.model.JAcademicYear;
 import app.mata.gradup.repository.model.JCohort;
+import app.mata.gradup.repository.model.JCourse;
+import app.mata.gradup.repository.model.JExam;
+import app.mata.gradup.repository.model.JGroup;
+import app.mata.gradup.repository.model.JSemester;
+import app.mata.gradup.repository.model.JStudent;
+import app.mata.gradup.repository.model.JTrack;
 import java.net.URI;
+import java.time.LocalDate;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,20 +66,44 @@ class PromotionWebIT extends SecuredFacadeIT {
     return csrfToken(restTemplate);
   }
 
-  private ResponseEntity<String> postDiplomas(JCohort cohort, String action, String track) {
+  private ResponseEntity<String> postForm(String url, String... keyValues) {
     var csrf = csrfFrom(restTemplate.getForEntity("/promotions", String.class));
     var headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
     var formData = new LinkedMultiValueMap<String, String>();
-    formData.add("action", action);
     formData.add("_csrf", csrf);
-    if (track != null) {
-      formData.add("track", track);
+    for (int i = 0; i + 1 < keyValues.length; i += 2) {
+      formData.add(keyValues[i], keyValues[i + 1]);
     }
-    return restTemplate.postForEntity(
-        "/promotions/" + cohort.getId() + "/diplomas",
-        new HttpEntity<>(formData, headers),
-        String.class);
+    return restTemplate.postForEntity(url, new HttpEntity<>(formData, headers), String.class);
+  }
+
+  private ResponseEntity<String> postDiplomas(JCohort cohort, String action, String track) {
+    return track == null
+        ? postForm("/promotions/" + cohort.getId() + "/diplomas", "action", action)
+        : postForm("/promotions/" + cohort.getId() + "/diplomas", "action", action, "track", track);
+  }
+
+  private JCohort seedFinishedCohortWithGrades() {
+    return seeder.inTransaction(
+        () -> {
+          JCohort cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+          JTrack el = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+          JGroup group = seeder.group("G1", cohort, el);
+          JAcademicYear year =
+              seeder.academicYear("2021-2024", LocalDate.of(2021, 9, 1), LocalDate.of(2024, 7, 31));
+          JSemester s1 =
+              seeder.semester(1, year, LocalDate.of(2021, 9, 1), LocalDate.of(2022, 1, 31));
+          JCourse prog1 = seeder.course("PROG1", 60, 1, null);
+          JExam exam = seeder.exam(seeder.offering(prog1, group, s1));
+          JStudent graduated =
+              seeder.student("STD21001", "Rakoto", "Hery", "hery@cu.te", cohort, el, group);
+          JStudent notGraduated =
+              seeder.student("STD21002", "Rabe", "Mialy", "mialy@cu.te", cohort, el, group);
+          seeder.grade(graduated, exam, "12.00");
+          seeder.grade(notGraduated, exam, "8.00");
+          return cohort;
+        });
   }
 
   @Test
@@ -112,8 +145,9 @@ class PromotionWebIT extends SecuredFacadeIT {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     assertNotNull(response.getBody());
     assertTrue(response.getBody().contains("Mpamakilay"));
-    assertTrue(response.getBody().contains("Générer les diplômes"));
-    assertTrue(response.getBody().contains("Télécharger les diplômés"));
+    assertTrue(response.getBody().contains("Créer une promotion"));
+    assertTrue(response.getBody().contains("Voir"));
+    assertTrue(response.getBody().contains("Modifier"));
     assertTrue(response.getBody().contains("EL"));
     assertTrue(response.getBody().contains("TN"));
     assertTrue(response.getBody().contains("Promotions"));
@@ -121,14 +155,15 @@ class PromotionWebIT extends SecuredFacadeIT {
   }
 
   @Test
-  void generate_action_redirects_back_to_promotions() {
+  void generate_action_redirects_to_promotion_detail() {
     loginAsAdmin(restTemplate);
     var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
 
     var response = postDiplomas(cohort, "generate", null);
 
     assertEquals(HttpStatus.FOUND, response.getStatusCode());
-    assertTrue(response.getHeaders().getLocation().toString().contains("/promotions"));
+    assertTrue(
+        response.getHeaders().getLocation().toString().contains("/promotions/" + cohort.getId()));
   }
 
   @Test
@@ -141,6 +176,120 @@ class PromotionWebIT extends SecuredFacadeIT {
 
     assertEquals(HttpStatus.FOUND, response.getStatusCode());
     assertEquals("http://localhost/diplomas.xlsx", response.getHeaders().getLocation().toString());
+  }
+
+  @Test
+  void admin_sees_detail_page_with_students_and_graduates() {
+    loginAsAdmin(restTemplate);
+    var cohort = seedFinishedCohortWithGrades();
+
+    var generate = postDiplomas(cohort, "generate", null);
+    assertEquals(HttpStatus.FOUND, generate.getStatusCode());
+
+    var response = restTemplate.getForEntity("/promotions/" + cohort.getId(), String.class);
+
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().contains("Mpamakilay"));
+    assertTrue(response.getBody().contains("Rakoto"));
+    assertTrue(response.getBody().contains("Rabe"));
+    assertTrue(response.getBody().contains("Diplômé"));
+    assertTrue(response.getBody().contains("Non diplômé"));
+    assertTrue(response.getBody().contains("12,00"));
+    assertTrue(response.getBody().contains("Générer les diplômes"));
+    assertTrue(response.getBody().contains("Télécharger les diplômés"));
+    assertTrue(response.getBody().contains("Retour aux promotions"));
+  }
+
+  @Test
+  void unfinished_promotion_shows_banner_and_blocks_generation() {
+    loginAsAdmin(restTemplate);
+    var cohort = seeder.cohort("Fahazavana", 2023, 2026);
+    var el = seeder.track(TrackCode.EL, "Ecosysteme Logiciel");
+    var group = seeder.group("G1", cohort, el);
+    seeder.student("STD23001", "Rasoa", "Lala", "lala@cu.te", cohort, el, group);
+
+    var page = restTemplate.getForEntity("/promotions/" + cohort.getId(), String.class);
+    System.out.println("BODY: " + page.getBody());
+
+    assertEquals(HttpStatus.OK, page.getStatusCode());
+    assertNotNull(page.getBody());
+    assertTrue(page.getBody().contains("Promotion en cours"));
+    assertTrue(page.getBody().contains("2027"));
+    assertTrue(page.getBody().contains("Fahazavana"));
+    assertTrue(page.getBody().contains("Rasoa"));
+    assertTrue(page.getBody().contains("Non diplômé"));
+
+    var generate = postDiplomas(cohort, "generate", null);
+
+    assertEquals(HttpStatus.FOUND, generate.getStatusCode());
+    assertTrue(
+        Objects.requireNonNull(generate.getHeaders().getLocation())
+            .toString()
+            .contains("error=not.finished"));
+  }
+
+  @Test
+  void detail_page_is_forbidden_for_non_admin() {
+    seedUser("student.web@cu.te", Role.STUDENT);
+    loginAsUser(restTemplate, "student.web@cu.te");
+    var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+
+    var response = restTemplate.getForEntity("/promotions/" + cohort.getId(), String.class);
+
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+  }
+
+  @Test
+  void create_promotion_redirects_to_detail_and_lists() {
+    loginAsAdmin(restTemplate);
+
+    var response =
+        postForm(
+            "/promotions",
+            "label",
+            "Promo 2026",
+            "entryYear",
+            "2026",
+            "expectedGraduationYear",
+            "2029");
+
+    assertEquals(HttpStatus.FOUND, response.getStatusCode());
+    var location = response.getHeaders().getLocation().toString();
+    assertTrue(location.contains("/promotions/"), "unexpected location: " + location);
+
+    var list = restTemplate.getForEntity("/promotions", String.class);
+    assertEquals(HttpStatus.OK, list.getStatusCode());
+    assertNotNull(list.getBody());
+    assertTrue(list.getBody().contains("Promo 2026"));
+  }
+
+  @Test
+  void create_promotion_rejects_blank_label() {
+    loginAsAdmin(restTemplate);
+
+    var response =
+        postForm(
+            "/promotions", "label", "  ", "entryYear", "2026", "expectedGraduationYear", "2029");
+
+    assertEquals(HttpStatus.FOUND, response.getStatusCode());
+    assertTrue(response.getHeaders().getLocation().toString().contains("error=label.required"));
+  }
+
+  @Test
+  void edit_promotion_updates_label() {
+    loginAsAdmin(restTemplate);
+    var cohort = seeder.cohort("Mpamakilay", 2021, 2024);
+
+    var response = postForm("/promotions/" + cohort.getId() + "/edit", "label", "Mpamakilay 2.0");
+
+    assertEquals(HttpStatus.FOUND, response.getStatusCode());
+    assertTrue(response.getHeaders().getLocation().toString().contains("/promotions"));
+
+    var list = restTemplate.getForEntity("/promotions", String.class);
+    assertEquals(HttpStatus.OK, list.getStatusCode());
+    assertNotNull(list.getBody());
+    assertTrue(list.getBody().contains("Mpamakilay 2.0"));
   }
 
   @Test
