@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
 public class LoginPageRegistration {
 
   public void register(HttpSecurity http) {
-    DefaultLoginPageGeneratingFilter loginPageGeneratingFilter =
-        new DefaultLoginPageGeneratingFilter();
+    DefaultLoginPageGeneratingFilter loginPageGeneratingFilter = new LoginPageFilter();
     loginPageGeneratingFilter.setResolveHiddenInputs(
         request -> {
           CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
