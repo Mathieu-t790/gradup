@@ -103,6 +103,19 @@ class SecurityIT extends SecuredFacadeIT {
   }
 
   @Test
+  void teacher_cannot_access_any_student_profile() {
+    var student = saveStudent("tafita@cu.te");
+    seedUser("teacher@cu.te", Role.TEACHER);
+    loginAsUser(restTemplate, "teacher@cu.te");
+
+    var response = restTemplate.getForEntity("/students/" + student.getId(), Error.class);
+
+    assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertEquals("FORBIDDEN", response.getBody().getCode());
+  }
+
+  @Test
   void admin_can_create_student() {
     loginAsAdmin(restTemplate);
     var cohort = saveCohort();

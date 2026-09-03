@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.mata.gradup.endpoint.event.model.TranscriptGenerated;
+import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mail.Email;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.model.Role;
@@ -17,6 +18,8 @@ import app.mata.gradup.repository.model.JTranscript;
 import app.mata.gradup.repository.model.JUser;
 import app.mata.gradup.service.utils.DownloadPresigner;
 import app.mata.gradup.service.utils.HtmlTemplater;
+import app.mata.gradup.service.utils.PdfRenderer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
@@ -28,13 +31,22 @@ import org.thymeleaf.context.Context;
 class TranscriptGeneratedServiceTest {
 
   private final TranscriptRepository transcriptRepository = mock(TranscriptRepository.class);
+  private final PdfRenderer pdfRenderer = mock(PdfRenderer.class);
+  private final BucketComponent bucketComponent = mock(BucketComponent.class);
   private final DownloadPresigner downloadPresigner = mock(DownloadPresigner.class);
   private final Mailer mailer = mock(Mailer.class);
   private final HtmlTemplater htmlTemplater = mock(HtmlTemplater.class);
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   private final TranscriptGeneratedService service =
       new TranscriptGeneratedService(
-          transcriptRepository, downloadPresigner, mailer, htmlTemplater);
+          transcriptRepository,
+          pdfRenderer,
+          bucketComponent,
+          downloadPresigner,
+          mailer,
+          htmlTemplater,
+          objectMapper);
 
   @Test
   void accept_emails_without_attachment_and_marks_sent() throws Exception {

@@ -66,7 +66,7 @@ public class GradeService {
   public GradeResponse updateGrade(UUID gradeId, GradeUpdateRequest request, UUID currentUserId) {
     var grade =
         gradeRepository
-            .findById(gradeId)
+            .findByIdForUpdate(gradeId)
             .orElseThrow(() -> new NotFoundException("Grade not found"));
     grade.setScore(BigDecimal.valueOf(request.getScore()));
     grade.setRecordedBy(currentUserId);

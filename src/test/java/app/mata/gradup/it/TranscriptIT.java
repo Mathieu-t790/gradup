@@ -62,7 +62,7 @@ class TranscriptIT extends SecuredFacadeIT {
   }
 
   @Test
-  void post_provisional_generates_upload_and_dispatches_event() {
+  void post_provisional_generates_and_dispatches_event() {
     Fixture fixture = seed(true);
 
     TranscriptResponse json =
@@ -75,14 +75,13 @@ class TranscriptIT extends SecuredFacadeIT {
 
     UUID transcriptId = json.getId();
     assertEquals(TranscriptType.PROVISIONAL, json.getType());
-    assertTrue(json.getDownloadUrl().startsWith("http://localhost"));
+    assertNull(json.getDownloadUrl());
     assertNull(json.getOverallAverage());
     assertNull(json.getCreditsEarned());
 
-    String storageKey = uploadedKey(fixture.studentId, transcriptId);
-    assertEquals("transcripts/" + fixture.studentId + "/" + transcriptId + ".pdf", storageKey);
     assertEquals(
-        storageKey, transcriptRepository.findById(transcriptId).orElseThrow().getStorageKey());
+        "transcripts/" + fixture.studentId + "/" + transcriptId + ".pdf",
+        transcriptRepository.findById(transcriptId).orElseThrow().getStorageKey());
 
     List<JTranscriptDetail> details =
         transcriptDetailRepository.findAll().stream()
@@ -94,7 +93,9 @@ class TranscriptIT extends SecuredFacadeIT {
 
     Collection<TranscriptGenerated> events = dispatchedEvents();
     assertEquals(1, events.size());
-    assertEquals(transcriptId, events.iterator().next().getTranscriptId());
+    TranscriptGenerated event = events.iterator().next();
+    assertEquals(transcriptId, event.getTranscriptId());
+    assertNotNull(event.getPdfData());
   }
 
   @Test
@@ -290,13 +291,6 @@ class TranscriptIT extends SecuredFacadeIT {
     headers.setContentType(MediaType.APPLICATION_JSON);
     return restTemplate.postForEntity(
         BASE_URL.formatted(studentId), new HttpEntity<>(body, headers), String.class);
-  }
-
-  private String uploadedKey(UUID studentId, UUID transcriptId) {
-    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
-    verify(bucketComponent).upload(any(), keyCaptor.capture());
-    assertEquals("transcripts/" + studentId + "/" + transcriptId + ".pdf", keyCaptor.getValue());
-    return keyCaptor.getValue();
   }
 
   private Collection<TranscriptGenerated> dispatchedEvents() {

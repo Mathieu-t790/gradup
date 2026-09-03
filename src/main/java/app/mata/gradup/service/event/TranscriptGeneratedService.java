@@ -2,6 +2,7 @@ package app.mata.gradup.service.event;
 
 import app.mata.gradup.endpoint.event.model.TranscriptGenerated;
 import app.mata.gradup.exception.NotFoundException;
+import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mail.Email;
 import app.mata.gradup.mail.Mailer;
 import app.mata.gradup.repository.TranscriptRepository;
@@ -10,9 +11,12 @@ import app.mata.gradup.service.TranscriptService;
 import app.mata.gradup.service.utils.DownloadPresigner;
 import app.mata.gradup.service.utils.EmailAssets;
 import app.mata.gradup.service.utils.HtmlTemplater;
+import app.mata.gradup.service.utils.PdfRenderer;
 import app.mata.gradup.service.utils.Users;
 import app.mata.gradup.service.utils.Wording;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.internet.InternetAddress;
+import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -31,9 +35,12 @@ public class TranscriptGeneratedService implements Consumer<TranscriptGenerated>
   private static final Duration DOWNLOAD_URL_EXPIRATION = Duration.ofDays(3);
 
   private final TranscriptRepository transcriptRepository;
+  private final PdfRenderer pdfRenderer;
+  private final BucketComponent bucketComponent;
   private final DownloadPresigner downloadPresigner;
   private final Mailer mailer;
   private final HtmlTemplater htmlTemplater;
+  private final ObjectMapper objectMapper;
 
   @Override
   @Transactional
@@ -43,9 +50,25 @@ public class TranscriptGeneratedService implements Consumer<TranscriptGenerated>
             .findById(event.getTranscriptId())
             .orElseThrow(
                 () -> new NotFoundException("Transcript not found: " + event.getTranscriptId()));
+
+    if (event.getPdfData() != null) {
+      renderAndUpload(transcript, event.getPdfData());
+    }
+
     mailer.accept(emailOf(transcript));
     transcript.setSentAt(Instant.now());
     transcriptRepository.save(transcript);
+  }
+
+  private void renderAndUpload(JTranscript transcript, String pdfDataJson) {
+    try {
+      PdfRenderer.TranscriptPdfData pdfData =
+          objectMapper.readValue(pdfDataJson, PdfRenderer.TranscriptPdfData.class);
+      File pdf = pdfRenderer.render(pdfData);
+      bucketComponent.upload(pdf, transcript.getStorageKey());
+    } catch (Exception e) {
+      throw new RuntimeException("Could not render transcript PDF " + transcript.getId(), e);
+    }
   }
 
   private Email emailOf(JTranscript transcript) {
