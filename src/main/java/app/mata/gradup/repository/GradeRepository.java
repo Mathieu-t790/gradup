@@ -1,13 +1,16 @@
 package app.mata.gradup.repository;
 
 import app.mata.gradup.repository.model.JGrade;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -36,6 +39,10 @@ public interface GradeRepository extends JpaRepository<JGrade, UUID> {
       WHERE g.student.id = :studentId AND o.semester.id = :semesterId
       """)
   Page<JGrade> findByStudentIdAndSemesterId(UUID studentId, UUID semesterId, Pageable pageable);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT g FROM JGrade g WHERE g.id = :id")
+  Optional<JGrade> findByIdForUpdate(@Param("id") UUID id);
 
   List<JGrade> findByExamId(UUID examId);
 

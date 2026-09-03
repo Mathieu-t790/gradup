@@ -16,8 +16,7 @@ public abstract class OwnerAuthorizer implements AuthorizationManager<RequestAut
   public AuthorizationDecision check(
       Supplier<Authentication> authentication, RequestAuthorizationContext context) {
     var auth = authentication.get();
-    if (AuthorizationUtils.hasRole(auth, Role.ADMIN)
-        || AuthorizationUtils.hasRole(auth, Role.TEACHER)) {
+    if (AuthorizationUtils.hasRole(auth, Role.ADMIN)) {
       return new AuthorizationDecision(true);
     }
     var userDetails = AuthorizationUtils.userDetails(auth);
