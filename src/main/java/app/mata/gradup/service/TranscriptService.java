@@ -6,7 +6,6 @@ import app.mata.gradup.endpoint.rest.model.TranscriptGenerateRequest;
 import app.mata.gradup.endpoint.rest.model.TranscriptResponse;
 import app.mata.gradup.exception.BadRequestException;
 import app.mata.gradup.exception.NotFoundException;
-import app.mata.gradup.file.bucket.BucketComponent;
 import app.mata.gradup.mapper.TranscriptMapper;
 import app.mata.gradup.model.TranscriptType;
 import app.mata.gradup.repository.AcademicYearRepository;
@@ -26,7 +25,6 @@ import app.mata.gradup.repository.model.JTranscriptDetail;
 import app.mata.gradup.repository.model.JVCourseAverage;
 import app.mata.gradup.service.utils.DownloadPresigner;
 import app.mata.gradup.service.utils.Pages;
-import app.mata.gradup.service.utils.PdfRenderer;
 import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData;
 import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.AbsencesInfo;
 import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.ResultInfo;
@@ -34,7 +32,8 @@ import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.StudentInfo;
 import app.mata.gradup.service.utils.TranscriptScope;
 import app.mata.gradup.service.utils.TranscriptScoring;
 import app.mata.gradup.service.utils.Wording;
-import java.io.File;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -65,10 +64,9 @@ public class TranscriptService {
   private final VCourseAverageRepository vCourseAverageRepository;
   private final DiplomaRepository diplomaRepository;
   private final TranscriptScope scope;
-  private final BucketComponent bucketComponent;
   private final DownloadPresigner downloadPresigner;
-  private final PdfRenderer pdfRenderer;
   private final EventProducer eventProducer;
+  private final ObjectMapper objectMapper;
   private final TranscriptMapper transcriptMapper;
 
   @Transactional
@@ -84,17 +82,13 @@ public class TranscriptService {
     PreparedTranscript prepared =
         prepare(request, student, transcriptId, storageKey, recipientEmail, averageByOffering);
 
-    File pdf = pdfRenderer.render(prepared.pdfData());
-    bucketComponent.upload(pdf, storageKey);
-
     JTranscript transcript = transcriptRepository.save(prepared.transcript());
     transcriptDetailRepository.saveAll(
         details(prepared.offerings(), transcript, averageByOffering));
 
-    dispatchEmailEvent(transcriptId);
+    dispatchPdfAndEmailEvent(transcriptId, prepared.pdfData());
 
-    String downloadUrl = presignUrl(transcript);
-    return transcriptMapper.toRest(transcript, downloadUrl);
+    return transcriptMapper.toRest(transcript, null);
   }
 
   private PreparedTranscript prepare(
@@ -271,6 +265,15 @@ public class TranscriptService {
       eventProducer.accept(List.of(new TranscriptGenerated(transcriptId)));
     } catch (Exception e) {
       log.warn("Could not dispatch transcript email event for transcript {}", transcriptId, e);
+    }
+  }
+
+  private void dispatchPdfAndEmailEvent(UUID transcriptId, TranscriptPdfData pdfData) {
+    try {
+      eventProducer.accept(
+          List.of(new TranscriptGenerated(transcriptId, objectMapper.writeValueAsString(pdfData))));
+    } catch (JsonProcessingException | RuntimeException e) {
+      log.warn("Could not dispatch transcript generation event for transcript {}", transcriptId, e);
     }
   }
 
