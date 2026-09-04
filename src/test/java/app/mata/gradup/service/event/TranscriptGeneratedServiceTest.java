@@ -19,9 +19,17 @@ import app.mata.gradup.repository.model.JUser;
 import app.mata.gradup.service.utils.DownloadPresigner;
 import app.mata.gradup.service.utils.HtmlTemplater;
 import app.mata.gradup.service.utils.PdfRenderer;
+import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData;
+import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.AbsencesInfo;
+import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.CourseLine;
+import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.ResultInfo;
+import app.mata.gradup.service.utils.PdfRenderer.TranscriptPdfData.StudentInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -118,6 +126,62 @@ class TranscriptGeneratedServiceTest {
     ArgumentCaptor<Email> emailCaptor = ArgumentCaptor.forClass(Email.class);
     verify(mailer).accept(emailCaptor.capture());
     assertTrue(emailCaptor.getValue().attachments().isEmpty());
+  }
+
+  @Test
+  void accept_with_pdf_data_renders_uploads_and_then_emails() throws Exception {
+    UUID transcriptId = UUID.randomUUID();
+    JTranscript transcript =
+        JTranscript.builder()
+            .id(transcriptId)
+            .student(studentWithUser())
+            .storageKey("transcripts/" + UUID.randomUUID() + "/" + transcriptId + ".pdf")
+            .recipientEmail("tafita@cu.te")
+            .build();
+    when(transcriptRepository.findById(transcriptId)).thenReturn(Optional.of(transcript));
+    File pdf = mock(File.class);
+    when(pdfRenderer.render(any(TranscriptPdfData.class))).thenReturn(pdf);
+    when(downloadPresigner.presign(any(), any(), any()))
+        .thenReturn(new URL("https://bucket.example/transcript.pdf?X-Amz-Expires=259200"));
+    when(htmlTemplater.render(eq("email/transcript"), any(Context.class)))
+        .thenReturn("<a href=\"https://bucket.example/transcript.pdf\">Télécharger</a>");
+
+    TranscriptPdfData pdfData =
+        new TranscriptPdfData(
+            "Relevé de notes – PROG1",
+            new StudentInfo("Mathieu", "Tafita", "STD21001", "Mpamakilay 2025-2026"),
+            List.of(
+                new CourseLine("PROG1", "Algorithmique", 6, new BigDecimal("12.50")),
+                new CourseLine("WEB2", "Développement web", 6, null)),
+            new AbsencesInfo("3", "Justifiées", null),
+            new ResultInfo(6, 30, new BigDecimal("12.50")),
+            true);
+    String pdfDataJson = objectMapper.writeValueAsString(pdfData);
+
+    service.accept(new TranscriptGenerated(transcriptId, pdfDataJson));
+
+    ArgumentCaptor<TranscriptPdfData> dataCaptor = ArgumentCaptor.forClass(TranscriptPdfData.class);
+    verify(pdfRenderer).render(dataCaptor.capture());
+    TranscriptPdfData rendered = dataCaptor.getValue();
+    assertEquals("Relevé de notes – PROG1", rendered.title());
+    assertEquals("STD21001", rendered.student().reference());
+    assertEquals("Mpamakilay 2025-2026", rendered.student().inscriptionLine());
+    assertEquals(2, rendered.courses().size());
+    assertEquals("PROG1", rendered.courses().get(0).code());
+    assertEquals(0, new BigDecimal("12.50").compareTo(rendered.courses().get(0).note()));
+    assertNull(rendered.courses().get(1).note());
+    assertEquals(6, rendered.result().creditsAcquired());
+    assertEquals(30, rendered.result().totalCredits());
+    assertEquals(0, new BigDecimal("12.50").compareTo(rendered.result().weightedAverage()));
+    assertEquals("3", rendered.absences().countText());
+    assertTrue(rendered.provisional());
+
+    verify(bucketComponent).upload(pdf, transcript.getStorageKey());
+    ArgumentCaptor<Email> emailCaptor = ArgumentCaptor.forClass(Email.class);
+    verify(mailer).accept(emailCaptor.capture());
+    assertTrue(emailCaptor.getValue().attachments().isEmpty());
+    verify(transcriptRepository).save(transcript);
+    assertNotNull(transcript.getSentAt(), "transcript must be marked as sent");
   }
 
   private static JStudent studentWithUser() {
